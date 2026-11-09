@@ -1,0 +1,50 @@
+# ── Secrets: never commit ─────────────────────────────────────────────
+# .env.local holds the Supabase keys and any other passwords.
+.env
+.env.local
+.env*.local
+# An example file with empty values is fine to share.
+!.env.example
+
+# ── Next.js and Node ──────────────────────────────────────────────────
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# Vercel and Supabase local files
+.vercel
+supabase/.temp/
+supabase/.branches/
+
+# ── Test output ───────────────────────────────────────────────────────
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.playwright-mcp/
+
+# ── Logs and system files ─────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Personal Claude Code settings (the shared ones in .claude/ are kept) ─
+.claude/settings.local.json
+
+# ── Course materials and personal files: kept on this computer, not in the repo ─
+MGMT51463/
+Hand off summary.docx
+# Office lock files
+~$*
