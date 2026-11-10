@@ -22,7 +22,7 @@ function Waiting({ view }: { view: PatientView }) {
         seen first.
       </p>
       <p className="text-lg">
-        Estimated time to see a doctor after triage:{" "}
+        Estimated time until you&apos;re called back:{" "}
         <strong>
           {view.waitLow} to {view.waitHigh} minutes
         </strong>

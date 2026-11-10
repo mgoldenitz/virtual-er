@@ -15,7 +15,7 @@ Next.js 16 App Router + TypeScript + Tailwind. Phase 1 has no server: visits liv
 | 7 | Repeated call-back may be silent; hidden-tab callbacks not replayed | `StatusAnnouncer` empties both live regions on every status change and fills the new text 300 ms later, only while the page is visible (waits for `visibilitychange` otherwise). Same path for the initial call-back and later ones |
 | 8 | Staff "Seen" / "On the way" not announced | `lib/progressChanges.ts` (compares `seen_at` / `confirmed_at`, not status, so an Undo is not announced as news) + `components/staff/ProgressAnnouncer.tsx` polite region, current site only, no minute counters |
 | — | "Seen" meaning | Row now says "Seen (screen shown, not necessarily read)" |
-| — | Wait-interval label | Not changed yet; waiting for the owner's decision |
+| — | Wait-interval label | Owner's choice: now "Estimated time until you're called back", simulated note kept; SPEC.md updated to match |
 
 40 unit tests pass; lint and type check are clean. Checked in a real browser (two tabs): call-back → Seen announced to staff; Left → row in Recently closed after 12 s; Undo → back to called, patient call-back announced again; failed check-in hides old slip; damaged record shows the warning; broken link then refresh shows no older visit.
 
