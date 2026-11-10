@@ -1,33 +1,42 @@
 // Everything a patient's phone may do, each as one narrow call that takes the token
 // (SPEC rule 5). Patient screens use only this file. Reading the visit and the two patient
-// steps go to the database functions; starting from home still uses browser storage until
-// the server route is built (step B of the storage plan).
+// steps go to the database functions; starting from home goes through the server route
+// app/api/start-visit.
 
 import { useCallback, useSyncExternalStore } from "react";
-import { makeAccessToken, makeUniqueDisplayCode } from "@/lib/codes";
+import { isAccessToken } from "@/lib/codes";
 import { afterFailedRead } from "@/lib/failedRead";
 import type { PatientView } from "@/lib/patientView";
 import { patientViewFromRow, type PatientVisitRow } from "@/lib/patientViewFromRow";
 import type { Site } from "@/lib/visit";
-import { startFromHome } from "@/lib/visitActions";
 import { saveToken } from "./savedToken";
 import { supabaseBrowser } from "./supabaseBrowser";
-import { addVisit, readVisits, type ChangeResult } from "./visitStore";
+import type { ChangeResult } from "./visitStore";
+
+/** saved = started and remembered on this phone; paused and busy = refused for now. */
+export type StartResult = "saved" | "paused" | "busy" | "not_saved";
 
 /**
  * Start a visit from home on the start page, and remember it on this phone.
- * Still the Phase 1 stand-in (browser storage) until step B replaces it with the server route.
- * Returns the new visit's token, or null if this browser could not save it.
+ * The phone sends only the site and language to the server route, which makes the code and
+ * token and asks the database; the database sets source = home and status = pre_arrival.
  */
-export function startVisitFromHome(site: Site, language: string): string | null {
-  const taken = new Set(readVisits().map((v) => v.code));
-  const visit = startFromHome(
-    { id: crypto.randomUUID(), code: makeUniqueDisplayCode(taken), access_token: makeAccessToken(), site, language },
-    new Date(),
-  );
-  if (addVisit(visit) !== "saved") return null;
-  saveToken(visit.access_token);
-  return visit.access_token;
+export async function startVisitFromHome(site: Site, language: string): Promise<StartResult> {
+  try {
+    const response = await fetch("/api/start-visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ site, language }),
+    });
+    const answer: unknown = await response.json();
+    const { result, token } = (answer ?? {}) as { result?: unknown; token?: unknown };
+    if (result === "paused" || result === "busy") return result;
+    if (result !== "saved" || typeof token !== "string" || !isAccessToken(token)) return "not_saved";
+    saveToken(token);
+    return "saved";
+  } catch {
+    return "not_saved";
+  }
 }
 
 /** A visit, null if the token matches no visit, or "unavailable" if it could not be read. */

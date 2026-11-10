@@ -1,13 +1,14 @@
 "use client";
 
-// The start page's "Start a visit": choose a demo site and a language. The visit is saved on
-// this phone, so the patient never types a code. If this phone already has a visit, it shows
-// that one first (open, ended or expired), and never offers a new one when storage cannot be read.
+// The start page's "Start a visit": choose a demo site and a language. The server starts the
+// visit and this phone remembers it, so the patient never types a code. If this phone already
+// has a visit, it shows that one first (open, ended or expired), and never offers a new one
+// while the saved visit cannot be read.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { startVisitFromHome, usePatientView } from "@/data/patientVisit";
+import { startVisitFromHome, usePatientView, type StartResult } from "@/data/patientVisit";
 import { loadSavedToken } from "@/data/savedToken";
 import { startPageState } from "@/lib/startPage";
 import type { Site } from "@/lib/visit";
@@ -31,6 +32,13 @@ const SAVED_NOTE = {
   },
 };
 
+// What the patient is told when a visit could not be started.
+const START_PROBLEM: Record<Exclude<StartResult, "saved">, string> = {
+  paused: "Off-site waiting is paused right now. Please come to the emergency department and wait there.",
+  busy: "Many visits are being started right now. Please wait a minute and try again, or go to the emergency department.",
+  not_saved: "Your visit was not saved. Please try again, or go to the emergency department desk.",
+};
+
 export function StartVisit() {
   const router = useRouter();
   const savedToken = useSyncExternalStore(noSubscribe, loadSavedToken, () => null);
@@ -38,6 +46,7 @@ export function StartVisit() {
   const [site, setSite] = useState<Site>("A");
   const [language, setLanguage] = useState("en");
   const [problem, setProblem] = useState("");
+  const [starting, setStarting] = useState(false);
   const [wantsNew, setWantsNew] = useState(false);
   const state = startPageState(saved);
 
@@ -52,7 +61,7 @@ export function StartVisit() {
           We cannot read the visit saved on this phone
         </h2>
         <p>
-          This browser cannot load or save visits right now, so a new visit could not be saved either. If you
+          The visit saved on this phone cannot be loaded right now, so a new visit is not offered. If you
           need care, go to the emergency department and follow its normal arrival and triage steps.
         </p>
       </section>
@@ -105,13 +114,17 @@ export function StartVisit() {
     );
   }
 
-  const start = () => {
-    const token = startVisitFromHome(site, language);
-    if (!token) {
-      setProblem("Your visit was not saved. Please try again, or go to the emergency department desk.");
-      return;
+  const start = async () => {
+    if (starting) return; // a second tap while the first is on its way must not start two visits
+    setStarting(true);
+    setProblem("");
+    const result = await startVisitFromHome(site, language);
+    if (result === "saved") {
+      router.push("/patient");
+      return; // stays "Starting…" until the patient screen opens
     }
-    router.push("/patient");
+    setStarting(false);
+    setProblem(START_PROBLEM[result]);
   };
 
   return (
@@ -154,8 +167,8 @@ export function StartVisit() {
         </select>
         <span className="mt-1 block text-sm text-slate-700">Two more languages come in Phase 3.</span>
       </label>
-      <Button onClick={start} className="w-full text-lg">
-        Start a visit
+      <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
+        {starting ? "Starting…" : "Start a visit"}
       </Button>
       {problem && (
         <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
