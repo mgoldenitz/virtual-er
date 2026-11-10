@@ -74,7 +74,7 @@ Decided:
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
 
 Waiting on the owner:
-- **Model handoff not done yet:** Gemini 3.1 Pro, High (or 3.6 Flash, High, if still out of credits) reviews the review fixes and step D. File: `handoffs/2026-11-10-gemini-review-storage-fixes-and-step-d.md`. It does not include the small "seen first" fix. The owner pastes the answer or says "skip".
+- Nothing right now. The Gemini review of the review fixes and step D (`handoffs/2026-11-10-gemini-review-storage-fixes-and-step-d.md`) was skipped by the owner on 2026-11-10.
 
 Not checked yet:
 - The start route's "paused" and "busy" answers (they need database changes, so they need the owner's approval).
