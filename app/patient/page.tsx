@@ -29,8 +29,10 @@ export default function PatientPage() {
     return () => window.removeEventListener("hashchange", readLink);
   }, []);
 
-  const view = usePatientView(token ?? null);
-  const loading = token === undefined || view === undefined;
+  const result = usePatientView(token ?? null);
+  const loading = token === undefined || result === undefined;
+  const unavailable = result === "unavailable";
+  const view = result === "unavailable" ? null : result;
 
   // The first time the called screen is actually on screen, record seen_at
   // (shown, not necessarily read). A tab in the background waits until it is brought forward.
@@ -61,7 +63,17 @@ export default function PatientPage() {
 
       {loading ? (
         <p>Loading your visit…</p>
-      ) : view === null ? (
+      ) : unavailable ? (
+        <section aria-labelledby="unavailable-heading" className="space-y-2">
+          <h2 id="unavailable-heading" className="text-2xl font-bold">
+            We cannot load your visit right now
+          </h2>
+          <p className="text-lg">
+            Nothing you do on this page can be saved at the moment, so staff may not see it. Please
+            contact the emergency department desk.
+          </p>
+        </section>
+      ) : !view ? (
         <section aria-labelledby="none-heading" className="space-y-2">
           <h2 id="none-heading" className="text-2xl font-bold">
             {brokenLink ? "This link did not work" : "No visit found on this phone"}

@@ -5,7 +5,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { patientViewFor, type PatientView } from "@/lib/patientView";
 import { confirmOnMyWay, markSeen } from "@/lib/visitActions";
-import { readVisits, subscribeToVisits, updateVisit, type ChangeResult } from "./visitStore";
+import { readVisits, storageMayHideToken, subscribeToVisits, updateVisit, type ChangeResult } from "./visitStore";
 
 function idForToken(token: string): string | null {
   return readVisits().find((v) => v.access_token === token)?.id ?? null;
@@ -25,10 +25,12 @@ export function confirmOnMyWayByToken(token: string): ChangeResult {
 
 // Cache so React gets the same object until the view really changes.
 let lastKey = "";
-let lastView: PatientView | null = null;
+let lastView: PatientView | null | "unavailable" = null;
 
-function readView(token: string): PatientView | null {
-  const view = patientViewFor(readVisits(), token);
+function readView(token: string): PatientView | null | "unavailable" {
+  const found = patientViewFor(readVisits(), token);
+  // Not found because the saved data is damaged: say the visit cannot be loaded, never "no visit".
+  const view = found === null && storageMayHideToken(token) ? "unavailable" : found;
   const key = token + JSON.stringify(view);
   if (key !== lastKey) {
     lastKey = key;
@@ -40,9 +42,10 @@ function readView(token: string): PatientView | null {
 /**
  * Live patient view for one token. The change signal carries no visit data:
  * on every change the hook simply re-reads through patientViewFor.
- * Returns undefined before the browser has loaded, null if the token matches no visit.
+ * Returns undefined before the browser has loaded, null if the token matches no visit,
+ * and "unavailable" if damaged saved data may be hiding it.
  */
-export function usePatientView(token: string | null): PatientView | null | undefined {
+export function usePatientView(token: string | null): PatientView | null | "unavailable" | undefined {
   const getSnapshot = useCallback(() => (token ? readView(token) : null), [token]);
   return useSyncExternalStore(subscribeToVisits, getSnapshot, () => undefined);
 }

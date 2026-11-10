@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { checkInAtDesk, callBack } from "@/lib/visitActions";
-import { addVisit, readStorageProblem, readVisits, resetUnreadableStorage, updateVisit } from "./visitStore";
+import {
+  addVisit,
+  readStorageProblem,
+  readVisits,
+  resetUnreadableStorage,
+  storageMayHideToken,
+  updateVisit,
+} from "./visitStore";
 
 const visit = checkInAtDesk(
   { id: "v1", code: "ABC234", access_token: "T", site: "A", ctas_level: 4, language: "en" },
@@ -79,5 +86,14 @@ describe("damaged saved data", () => {
     expect(backups.map(([, value]) => value)).toEqual(["{broken"]);
     expect(addVisit(visit)).toBe("saved");
     expect(resetUnreadableStorage()).toBe("refused");
+  });
+
+  it("tells the patient screen when damage may be hiding a visit", () => {
+    fakeBrowser(() => true);
+    window.localStorage.setItem("vwr.visits.v1", JSON.stringify([{ ...visit, ctas_level: { x: 1 } }]));
+    expect(storageMayHideToken("T")).toBe(true);
+    expect(storageMayHideToken("OTHER")).toBe(false);
+    window.localStorage.setItem("vwr.visits.v1", "{broken");
+    expect(storageMayHideToken("OTHER")).toBe(true);
   });
 });

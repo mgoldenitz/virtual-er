@@ -50,6 +50,19 @@ export function readStorageProblem(): StorageProblem {
   return cachedProblem;
 }
 
+/**
+ * True when this token's visit may be hidden by damage: the whole saved list is unreadable,
+ * or a damaged entry carries this token. The patient screen then says it cannot load the
+ * visit, instead of "No visit found".
+ */
+export function storageMayHideToken(token: string): boolean {
+  refresh();
+  if (cached.unreadable) return true;
+  return cached.damaged.some(
+    (entry) => typeof entry === "object" && entry !== null && (entry as { access_token?: unknown }).access_token === token,
+  );
+}
+
 function writeVisits(visits: Visit[]): ChangeResult {
   refresh();
   // The saved text could not be read at all. Writing now would replace it, so nothing is saved

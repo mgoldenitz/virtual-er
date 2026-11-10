@@ -4,7 +4,7 @@
 // newest first, each with its own Undo button. There is no time limit, and older closures
 // stay reachable with "Show older closures", so nobody has to hurry.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { undoCloseVisit } from "@/data/staffActions";
 import { CLOSED_PAGE_SIZE, closedLabel, recentlyClosed } from "@/lib/recentlyClosed";
 import type { Site, Visit } from "@/lib/visit";
@@ -21,10 +21,24 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
   // A failure note stays beside its own row, and the row (with its Undo button) stays too.
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [shownCount, setShownCount] = useState(CLOSED_PAGE_SIZE);
+  const [revealed, setRevealed] = useState<{ first: number; message: string } | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const all = recentlyClosed(visits, site);
+
+  // After "Show older closures", move focus to the first newly shown row (the button may be gone).
+  useEffect(() => {
+    if (revealed) listRef.current?.querySelectorAll("li")[revealed.first]?.focus();
+  }, [revealed]);
+
   if (all.length === 0) return null;
   const closed = all.slice(0, shownCount);
   const older = all.length - closed.length;
+
+  const showOlder = () => {
+    const added = Math.min(CLOSED_PAGE_SIZE, older);
+    setRevealed({ first: closed.length, message: `Showing ${added} older ${added === 1 ? "closure" : "closures"}.` });
+    setShownCount(shownCount + CLOSED_PAGE_SIZE);
+  };
 
   const undo = (visit: Visit) => {
     const result = undoCloseVisit(visit.id, visit);
@@ -44,9 +58,9 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
         Recently closed
       </h3>
       <p className="text-sm text-slate-700">Pressed by mistake? Undo puts the patient back where they were.</p>
-      <ul className="space-y-2">
+      <ul ref={listRef} className="space-y-2">
         {closed.map((visit) => (
-          <li key={visit.id} className="rounded-lg border-2 border-slate-300 p-3" data-testid={`closed-${visit.code}`}>
+          <li key={visit.id} tabIndex={-1} className="rounded-lg border-2 border-slate-300 p-3" data-testid={`closed-${visit.code}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>
                 <span className="font-mono font-bold tracking-widest">{visit.code}</span> {closedLabel(visit)}
@@ -60,10 +74,13 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
         ))}
       </ul>
       {older > 0 && (
-        <Button variant="secondary" onClick={() => setShownCount(shownCount + CLOSED_PAGE_SIZE)}>
+        <Button variant="secondary" onClick={showOlder}>
           Show older closures ({older} more)
         </Button>
       )}
+      <p role="status" className="sr-only">
+        {revealed?.message}
+      </p>
     </section>
   );
 }
