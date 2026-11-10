@@ -35,7 +35,7 @@ const SAVED_NOTE = {
 // What the patient is told when a visit could not be started.
 const START_PROBLEM: Record<Exclude<StartResult, "saved">, string> = {
   paused: "Off-site waiting is paused right now. Please come to the emergency department and wait there.",
-  busy: "Many visits are being started right now. Please wait a minute and try again, or go to the emergency department.",
+  busy: "Too many visits have been started just now. Please wait a few minutes and try again, or go to the emergency department.",
   not_saved: "Your visit was not saved. Please try again, or go to the emergency department desk.",
 };
 

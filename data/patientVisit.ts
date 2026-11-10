@@ -28,6 +28,9 @@ export async function startVisitFromHome(site: Site, language: string): Promise<
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ site, language }),
     });
+    // 429 = too many starts: from the route's own cap, or from Vercel's per-device firewall rule,
+    // whose answer is not in the route's format.
+    if (response.status === 429) return "busy";
     const answer: unknown = await response.json();
     const { result, token } = (answer ?? {}) as { result?: unknown; token?: unknown };
     if (result === "paused" || result === "busy") return result;
