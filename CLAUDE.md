@@ -22,6 +22,8 @@ Read SPEC.md before any work. Its hard rules always apply and win over anything 
 
 I forget these handoffs. Whenever one of the steps below comes up, stop and give me a short note that starts with "Model handoff:". Name the model and effort level, the file or text to give it, the question to ask, and what to bring back to you. Then wait until I paste the answer back or say "skip". The full workflow is in ai_model_workflow_virtual_er.md. Nothing I paste into another model may contain keys, tokens, passwords or real patient data, so prepare the text with those left out.
 
+Save every handoff file in the handoffs/ folder of this project, never in a temporary folder. Name it date-model-topic.md (for example 2026-11-09-sol-review-core-loop.md), and give that path in the "Model handoff:" note.
+
 - After each small change works and passes its tests: GPT-6.1 Sol, Medium, reviews the result.
 - When you are stuck (two fixes have failed) or a task is important or unclear: the escalation loop. GPT-6.1 Sol, High, analyzes the problem; Gemini 4 Argon, High, gives a second opinion; Kimi K3.1 Pro, High, only if long documents matter; Grok 4.7, Low or Medium, challenges the assumptions; then I decide.
 - Phase 1, after the Playwright phone and laptop tests: GPT-6.1 Sol, Medium, reviews the flow for confusing labels and missing states, then Grok 4.7, Low, suggests simpler screens.
