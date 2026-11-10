@@ -8,10 +8,9 @@ import { isAccessToken } from "@/lib/codes";
 import { afterFailedRead } from "@/lib/failedRead";
 import type { PatientView } from "@/lib/patientView";
 import { patientViewFromRow, type PatientVisitRow } from "@/lib/patientViewFromRow";
-import type { Site } from "@/lib/visit";
+import type { ChangeResult, Site } from "@/lib/visit";
 import { saveToken } from "./savedToken";
 import { supabaseBrowser } from "./supabaseBrowser";
-import type { ChangeResult } from "./visitStore";
 
 /** saved = started and remembered on this phone; paused and busy = refused for now. */
 export type StartResult = "saved" | "paused" | "busy" | "not_saved";

@@ -1,10 +1,9 @@
-// React hook for staff screens: the full list of visits, kept up to date live.
-// Returns null during the first server render, before the browser's storage can be read.
+// React hook for staff screens: the list of visits from the database, kept up to date.
+// `visits` is null until the first read works; `outOfDate` is true when the last read failed.
 
 import { useSyncExternalStore } from "react";
-import type { Visit } from "@/lib/visit";
-import { readVisits, subscribeToVisits } from "./visitStore";
+import { EMPTY_LIST, readVisitList, watchVisits, type VisitList } from "./visitCache";
 
-export function useVisits(): Visit[] | null {
-  return useSyncExternalStore(subscribeToVisits, readVisits, () => null);
+export function useVisits(): VisitList {
+  return useSyncExternalStore(watchVisits, readVisitList, () => EMPTY_LIST);
 }

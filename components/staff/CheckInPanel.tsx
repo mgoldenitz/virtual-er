@@ -34,6 +34,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [language, setLanguage] = useState("en");
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // A different home visit was chosen: start the form fresh, with the language the patient picked.
   const [formFor, setFormFor] = useState<string | null>(null);
@@ -58,31 +59,32 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
   }
 
   /** Save the check-in; returns the visit code, or null after showing why it was not saved. */
-  function save(outcome: DeskOutcome, ctasLevel: 4 | 5): string | null {
+  async function save(outcome: DeskOutcome, ctasLevel: 4 | 5): Promise<string | null> {
     const form = { site, ctas_level: ctasLevel, language };
     if (homeVisit) {
-      const result = checkInVisitFromHome(homeVisit.id, form, outcome);
+      const result = await checkInVisitFromHome(homeVisit.id, form, outcome);
       if (result === "saved") {
         onHomeDone();
         return homeVisit.code;
       }
       setMessage(
         result === "not_saved"
-          ? "Not saved: this browser could not store the check-in. Nothing was recorded. Try again."
+          ? "Not saved: the database could not be reached. Nothing was recorded. Try again."
           : `Visit ${homeVisit.code} changed or is already checked in. No check-in was saved.`,
       );
       return null;
     }
-    const visit = createDeskVisit(form, outcome);
+    const visit = await createDeskVisit(form, outcome);
     if (!visit) {
-      setMessage("Not saved: this browser could not store the visit. Nothing was recorded. Try again.");
+      setMessage("Not saved: the database could not be reached. Nothing was recorded. Try again.");
       return null;
     }
     onCreated(visit);
     return visit.code;
   }
 
-  function finish(outcome: DeskOutcome) {
+  async function finish(outcome: DeskOutcome) {
+    if (saving) return; // a second press while the first is on its way must not check in twice
     // Hide the previous patient's slip first, so a failed save never leaves it on screen
     // where it could be handed to the next patient.
     onAttempt();
@@ -95,7 +97,10 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
       setMessage("Tick all three checklist items to start off-site waiting.");
       return;
     }
-    const code = save(outcome, ctas);
+    setSaving(true);
+    setMessage("Saving…");
+    const code = await save(outcome, ctas);
+    setSaving(false);
     if (!code) return;
     setCtas(null);
     setTicked({});
@@ -108,7 +113,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    finish("waiting");
+    void finish("waiting");
   };
 
   return (
@@ -183,11 +188,13 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
 
       {!homeProblem && (
         <div className="flex flex-wrap gap-3">
-          <Button type="submit">Start off-site waiting</Button>
-          <Button variant="secondary" onClick={() => finish("declined")}>
+          <Button type="submit" aria-disabled={saving}>
+            Start off-site waiting
+          </Button>
+          <Button variant="secondary" aria-disabled={saving} onClick={() => finish("declined")}>
             Offered, declined
           </Button>
-          <Button variant="secondary" onClick={() => finish("not_eligible")}>
+          <Button variant="secondary" aria-disabled={saving} onClick={() => finish("not_eligible")}>
             Not eligible
           </Button>
         </div>

@@ -18,9 +18,18 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
   const [message, setMessage] = useState("");
   const expected = expectedArrivals(visits, site, now);
 
-  const find = (event: FormEvent) => {
+  const [looking, setLooking] = useState(false);
+
+  const find = async (event: FormEvent) => {
     event.preventDefault();
-    const visit = findVisitByCode(typed);
+    if (looking) return;
+    setLooking(true);
+    setMessage("Looking…");
+    const visit = await findVisitByCode(typed);
+    setLooking(false);
+    if (visit === "failed") {
+      return setMessage("Could not look up the code: the database could not be reached. Try again.");
+    }
     if (!visit) return setMessage("No visit has that code. Check the code with the patient.");
     if (visit.site !== site) {
       return setMessage(`Visit ${visit.code} was started for Demo Site ${visit.site}. Switch site to check it in.`);
@@ -56,7 +65,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
             className="mt-1 block min-h-11 w-40 rounded-lg border-2 border-control px-3 font-mono uppercase tracking-widest"
           />
         </label>
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant="secondary" aria-disabled={looking}>
           Find visit
         </Button>
       </form>

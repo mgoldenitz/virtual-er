@@ -20,6 +20,7 @@ type Props = {
 export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
   // A failure note stays beside its own row, and the row (with its Undo button) stays too.
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [shownCount, setShownCount] = useState(CLOSED_PAGE_SIZE);
   const [revealed, setRevealed] = useState<{ first: number; message: string } | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -40,13 +41,16 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
     setShownCount(shownCount + CLOSED_PAGE_SIZE);
   };
 
-  const undo = (visit: Visit) => {
-    const result = undoCloseVisit(visit.id, visit);
+  const undo = async (visit: Visit) => {
+    if (savingId) return; // one Undo at a time, so a double press cannot send it twice
+    setSavingId(visit.id);
+    const result = await undoCloseVisit(visit.id, visit);
+    setSavingId(null);
     const note =
       result === "saved"
         ? ""
         : result === "not_saved"
-          ? `Not saved: this browser could not undo visit ${visit.code}. Try again.`
+          ? `Not saved: the database could not be reached, so visit ${visit.code} was not undone. Try again.`
           : `Could not undo visit ${visit.code}: it changed since it was closed.`;
     setNotes({ ...notes, [visit.id]: note });
     onUndoResult(result === "saved" ? `Undone: visit ${visit.code} is back on the list.` : note, result === "saved");
@@ -65,8 +69,8 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
               <p>
                 <span className="font-mono font-bold tracking-widest">{visit.code}</span> {closedLabel(visit)}
               </p>
-              <Button variant="secondary" onClick={() => undo(visit)}>
-                Undo<span className="sr-only"> for visit {visit.code}</span>
+              <Button variant="secondary" aria-disabled={savingId !== null} onClick={() => undo(visit)}>
+                {savingId === visit.id ? "Saving…" : "Undo"}<span className="sr-only"> for visit {visit.code}</span>
               </Button>
             </div>
             {notes[visit.id] && <p className="mt-2 font-semibold text-red-800">{notes[visit.id]}</p>}

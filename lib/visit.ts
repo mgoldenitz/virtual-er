@@ -42,6 +42,13 @@ export type Visit = {
   is_demo: boolean;
 };
 
+/**
+ * What happened when something tried to change a visit: saved, refused (the step is not
+ * allowed now, or someone else changed the visit first), or not_saved (the change could not
+ * be stored, for example the database could not be reached).
+ */
+export type ChangeResult = "saved" | "refused" | "not_saved";
+
 /** Every status, for checking data read back from storage. */
 export const ALL_STATUSES: VisitStatus[] = [
   "pre_arrival",

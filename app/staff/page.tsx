@@ -4,7 +4,7 @@
 // waiting off-site, and call them back.
 
 import { useEffect, useRef, useState } from "react";
-import { useStorageProblem } from "@/data/useStorageProblem";
+import { reloadVisits } from "@/data/staffActions";
 import { useVisits } from "@/data/useVisits";
 import { homeCheckInProblem } from "@/lib/homeCheckIn";
 import { activeLine } from "@/lib/queue";
@@ -14,20 +14,19 @@ import { ExpectedArrivals } from "@/components/staff/ExpectedArrivals";
 import { ProgressAnnouncer } from "@/components/staff/ProgressAnnouncer";
 import { RecentlyClosed } from "@/components/staff/RecentlyClosed";
 import { SignOutButton } from "@/components/staff/SignOutButton";
-import { StorageWarning } from "@/components/staff/StorageWarning";
 import { VisitRow } from "@/components/staff/VisitRow";
 import { VisitSlip } from "@/components/staff/VisitSlip";
 import { StaffShell } from "@/components/staff/StaffShell";
+import { Button } from "@/components/Button";
 import { useNow } from "@/components/useNow";
 
 export default function StaffPage() {
-  const visits = useVisits();
+  const { visits, outOfDate } = useVisits();
   const now = useNow();
   const [site, setSite] = useState<Site>("A");
   const [slip, setSlip] = useState<Visit | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [homeVisit, setHomeVisit] = useState<Visit | null>(null);
-  const problem = useStorageProblem();
 
   // Staff chose an expected arrival: hide any old slip and move focus to the check-in form.
   const chooseHomeVisit = (visit: Visit) => {
@@ -83,10 +82,18 @@ export default function StaffPage() {
         </label>
         <SignOutButton />
       </header>
-      <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
-        Phase 2 demo, in progress: you are signed in as staff, but visits are still saved only in this
-        browser until the next step.
-      </p>
+      {outOfDate && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-red-800 bg-white p-3">
+          <p className="font-semibold text-red-900">
+            {visits
+              ? "This list may be out of date: the visits could not be read just now. Check your connection."
+              : "The visits could not be loaded. Check your connection, or sign out and sign in again."}
+          </p>
+          <Button variant="secondary" onClick={() => void reloadVisits()}>
+            Try again
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
@@ -112,9 +119,8 @@ export default function StaffPage() {
           <p role="status" className="min-h-6 font-semibold">
             {announcement}
           </p>
-          <StorageWarning problem={problem} />
           {visits === null || now === null ? (
-            <p>Loading…</p>
+            <p>{outOfDate ? "No list to show yet." : "Loading…"}</p>
           ) : line.length === 0 ? (
             <p>No one is waiting off-site at this site.</p>
           ) : (

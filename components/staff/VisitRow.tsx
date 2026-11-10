@@ -4,9 +4,8 @@
 
 import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
-import type { ChangeResult } from "@/data/visitStore";
 import { minutesBetween } from "@/lib/queue";
-import type { Visit } from "@/lib/visit";
+import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
 type Props = {
@@ -17,7 +16,7 @@ type Props = {
   onLeftList: (message: string) => void;
 };
 
-const NOT_SAVED = "Not saved: this browser could not store the change. Try again.";
+const NOT_SAVED = "Not saved: the database could not be reached. Try again.";
 const CHANGED = "The list just changed. Check this patient again.";
 
 function progress(visit: Visit, now: Date): string {
@@ -32,8 +31,13 @@ function progress(visit: Visit, now: Date): string {
 
 export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const [note, setNote] = useState("");
-  /** Show what happened. `leftListMessage` is announced when the patient leaves the list. */
-  const act = (result: ChangeResult, leftListMessage?: string) => {
+  const [saving, setSaving] = useState(false);
+  /** Save one change and show what happened. `leftListMessage` is announced when the patient leaves the list. */
+  const act = async (change: () => Promise<ChangeResult>, leftListMessage?: string) => {
+    if (saving) return; // while one change is on its way, further presses do nothing
+    setSaving(true);
+    const result = await change();
+    setSaving(false);
     if (result === "saved" && leftListMessage) {
       onLeftList(leftListMessage);
     }
@@ -54,9 +58,11 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {visit.status === "waiting" && (
-          <Button onClick={() => act(callBackVisit(visit.id))}>Call back</Button>
+          <Button aria-disabled={saving} onClick={() => act(() => callBackVisit(visit.id))}>
+            Call back
+          </Button>
         )}
-        <Button variant="secondary" onClick={() => act(markVisitArrived(visit.id), `Visit ${visit.code} marked arrived. Undo is under Recently closed.`)}>
+        <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => markVisitArrived(visit.id), `Visit ${visit.code} marked arrived. Undo is under Recently closed.`)}>
           Mark arrived
         </Button>
         <Button variant="secondary" onClick={() => onShowSlip(visit)}>
@@ -68,17 +74,17 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
           Remove from list
         </summary>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "left"), `Visit ${visit.code} removed: left. Undo is under Recently closed.`)}>
+          <Button variant="danger" aria-disabled={saving} onClick={() => act(() => removeVisit(visit.id, "left"), `Visit ${visit.code} removed: left. Undo is under Recently closed.`)}>
             Left
           </Button>
-          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "no_show"), `Visit ${visit.code} removed: no-show. Undo is under Recently closed.`)}>
+          <Button variant="danger" aria-disabled={saving} onClick={() => act(() => removeVisit(visit.id, "no_show"), `Visit ${visit.code} removed: no-show. Undo is under Recently closed.`)}>
             No-show
           </Button>
         </div>
       </details>
-      {note && (
-        <p role="status" className="mt-2 font-semibold text-red-800">
-          {note}
+      {(saving || note) && (
+        <p role="status" className={`mt-2 font-semibold ${saving ? "" : "text-red-800"}`}>
+          {saving ? "Saving…" : note}
         </p>
       )}
     </li>
