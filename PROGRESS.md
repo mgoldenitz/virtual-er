@@ -78,7 +78,7 @@ Decided:
 - Vercel settings (2026-11-10):
   - Environment variables: all three set. The owner re-entered `SUPABASE_SECRET_KEY` and redeployed; the live start route now answers "saved".
   - Function region: Montreal (yul1), set by the owner; the deploy confirms `regions: yul1`. (Montreal over Cleveland because the database is in Montreal.)
-  - Firewall rule for `/api/start-visit`: approved by the owner (POST, 20 per 10 minutes per IP, fixed window, answer 429). The Vercel MCP may not change firewall settings (403) and the Vercel CLI is not installed, so the owner adds it in the dashboard. **Not added yet.**
+  - Firewall rule for `/api/start-visit`: approved by the owner (POST, 20 per 10 minutes per IP, fixed window, answer 429). The Vercel MCP may not change firewall settings (403) and the Vercel CLI is not installed, so the owner added it in the dashboard on 2026-11-10. Read back: active, path equals `/api/start-visit`, 20 per 600 seconds per IP, fixed window, answers 429 (no method condition; harmless, the route only accepts POST). A normal request still reaches the route. The limit itself was not triggered on purpose (that would make 20 test visits).
 - THP links now go to https://www.thp.ca/emergency/A/visit.html (owner, 2026-11-10; SPEC updated).
 
 ## Where to pick up (written 2026-11-10)
