@@ -10,6 +10,11 @@ import { ACTIVE_STATUSES, type Site, type Visit } from "./visit";
 function byTriage(a: Visit, b: Visit): number {
   const at = a.triaged_at ?? "";
   const bt = b.triaged_at ?? "";
+  // Compare the moments themselves, so the order does not depend on how the time is written
+  // ("...09.5+00:00" from the database, "...09.500Z" from a browser).
+  const apart = Date.parse(at) - Date.parse(bt);
+  if (apart < 0 || apart > 0) return apart < 0 ? -1 : 1;
+  // Same millisecond: the database's text keeps finer detail (microseconds), so compare that.
   if (at !== bt) return at < bt ? -1 : 1;
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }

@@ -68,3 +68,29 @@ describe("ties in triage time", () => {
     expect(placeInLine(visits, visits[1])).toBe(1); // "a" is first in both
   });
 });
+
+describe("line order with times as the database writes them", () => {
+  const triagedAt = (id: string, triaged_at: string) => visit(id, 0, { triaged_at });
+
+  it("orders by the moment, whatever the number of decimals", () => {
+    const line = activeLine(
+      [
+        triagedAt("d", "2026-11-10T09:13:09.82226+00:00"),
+        triagedAt("c", "2026-11-10T09:13:09.82+00:00"),
+        triagedAt("b", "2026-11-10T09:13:09.5+00:00"),
+        triagedAt("a", "2026-11-10T09:13:09+00:00"),
+        triagedAt("e", "2026-11-10T09:13:09.822261+00:00"),
+      ],
+      "A",
+    );
+    expect(line.map((v) => v.id)).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("orders a browser-style time and a database-style time by the moment", () => {
+    const line = activeLine(
+      [triagedAt("late", "2026-11-10T09:13:10.000Z"), triagedAt("early", "2026-11-10T09:13:09.9+00:00")],
+      "A",
+    );
+    expect(line.map((v) => v.id)).toEqual(["early", "late"]);
+  });
+});

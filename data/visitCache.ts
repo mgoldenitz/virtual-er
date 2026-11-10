@@ -3,6 +3,7 @@
 // back, and after every staff action. Nothing here is saved in the browser.
 
 import { ACTIVE_STATUSES, type Visit } from "@/lib/visit";
+import { keepFresh } from "./keepFresh";
 import { supabaseBrowser } from "./supabaseBrowser";
 
 /** A visit as the database holds it: the version goes up by one on every change. */
@@ -15,7 +16,6 @@ export const EMPTY_LIST: VisitList = { visits: null, outOfDate: false };
 
 const LIST_HOURS = 24; // plus everyone still in the line, however long ago they were triaged
 const REREAD_MS = 15_000; // until live updates arrive in the next step
-const RETRY_MS = 5_000; // sooner while reads are failing
 
 let list: VisitList = EMPTY_LIST;
 let visitsKey = "";
@@ -69,28 +69,20 @@ export function putVisit(visit: StoredVisit): void {
   void loadVisits();
 }
 
-/** While a staff screen is open: read now, every 15 seconds, and when the tab comes back. */
+let stopReading: (() => void) | null = null;
+
+/**
+ * While any staff screen is open: read now, every 15 seconds, and when the tab comes back.
+ * There is one timer however many parts of the screen are listening.
+ */
 export function watchVisits(onChange: () => void): () => void {
   listeners.add(onChange);
-  let stopped = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const readNow = async () => {
-    await loadVisits();
-    if (stopped) return;
-    clearTimeout(timer);
-    timer = setTimeout(readNow, list.outOfDate ? RETRY_MS : REREAD_MS);
-  };
-  const onBack = () => {
-    if (document.visibilityState === "visible") void readNow();
-  };
-  void readNow();
-  document.addEventListener("visibilitychange", onBack);
-  window.addEventListener("online", onBack);
+  if (!stopReading) stopReading = keepFresh(loadVisits, () => list.outOfDate, REREAD_MS);
   return () => {
-    stopped = true;
-    clearTimeout(timer);
     listeners.delete(onChange);
-    document.removeEventListener("visibilitychange", onBack);
-    window.removeEventListener("online", onBack);
+    if (listeners.size === 0 && stopReading) {
+      stopReading();
+      stopReading = null;
+    }
   };
 }

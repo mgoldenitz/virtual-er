@@ -9,6 +9,7 @@ import { afterFailedRead } from "@/lib/failedRead";
 import type { PatientView } from "@/lib/patientView";
 import { patientViewFromRow, type PatientVisitRow } from "@/lib/patientViewFromRow";
 import type { ChangeResult, Site } from "@/lib/visit";
+import { keepFresh } from "./keepFresh";
 import { saveToken } from "./savedToken";
 import { supabaseBrowser } from "./supabaseBrowser";
 
@@ -41,18 +42,24 @@ export async function startVisitFromHome(site: Site, language: string): Promise<
 /** A visit, null if the token matches no visit, or "unavailable" if it could not be read. */
 type Shown = PatientView | null | "unavailable";
 
-const REREAD_MS = 30_000; // until live updates arrive in the next step
-const RETRY_MS = 5_000; // sooner while reads are failing
+const REREAD_MS = 15_000; // until live updates arrive in the next step
 
 // What each token last showed, kept in memory only (nothing about the visit is saved on the phone).
-type Entry = { shown?: Shown; key: string; failures: number; latestRead: number };
+type Entry = {
+  shown?: Shown;
+  key: string;
+  failures: number;
+  latestRead: number;
+  watchers: number;
+  stopReading?: () => void;
+};
 const entries = new Map<string, Entry>();
 const listeners = new Set<() => void>();
 
 function entryFor(token: string): Entry {
   let entry = entries.get(token);
   if (!entry) {
-    entry = { key: "", failures: 0, latestRead: 0 };
+    entry = { key: "", failures: 0, latestRead: 0, watchers: 0 };
     entries.set(token, entry);
   }
   return entry;
@@ -84,30 +91,25 @@ async function refreshPatientView(token: string): Promise<void> {
   listeners.forEach((tell) => tell());
 }
 
-/** While a screen is showing this token: read now, every 30 seconds, and when the tab comes back. */
+/**
+ * While a screen is showing this token: read now, every 15 seconds, and when the tab comes back.
+ * There is one timer per token however many parts of the screen are listening.
+ */
 function watch(token: string | null, onChange: () => void): () => void {
   if (!token) return () => {};
   listeners.add(onChange);
-  let stopped = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const readNow = async () => {
-    await refreshPatientView(token);
-    if (stopped) return;
-    clearTimeout(timer);
-    timer = setTimeout(readNow, entryFor(token).failures > 0 ? RETRY_MS : REREAD_MS);
-  };
-  const onBack = () => {
-    if (document.visibilityState === "visible") void readNow();
-  };
-  void readNow();
-  document.addEventListener("visibilitychange", onBack);
-  window.addEventListener("online", onBack);
+  const entry = entryFor(token);
+  entry.watchers++;
+  if (!entry.stopReading) {
+    entry.stopReading = keepFresh(() => refreshPatientView(token), () => entry.failures > 0, REREAD_MS);
+  }
   return () => {
-    stopped = true;
-    clearTimeout(timer);
     listeners.delete(onChange);
-    document.removeEventListener("visibilitychange", onBack);
-    window.removeEventListener("online", onBack);
+    entry.watchers--;
+    if (entry.watchers === 0 && entry.stopReading) {
+      entry.stopReading();
+      entry.stopReading = undefined;
+    }
   };
 }
 

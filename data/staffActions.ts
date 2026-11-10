@@ -32,10 +32,12 @@ async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Pr
     void loadVisits();
     return "refused";
   }
+  const changed = changedFields(before, after);
+  if (Object.keys(changed).length === 0) return "refused"; // nothing to save
   try {
     const { data, error } = await supabaseBrowser()
       .from("visits")
-      .update(changedFields(before, after))
+      .update(changed)
       .eq("id", id)
       .eq("version", before.version)
       .select();
