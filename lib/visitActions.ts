@@ -2,7 +2,7 @@
 // and returns the updated visit, or null when the step is not allowed right now
 // (for example a second click after the list already changed).
 
-import type { Site, Visit } from "./visit";
+import { ACTIVE_STATUSES, type Site, type Visit, type VisitStatus } from "./visit";
 
 export type DeskCheckIn = {
   id: string;
@@ -93,4 +93,21 @@ export function markArrived(visit: Visit, now: Date): Visit | null {
 export function markRemoved(visit: Visit, reason: "left" | "no_show", now: Date): Visit | null {
   if (!["waiting", "called", "on_the_way"].includes(visit.status)) return null;
   return { ...visit, status: "removed", removed_reason: reason, closed_at: now.toISOString() };
+}
+
+/** How long the staff screen shows the Undo banner after Mark arrived, Left or No-show. */
+export const UNDO_BANNER_SECONDS = 10;
+/** The rule allows a little longer than the banner, so a last-second click still works. */
+const UNDO_LIMIT_SECONDS = UNDO_BANNER_SECONDS + 5;
+
+/**
+ * Staff press Undo after Mark arrived, Left or No-show: the visit goes back to the status it had
+ * just before (waiting, called or on the way) and is open again. Only shortly after closing.
+ */
+export function undoClose(visit: Visit, previous: VisitStatus, now: Date): Visit | null {
+  if (visit.status !== "arrived" && visit.status !== "removed") return null;
+  if (!visit.closed_at || !ACTIVE_STATUSES.includes(previous)) return null;
+  const secondsSinceClosed = (now.getTime() - new Date(visit.closed_at).getTime()) / 1000;
+  if (secondsSinceClosed > UNDO_LIMIT_SECONDS) return null;
+  return { ...visit, status: previous, arrived_at: null, removed_reason: null, closed_at: null };
 }

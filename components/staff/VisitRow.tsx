@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
 import type { ChangeResult } from "@/data/visitStore";
+import type { Closed } from "@/components/staff/UndoBanner";
 import { minutesBetween } from "@/lib/queue";
 import type { Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -13,8 +14,8 @@ type Props = {
   visit: Visit;
   now: Date;
   onShowSlip: (visit: Visit) => void;
-  /** Called after a change that takes this patient off the list, with a message for screen readers. */
-  onLeftList: (message: string) => void;
+  /** Called after a change that takes this patient off the list, so the page can offer Undo. */
+  onLeftList: (closed: Closed) => void;
 };
 
 const NOT_SAVED = "Not saved: this browser could not store the change. Try again.";
@@ -33,7 +34,9 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const [note, setNote] = useState("");
   /** Show what happened. `leftListMessage` is announced when the patient leaves the list. */
   const act = (result: ChangeResult, leftListMessage?: string) => {
-    if (result === "saved" && leftListMessage) onLeftList(leftListMessage);
+    if (result === "saved" && leftListMessage) {
+      onLeftList({ id: visit.id, code: visit.code, previous: visit.status, message: leftListMessage });
+    }
     setNote(result === "saved" ? "" : result === "not_saved" ? NOT_SAVED : CHANGED);
   };
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;

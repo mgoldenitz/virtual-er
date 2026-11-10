@@ -2,12 +2,13 @@
 // behind staff login; the screens keep calling these same functions.
 
 import { makeAccessToken, makeUniqueDisplayCode } from "@/lib/codes";
-import type { Site, Visit } from "@/lib/visit";
+import type { Site, Visit, VisitStatus } from "@/lib/visit";
 import {
   callBack,
   checkInAtDesk,
   markArrived,
   markRemoved,
+  undoClose,
   type DeskOutcome,
 } from "@/lib/visitActions";
 import { addVisit, readVisits, updateVisit } from "./visitStore";
@@ -37,3 +38,5 @@ export const callBackVisit = (id: string) => updateVisit(id, (v) => callBack(v, 
 export const markVisitArrived = (id: string) => updateVisit(id, (v) => markArrived(v, new Date()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
   updateVisit(id, (v) => markRemoved(v, reason, new Date()));
+export const undoCloseVisit = (id: string, previous: VisitStatus) =>
+  updateVisit(id, (v) => undoClose(v, previous, new Date()));
