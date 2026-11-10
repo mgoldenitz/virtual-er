@@ -69,7 +69,7 @@ Decided:
   - Checked in the browser (phone 390 x 844 and laptop): the whole loop through the database, run again after the last changes (start from home, find by code, check in, call back, seen, "I'm on my way", mark arrived, Undo); a new desk visit with its slip; two staff tabs pressing "Call back" on one patient (the second was refused); a blocked database on both screens (they recover by themselves); axe-core on the new staff states and the start page: no failures. 72 unit tests, type check and lint pass.
   - Fixed after the last full run: a tap on "I'm on my way" before the automatic "seen" call landed left `seen_at` empty. The tap now records "seen" first (`app/patient/page.tsx`).
 
-- Live updates (2026-11-10): `data/changeSignal.ts` listens to the `change_signal` row over Supabase Realtime (one connection per tab; nothing about a visit travels over it). `data/keepFresh.ts` reads again on every signal, and once more if a signal came in during a read. The 15-second timer stays as a fallback. Checked with two phone sessions: phone A re-read its visit 0.5 seconds after phone B started a visit. Not checked yet: the staff screen (needs the owner signed in) and phone-to-laptop on Vercel. Review file: `handoffs/2026-11-10-gemini-review-live-updates.md`.
+- Live updates (2026-11-10): `data/changeSignal.ts` listens to the `change_signal` row over Supabase Realtime (one connection per tab; nothing about a visit travels over it). `data/keepFresh.ts` reads again on every signal, and once more if a signal came in during a read. The 15-second timer stays as a fallback. Checked with two phone sessions: phone A re-read its visit 0.5 seconds after phone B started a visit. The owner checked the staff screen on 2026-11-10 (start from home, check in, call back, arrived): each step showed on the other screen within about 2 seconds. Still to check: phone and laptop over the vercel.app link. The Gemini review (`handoffs/2026-11-10-gemini-review-live-updates.md`) was skipped by the owner. The test visits were deleted; the `visits` table is empty.
 
 ## Where to pick up (written 2026-11-10)
 
@@ -94,6 +94,6 @@ Working notes for a new session:
 - Long shell commands with quotes inside a heredoc fail in this setup; write a script file in the scratchpad folder and run that.
 
 Next steps:
-1. Done: live updates (see above). The owner checks it with the staff screen signed in.
+1. Done: live updates (see above).
 2. Deploy to Vercel, with a per-device limit on starting from home (the start route stays local until then).
 3. Playwright laptop and phone test (about 2 seconds). Then Gemini 3.1 Pro (High) reviews security and architecture, and GPT-6 Astra (High) does the security review. Run /security-review at the end of the phase.
