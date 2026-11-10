@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
 import { takeTokenFromLink } from "@/data/savedToken";
 import { EmergencyLine } from "@/components/EmergencyLine";
+import { PatientShell } from "@/components/PatientShell";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 
@@ -57,6 +58,7 @@ export default function PatientPage() {
   }
 
   return (
+    <PatientShell>
     <main className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
       <h1 className="text-xl font-bold">Virtual Waiting Room</h1>
       <EmergencyLine />
@@ -64,7 +66,7 @@ export default function PatientPage() {
       {loading ? (
         <p>Loading your visit…</p>
       ) : unavailable ? (
-        <section aria-labelledby="unavailable-heading" className="space-y-2">
+        <section aria-labelledby="unavailable-heading" className="clean-card space-y-2">
           <h2 id="unavailable-heading" className="text-2xl font-bold">
             We cannot load your visit right now
           </h2>
@@ -74,7 +76,7 @@ export default function PatientPage() {
           </p>
         </section>
       ) : !view ? (
-        <section aria-labelledby="none-heading" className="space-y-2">
+        <section aria-labelledby="none-heading" className="clean-card space-y-2">
           <h2 id="none-heading" className="text-2xl font-bold">
             {brokenLink ? "This link did not work" : "No visit found on this phone"}
           </h2>
@@ -102,5 +104,6 @@ export default function PatientPage() {
         </>
       )}
     </main>
+    </PatientShell>
   );
 }

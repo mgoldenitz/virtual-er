@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { EmergencyLine } from "@/components/EmergencyLine";
+import { PatientShell } from "@/components/PatientShell";
 import { CareOptions } from "@/components/start/CareOptions";
 import { StartVisit } from "@/components/start/StartVisit";
 
@@ -11,13 +12,16 @@ const linkStyle =
 
 export default function StartPage() {
   return (
+    <PatientShell>
     <main className="mx-auto w-full max-w-xl space-y-6 px-4 py-6">
       <h1 className="text-2xl font-bold">Virtual Waiting Room</h1>
       <p className="rounded-lg border-2 border-red-700 bg-red-50 p-3 text-lg font-bold text-red-900">
         Chest pain, trouble breathing, signs of stroke, heavy bleeding or another emergency? Call
         911 now.
       </p>
-      <CareOptions />
+      <div className="clean-card">
+        <CareOptions />
+      </div>
       <StartVisit />
       <EmergencyLine />
       <nav aria-label="Demo screens" className="flex flex-wrap gap-3 border-t border-slate-300 pt-4">
@@ -32,5 +36,6 @@ export default function StartPage() {
         </Link>
       </nav>
     </main>
+    </PatientShell>
   );
 }

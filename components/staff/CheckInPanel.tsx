@@ -112,7 +112,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" aria-labelledby="checkin-heading">
+    <form onSubmit={onSubmit} className="glass-panel space-y-4" aria-labelledby="checkin-heading">
       <h2 id="checkin-heading" tabIndex={-1} className="text-xl font-bold">
         {homeVisit ? `Check in visit ${homeVisit.code} after triage` : "Check in a patient after triage"}
       </h2>
@@ -137,7 +137,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
           {([4, 5] as const).map((level) => (
             <label
               key={level}
-              className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-slate-400 px-4"
+              className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-control px-4"
             >
               <input
                 type="radio"
@@ -174,7 +174,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="mt-2 block min-h-11 rounded-lg border-2 border-slate-400 px-3"
+          className="mt-2 block min-h-11 rounded-lg border-2 border-control px-3"
         >
           <option value="en">English</option>
         </select>

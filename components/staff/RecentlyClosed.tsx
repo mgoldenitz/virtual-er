@@ -60,7 +60,7 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
       <p className="text-sm text-slate-700">Pressed by mistake? Undo puts the patient back where they were.</p>
       <ul ref={listRef} className="space-y-2">
         {closed.map((visit) => (
-          <li key={visit.id} tabIndex={-1} className="rounded-lg border-2 border-slate-300 p-3" data-testid={`closed-${visit.code}`}>
+          <li key={visit.id} tabIndex={-1} className="rounded-lg border-2 border-slate-300 bg-white p-3" data-testid={`closed-${visit.code}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>
                 <span className="font-mono font-bold tracking-widest">{visit.code}</span> {closedLabel(visit)}

@@ -38,7 +38,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
   };
 
   return (
-    <section aria-labelledby="expected-heading" className="space-y-3">
+    <section aria-labelledby="expected-heading" className="glass-panel space-y-3">
       <h2 id="expected-heading" className="text-xl font-bold">
         Expected arrivals ({expected.length})
       </h2>
@@ -53,7 +53,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
             spellCheck={false}
-            className="mt-1 block min-h-11 w-40 rounded-lg border-2 border-slate-400 px-3 font-mono uppercase tracking-widest"
+            className="mt-1 block min-h-11 w-40 rounded-lg border-2 border-control px-3 font-mono uppercase tracking-widest"
           />
         </label>
         <Button type="submit" variant="secondary">
@@ -68,7 +68,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
           {expected.map((visit) => (
             <li
               key={visit.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-slate-300 p-3"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-slate-300 bg-white p-3"
               data-testid={`expected-${visit.code}`}
             >
               <p>

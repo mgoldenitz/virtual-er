@@ -1,5 +1,74 @@
 @import "tailwindcss";
 
+/* Colour tokens. Every pair used for text passes WCAG 2.2 AA (4.5:1) on white.
+   Patient screens use these as they are; the staff screens swap in the glass blue below. */
+@theme {
+  --color-brand: #1e40af;        /* buttons and links; white text on it is 8.7:1 */
+  --color-brand-strong: #1e3a8a; /* hover */
+  --color-ink: #111827;          /* main text, 17:1 */
+  --color-muted: #374151;        /* secondary text, 10:1 */
+  --color-canvas: #f8fafc;       /* page background behind cards */
+  --color-card: #ffffff;
+  --color-line: #e2e8f0;         /* card edges (decoration only) */
+  --color-control: #64748b;      /* input and select borders, 4.8:1 (WCAG needs 3:1) */
+}
+
 body {
+  /* The phone's own font (Roboto on Android, San Francisco on iPhone): nothing to download. */
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* Patient screens (clean look): a plain white box on the light-grey page. */
+.clean-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+/* Staff screens (glass look). White text on #1856ff is 5.5:1. */
+.theme-staff {
+  --color-brand: #1856ff;
+  --color-brand-strong: #0f3fd1;
+  --color-ink: #141414;
+}
+
+/* A soft, pale colour wash behind the glass panels. It stays light so text on the panels
+   keeps its contrast even where the panel is see-through. */
+.staff-backdrop {
+  background-color: #eef2fb;
+  background-image:
+    radial-gradient(at 10% 0%, rgb(24 86 255 / 0.22) 0, transparent 50%),
+    radial-gradient(at 95% 15%, rgb(58 52 78 / 0.14) 0, transparent 45%),
+    radial-gradient(at 50% 100%, rgb(7 202 107 / 0.12) 0, transparent 50%);
+}
+
+/* A frosted panel: mostly white (82%), so text stays dark-on-light. */
+.glass-panel {
+  background-color: rgb(255 255 255 / 0.82);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow:
+    0 8px 32px rgb(20 20 40 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* Solid panels instead of glass for people who ask their device for less see-through or more
+   contrast, and on browsers that cannot blur. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-panel {
+    background-color: #ffffff;
+    border-color: var(--color-control);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-panel {
+    background-color: #ffffff;
+  }
 }

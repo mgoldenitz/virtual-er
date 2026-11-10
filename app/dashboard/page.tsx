@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { SignOutButton } from "@/components/staff/SignOutButton";
+import { StaffShell } from "@/components/staff/StaffShell";
 
 const COMING = [
   "Patients waiting off-site now, and patients called but not yet arrived",
@@ -15,15 +16,16 @@ const COMING = [
 
 export default function DashboardPage() {
   return (
+    <StaffShell>
     <main className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <SignOutButton />
       </header>
       <p className="rounded-lg bg-amber-50 p-3 text-amber-950">
         Placeholder: no numbers are shown yet; they come in Phase 4.
       </p>
-      <section aria-labelledby="coming-heading" className="space-y-2">
+      <section aria-labelledby="coming-heading" className="glass-panel space-y-2">
         <h2 id="coming-heading" className="text-xl font-bold">
           Numbers this page will show for the current day
         </h2>
@@ -37,5 +39,6 @@ export default function DashboardPage() {
         Back to the staff screen
       </Link>
     </main>
+    </StaffShell>
   );
 }

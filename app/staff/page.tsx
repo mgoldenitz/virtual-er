@@ -17,6 +17,7 @@ import { SignOutButton } from "@/components/staff/SignOutButton";
 import { StorageWarning } from "@/components/staff/StorageWarning";
 import { VisitRow } from "@/components/staff/VisitRow";
 import { VisitSlip } from "@/components/staff/VisitSlip";
+import { StaffShell } from "@/components/staff/StaffShell";
 import { useNow } from "@/components/useNow";
 
 export default function StaffPage() {
@@ -61,8 +62,9 @@ export default function StaffPage() {
   const showSlip = (visit: Visit) => setSlip(visit.status === "waiting" || visit.called_at ? visit : null);
 
   return (
+    <StaffShell>
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Staff: Virtual Waiting Room</h1>
         <label className="flex items-center gap-2">
           <span className="font-semibold">Site</span>
@@ -73,7 +75,7 @@ export default function StaffPage() {
               setSlip(null);
               setHomeVisit(null);
             }}
-            className="min-h-11 rounded-lg border-2 border-slate-400 px-3"
+            className="min-h-11 rounded-lg border-2 border-control px-3"
           >
             <option value="A">Demo Site A</option>
             <option value="B">Demo Site B</option>
@@ -103,7 +105,7 @@ export default function StaffPage() {
           {slip && <VisitSlip code={slip.code} token={slip.access_token} onClose={() => setSlip(null)} />}
         </div>
 
-        <section aria-labelledby="list-heading" className="space-y-3">
+        <section aria-labelledby="list-heading" className="glass-panel space-y-3">
           <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-xl font-bold">
             Off-site: waiting or called back ({line.length})
           </h2>
@@ -133,5 +135,6 @@ export default function StaffPage() {
         </section>
       </div>
     </main>
+    </StaffShell>
   );
 }

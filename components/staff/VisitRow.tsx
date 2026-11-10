@@ -42,7 +42,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
 
   return (
-    <li className="rounded-xl border-2 border-slate-300 p-4" data-testid={`row-${visit.code}`}>
+    <li className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-mono text-xl font-bold tracking-widest">{visit.code}</p>
         <p>

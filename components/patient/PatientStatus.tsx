@@ -11,7 +11,7 @@ type Props = { view: PatientView; onOnMyWay: () => void };
 
 function Waiting({ view }: { view: PatientView }) {
   return (
-    <section aria-labelledby="status-heading" className="space-y-3">
+    <section aria-labelledby="status-heading" className="clean-card space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
         Status: Waiting
       </h2>
@@ -96,7 +96,7 @@ const ENDED = {
 function OtherStatus({ view }: { view: PatientView }) {
   const { heading, text } = OTHER[view.status] ?? ENDED;
   return (
-    <section aria-labelledby="status-heading" className="space-y-3">
+    <section aria-labelledby="status-heading" className="clean-card space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
         {heading}
       </h2>
@@ -112,7 +112,7 @@ function OtherStatus({ view }: { view: PatientView }) {
 // A visit started from home that was never triaged within 6 hours: staff no longer expect it.
 function Expired() {
   return (
-    <section aria-labelledby="status-heading" className="space-y-3">
+    <section aria-labelledby="status-heading" className="clean-card space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
         This visit request has expired
       </h2>

@@ -5,7 +5,7 @@ import type { ButtonHTMLAttributes } from "react";
 type Variant = "primary" | "secondary" | "danger";
 
 const styles: Record<Variant, string> = {
-  primary: "bg-blue-800 text-white hover:bg-blue-900",
+  primary: "bg-brand text-white hover:bg-brand-strong",
   secondary: "border-2 border-slate-700 bg-white text-slate-900 hover:bg-slate-100",
   danger: "bg-red-800 text-white hover:bg-red-900",
 };
@@ -19,7 +19,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`min-h-11 rounded-lg px-4 py-2 text-base font-semibold focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950 disabled:opacity-50 ${styles[variant]} ${className}`}
+      className={`min-h-11 rounded-xl px-4 py-2 text-base font-semibold focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950 disabled:opacity-50 ${styles[variant]} ${className}`}
       {...props}
     />
   );

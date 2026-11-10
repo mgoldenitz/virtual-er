@@ -16,8 +16,8 @@ import { Button } from "@/components/Button";
 const noSubscribe = () => () => {};
 
 const openLinkStyle =
-  "inline-block min-h-11 rounded-lg bg-blue-800 px-4 py-2 font-semibold text-white focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
-const boxStyle = "space-y-3 rounded-xl border-2 border-slate-400 p-4";
+  "inline-block min-h-11 rounded-xl bg-brand px-4 py-2 font-semibold text-white hover:bg-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
+const boxStyle = "clean-card space-y-3";
 
 // What the start page says about a visit already saved on this phone, before any new one.
 const SAVED_NOTE = {
@@ -115,7 +115,7 @@ export function StartVisit() {
   };
 
   return (
-    <section aria-labelledby="start-heading" className="space-y-4 rounded-xl border-2 border-slate-400 p-4">
+    <section aria-labelledby="start-heading" className="clean-card space-y-4">
       <h2 id="start-heading" className="text-xl font-bold">
         Start a visit
       </h2>
@@ -129,7 +129,7 @@ export function StartVisit() {
           {(["A", "B"] as const).map((s) => (
             <label
               key={s}
-              className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-slate-400 px-4"
+              className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-control px-4"
             >
               <input
                 type="radio"
@@ -148,7 +148,7 @@ export function StartVisit() {
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="mt-2 block min-h-11 rounded-lg border-2 border-slate-400 px-3"
+          className="mt-2 block min-h-11 rounded-lg border-2 border-control px-3"
         >
           <option value="en">English</option>
         </select>

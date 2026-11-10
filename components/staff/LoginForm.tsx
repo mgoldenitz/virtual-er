@@ -13,7 +13,7 @@ const WRONG = "Email or password not recognised. Check them and try again.";
 const NOT_STAFF = "This account is not a staff account, so it cannot open the staff screens.";
 const NO_CONNECTION = "Could not reach the sign-in service. Check your internet connection and try again.";
 
-const fieldStyle = "mt-2 block min-h-11 w-full rounded-lg border-2 border-slate-400 px-3";
+const fieldStyle = "mt-2 block min-h-11 w-full rounded-lg border-2 border-control px-3";
 
 export function LoginForm() {
   const router = useRouter();
