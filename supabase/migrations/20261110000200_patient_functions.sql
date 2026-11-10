@@ -17,8 +17,10 @@ returns table (
   language text,
   status text,
   place_in_line integer,
-  -- Average minutes between the last 5 call-backs at this site; null with under 2 call-backs.
-  average_gap_minutes double precision,
+  -- Average minutes between the last 5 call-backs at this site, rounded to whole minutes
+  -- so it cannot be used to work out exactly when other patients were called.
+  -- Null with under 2 call-backs.
+  average_gap_minutes integer,
   called_at timestamptz,
   last_still_here_at timestamptz,
   seen boolean,
@@ -47,7 +49,7 @@ as $$
     case when me.status = 'waiting' then (
       -- The average of the gaps between 6 call-backs is (last - first) / 5.
       select case when count(*) >= 2
-        then extract(epoch from max(last6.called_at) - min(last6.called_at)) / 60 / (count(*) - 1)
+        then round(extract(epoch from max(last6.called_at) - min(last6.called_at)) / 60 / (count(*) - 1))::integer
       end
       from (
         select other.called_at
@@ -107,7 +109,7 @@ $$;
 -- server-only key); browsers cannot. The function itself sets source = home and
 -- status = pre_arrival, so it never grants a place in line (hard rule 7).
 -- The server route makes the code and token with lib/codes.ts and retries on "taken".
--- Returns: saved, paused (off-site waiting is paused at this site), busy (too many
+-- Returns: saved, paused (off-site waiting is paused at this site), busy (10 or more
 -- starts at this site in the last minute), or taken (code or token already used).
 -- ---------------------------------------------------------------------------
 create function public.start_home_visit(p_site text, p_language text, p_code text, p_token text)
@@ -117,12 +119,14 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- One start at a time per site, so two requests at once cannot both pass the cap below.
+  perform pg_advisory_xact_lock(hashtext('start_home_visit:' || p_site));
   if exists (select 1 from public.site_settings where site = p_site and offsite_paused) then
     return 'paused';
   end if;
   -- A demo-sized cap for the whole site. A per-device limit is added on Vercel.
   if (select count(*) from public.visits
-      where site = p_site and source = 'home' and created_at > now() - interval '1 minute') >= 30 then
+      where site = p_site and source = 'home' and created_at > now() - interval '1 minute') >= 10 then
     return 'busy';
   end if;
   insert into public.visits (code, access_token, site, source, language, status)

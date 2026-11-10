@@ -61,7 +61,10 @@ create index visits_site_line on public.visits (site, status, triaged_at, id);
 
 alter table public.visits enable row level security;
 
-revoke all on table public.visits from anon;
+-- Row-level security only filters rows; the role also needs the table rights themselves.
+-- This project gives new tables no read or write rights by default, so grant exactly these.
+revoke all on table public.visits from anon, authenticated;
+grant select, insert, update on table public.visits to authenticated;
 
 create policy "Staff can read visits" on public.visits
   for select to authenticated using ((select public.is_staff()));
@@ -85,7 +88,8 @@ insert into public.site_settings (site) values ('A'), ('B');
 
 alter table public.site_settings enable row level security;
 
-revoke all on table public.site_settings from anon;
+revoke all on table public.site_settings from anon, authenticated;
+grant select, update on table public.site_settings to authenticated;
 
 create policy "Staff can read site settings" on public.site_settings
   for select to authenticated using ((select public.is_staff()));
