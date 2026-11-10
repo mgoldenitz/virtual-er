@@ -65,6 +65,8 @@ Second revision (2026-11-09, after another review and a check of THP's emergency
 
 Third revision (2026-11-09, after a safeguards brief): "Your place can change if more urgent patients arrive" on the waiting screen; "I'm still here" stated as not a clinical reassessment; a seen\_at time when the called screen is first shown, tracked apart from on my way and arrival (a fifth narrow patient action); a staff "Pause off-site waiting" switch for downtime (site\_settings table); the full link printed beside the QR code on the slip; WCAG 2.2 AA as the target, with Ontario's legal minimum of 2.0 AA noted; live-region announcements without repeated countdowns, and no alert by sound or colour alone; Sault Area Hospital precedent and Geneva location numbers added to Part 3.
 
+Fourth revision (2026-11-09, after the Phase 1 code reviews): the wait range is now labelled "Estimated time until you're called back", because the simulated number counts from now until the call-back, not from triage; the note that it is simulated stays.
+
 Open questions: the app's name; the two extra languages; fluent speakers to check translations; three to five testers for Phase 5.
 
 ## Part 3: research already done
@@ -160,7 +162,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 ### /patient (phone, no login)
 
 * Opens the visit saved on this phone automatically. For patients who did not start on their own phone, the triage desk prints a slip with a QR code (carrying the token), the short code, and the full link written out under the QR code with a label ("Or type this link into your phone's browser"), so a patient whose camera cannot scan still has a way in. The patient scans the QR code with the phone camera; if that fails, staff show the QR code again from /staff. Typing the short code on /patient does not open a visit.
-* Shows: place in line, estimated time to see a doctor after triage, as a range (for example "40 to 60 minutes", simulated; THP's own dashboard also measures waits from triage), and status: Waiting, Please head back now, Ready at the desk.
+* Shows: place in line, "Estimated time until you're called back" as a range counted from now (for example "40 to 60 minutes"), with a note that the estimate is simulated, and status: Waiting, Please head back now, Ready at the desk.
 * Under the place in line, always show: "Your place can change if more urgent patients arrive. The most urgent patients are always seen first."
 * "I'm on my way" button after the patient is called.
 * Every 30 minutes while waiting off-site, an "I'm still here" button appears. A missed tap (no tap within 10 minutes of the prompt) flags the patient on the staff screen. "I'm still here" only tells staff the patient is still following the visit; it is not a clinical reassessment, and neither the patient screen nor the staff screen may describe it as one. If symptoms change, the 911 line applies.
