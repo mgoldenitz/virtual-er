@@ -73,6 +73,7 @@ export function checkInAtDesk(input: DeskCheckIn, outcome: DeskOutcome, now: Dat
 /**
  * A patient starts a visit from home on the start page: "Checked in from home, not yet triaged".
  * This never gives a place in line (SPEC rule 7); that starts at triage.
+ * In the app the database function start_home_visit does this; this copy is used by the tests.
  */
 export function startFromHome(input: NewVisit, now: Date): Visit {
   return blankVisit(input, "home", now.toISOString());
@@ -96,13 +97,19 @@ export function callBack(visit: Visit, now: Date): Visit | null {
   return { ...visit, status: "called", called_at: now.toISOString() };
 }
 
-/** The called screen was shown on the patient's phone. Sets seen_at once, only while called. */
+/**
+ * The called screen was shown on the patient's phone. Sets seen_at once, only while called.
+ * In the app the database function record_seen does this; this copy is used by the tests.
+ */
 export function markSeen(visit: Visit, now: Date): Visit | null {
   if (visit.status !== "called" || visit.seen_at) return null;
   return { ...visit, seen_at: now.toISOString() };
 }
 
-/** The patient taps "I'm on my way". Only while called. */
+/**
+ * The patient taps "I'm on my way". Only while called.
+ * In the app the database function confirm_on_my_way does this; this copy is used by the tests.
+ */
 export function confirmOnMyWay(visit: Visit, now: Date): Visit | null {
   if (visit.status !== "called") return null;
   return { ...visit, status: "on_the_way", confirmed_at: now.toISOString() };

@@ -49,19 +49,5 @@ export type Visit = {
  */
 export type ChangeResult = "saved" | "refused" | "not_saved";
 
-/** Every status, for checking data read back from storage. */
-export const ALL_STATUSES: VisitStatus[] = [
-  "pre_arrival",
-  "waiting",
-  "called",
-  "on_the_way",
-  "arrived",
-  "unable_to_reach",
-  "needs_reassessment",
-  "removed",
-  "declined",
-  "not_eligible",
-];
-
 /** Statuses that are still in the off-site line (not yet closed). */
 export const ACTIVE_STATUSES: VisitStatus[] = ["waiting", "called", "on_the_way"];

@@ -13,7 +13,7 @@ Done:
   - QR slip, the off-site list, Recently closed with Undo, and storage warnings.
 - Patient screen: every status, a live region for status changes, seen_at recorded when the called screen is visible, and the expired and unavailable states.
 - Dashboard: placeholder page only (built in Phase 4).
-- 60 unit tests (`npm test`).
+- 60 unit tests (`npm test`) at the end of Phase 1.
 
 Reviews:
 - Sol: five reviews done. Its review of the flow fixes was skipped (`handoffs/2026-11-09-sol-review-phase1-flow-fixes.md`).
@@ -65,9 +65,9 @@ Next steps:
    - Step C done (2026-11-10): the staff screens read and save visits in the database. `data/visitCache.ts` holds the list in memory (everyone still in the line plus anything made or closed in the last 24 hours) and re-reads it every 15 seconds, when the tab comes back, and after every action. `data/staffActions.ts` saves only the changed fields (`lib/changedFields.ts`) and only if the visit's `version` still matches. Buttons show "Saving…" and ignore a second press. A red banner with "Try again" shows when the list could not be read. `components/staff/StorageWarning.tsx` and the yellow "saved only in this browser" note were removed now, because they no longer fit.
    - Checked in the browser on 2026-11-10: the whole loop through the database (start from home, find by code, check in, call back, seen, "I'm on my way", mark arrived, Undo, mark arrived); a new desk visit with its slip; two staff tabs pressing "Call back" on the same patient (the second was told "The list just changed"); a blocked database ("Not saved", and the out-of-date banner, which cleared with "Try again"); axe-core on the new staff states and the start page at phone and laptop size: no failures.
    - **Changed from the plan:** the staff list also re-reads every 15 seconds (the plan had only "after an action and when the tab comes back"), so staff see "Seen" and "On the way" before live updates exist. Until live updates (next step 2), the phone can take up to 30 seconds to show a call-back and staff up to 15 seconds to see the patient's answer.
-   - **Gemini 3.1 Pro (High) review of steps A to C:** `handoffs/2026-11-10-gemini-review-steps-a-to-c-supabase-storage.md` (not done yet).
-   - Step D is next: delete `data/visitStore.ts` and its test, `data/useStorageProblem.ts`, `lib/parseVisits.ts` and its test, and `patientViewFor` in `lib/patientView.ts` (keep the `PatientView` type). Nothing in the app uses them any more.
-   - `lib/patientView.ts` `patientViewFor` is now used only by its test (the type `PatientView` is still used). Remove it in step D.
+   - Review of steps A to C: done on 2026-11-10 by Gemini 3.6 Flash (High), because the owner had no Gemini 3.1 Pro credits left. Answer and what was done: `handoffs/2026-11-10-gemini-review-steps-a-to-c-supabase-storage-response.md`. Fixed: one re-read timer per list (`data/keepFresh.ts`), no empty saves, line order compares the moments first (`lib/queue.ts`), and the patient screen re-reads every 15 seconds (was 30).
+   - Step D done (2026-11-10): deleted `data/visitStore.ts` and its test, `data/useStorageProblem.ts`, `lib/parseVisits.ts` and its test, and `patientViewFor` with its test (the `PatientView` type stays). The only thing still saved in the browser is the phone's own token (`data/savedToken.ts`). `startFromHome`, `markSeen` and `confirmOnMyWay` in `lib/visitActions.ts` stay as test helpers; in the app the database functions do those steps.
+   - **Step 1 is finished.** Not checked: the start route's "paused" and "busy" answers.
 2. Live updates through `change_signal`.
 3. Deploy to Vercel, with a per-device limit on starting from home.
 4. Playwright laptop and phone test (about 2 seconds). Then Gemini 3.1 Pro (High) and GPT-6 Astra (High).
