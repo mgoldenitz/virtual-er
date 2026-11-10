@@ -17,11 +17,20 @@ Done:
 
 Reviews:
 - Sol: five reviews done. Its review of the flow fixes was skipped (`handoffs/2026-11-09-sol-review-phase1-flow-fixes.md`).
-- Grok's simpler-screens pass was skipped (`handoffs/2026-11-09-grok-simpler-screens-phase1.md`).
+- Grok's simpler-screens pass is done (`handoffs/2026-11-09-grok-simpler-screens-phase1.md`). No code changes; the owner agreed on 2026-11-09:
+  1. Fold the care options into a closed section: skipped. SPEC wants them seen before travelling.
+  2. Hide patient notes behind "More info": skipped. SPEC says the "place can change" line always shows and the demo must state its alert limits.
+  3. Hide the check-in form until needed: skipped. It adds a tap to the most common action; revisit when QR scanning arrives.
+  4. One menu for remove actions: already done ("Remove from list" in `components/staff/VisitRow.tsx`).
+  5. One card for an open visit: already done (`components/start/StartVisit.tsx`).
 
 Decisions kept on purpose:
 - The patient heading "Checked in from home, not yet triaged" (SPEC wording; revisit in the Phase 3 wording pass).
 - The staff button label "Check in".
+
+To do in Phase 3 (from Grok's pass):
+- Shorten the patient screen's "not yet triaged" text (three paragraphs now) in the wording pass, keeping the SPEC sentence about the line starting at triage.
+- Put the "Review: unable to reach" confirmation inside each card's "Remove from list" section.
 
 Notes:
 - Another copy of this project, in OneDrive\Desktop\Career\virtual-er, may be running on port 3000. Run this one with `npx next dev -p 3100`.
