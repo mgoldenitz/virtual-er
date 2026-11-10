@@ -73,3 +73,8 @@ export function normalizeToken(typed: string): string {
 export function isAccessToken(token: string): boolean {
   return /^[0-9A-HJKMNP-TV-Z]{26}$/.test(token);
 }
+
+/** A display code as staff typed it: spaces and hyphens dropped, upper-case. */
+export function normalizeDisplayCode(typed: string): string {
+  return typed.replace(/[\s-]/g, "").toUpperCase();
+}

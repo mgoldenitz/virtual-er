@@ -16,19 +16,22 @@ export type DeskCheckIn = {
 
 export type DeskOutcome = "waiting" | "declined" | "not_eligible";
 
-function blankVisit(input: DeskCheckIn, nowIso: string): Visit {
+/** What a new visit needs, whether started at the desk or from home. */
+export type NewVisit = { id: string; code: string; access_token: string; site: Site; language: string; is_demo?: boolean };
+
+function blankVisit(input: NewVisit, source: "home" | "desk", nowIso: string): Visit {
   return {
     id: input.id,
     code: input.code,
     access_token: input.access_token,
     site: input.site,
-    source: "desk",
-    ctas_level: input.ctas_level,
+    source,
+    ctas_level: null,
     language: input.language,
-    status: "waiting",
+    status: "pre_arrival",
     removed_reason: null,
     created_at: nowIso,
-    triaged_at: nowIso,
+    triaged_at: null,
     offered_at: null,
     last_still_here_at: null,
     called_at: null,
@@ -46,22 +49,43 @@ function blankVisit(input: DeskCheckIn, nowIso: string): Visit {
 }
 
 /**
- * A nurse checks in a patient at the desk after triage.
+ * The nurse's check-in after triage, applied to a visit that has not been triaged yet.
+ * Its place in line starts now (triaged_at), never when it was created (SPEC rule 7).
  * - waiting: offered and accepted off-site waiting; joins the line now.
  * - declined: offered, said no; waits on-site as usual (closed for virtual waiting).
  * - not_eligible: not offered; waits on-site as usual.
  */
+function applyTriage(visit: Visit, ctas: 4 | 5, language: string, outcome: DeskOutcome, nowIso: string): Visit {
+  const triaged = { ...visit, ctas_level: ctas, language, triaged_at: nowIso };
+  if (outcome === "not_eligible") return { ...triaged, status: "not_eligible", closed_at: nowIso };
+  const offered = { ...triaged, offered_at: nowIso };
+  if (outcome === "declined") return { ...offered, status: "declined", closed_at: nowIso };
+  return { ...offered, status: "waiting" };
+}
+
+/** A nurse checks in a patient at the desk after triage, for a patient who did not start a visit. */
 export function checkInAtDesk(input: DeskCheckIn, outcome: DeskOutcome, now: Date): Visit {
   const nowIso = now.toISOString();
-  const visit = blankVisit(input, nowIso);
-  if (outcome === "not_eligible") {
-    return { ...visit, status: "not_eligible", closed_at: nowIso };
-  }
-  visit.offered_at = nowIso;
-  if (outcome === "declined") {
-    return { ...visit, status: "declined", closed_at: nowIso };
-  }
-  return visit;
+  return applyTriage(blankVisit(input, "desk", nowIso), input.ctas_level, input.language, outcome, nowIso);
+}
+
+/**
+ * A patient starts a visit from home on the start page: "Checked in from home, not yet triaged".
+ * This never gives a place in line (SPEC rule 7); that starts at triage.
+ */
+export function startFromHome(input: NewVisit, now: Date): Visit {
+  return blankVisit(input, "home", now.toISOString());
+}
+
+/** A nurse checks in, after triage, a visit the patient started from home. Only before triage. */
+export function checkInHomeVisit(
+  visit: Visit,
+  triage: { ctas_level: 4 | 5; language: string },
+  outcome: DeskOutcome,
+  now: Date,
+): Visit | null {
+  if (visit.status !== "pre_arrival" || visit.triaged_at) return null;
+  return applyTriage(visit, triage.ctas_level, triage.language, outcome, now.toISOString());
 }
 
 /** Staff press "Call back". Only while waiting. */

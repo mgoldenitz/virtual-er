@@ -4,11 +4,38 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 import { patientViewFor, type PatientView } from "@/lib/patientView";
-import { confirmOnMyWay, markSeen } from "@/lib/visitActions";
-import { readVisits, storageMayHideToken, subscribeToVisits, updateVisit, type ChangeResult } from "./visitStore";
+import { makeAccessToken, makeUniqueDisplayCode } from "@/lib/codes";
+import type { Site } from "@/lib/visit";
+import { confirmOnMyWay, markSeen, startFromHome } from "@/lib/visitActions";
+import { saveToken } from "./savedToken";
+import {
+  addVisit,
+  readVisits,
+  storageMayHideToken,
+  subscribeToVisits,
+  updateVisit,
+  type ChangeResult,
+} from "./visitStore";
 
 function idForToken(token: string): string | null {
   return readVisits().find((v) => v.access_token === token)?.id ?? null;
+}
+
+/**
+ * Start a visit from home on the start page, and remember it on this phone.
+ * Phase 1 stand-in for the rate-limited server route (SPEC rule 5): only this function sets
+ * source = home and status = pre_arrival; the screen passes only the site and language.
+ * Returns the new visit's token, or null if this browser could not save it.
+ */
+export function startVisitFromHome(site: Site, language: string): string | null {
+  const taken = new Set(readVisits().map((v) => v.code));
+  const visit = startFromHome(
+    { id: crypto.randomUUID(), code: makeUniqueDisplayCode(taken), access_token: makeAccessToken(), site, language },
+    new Date(),
+  );
+  if (addVisit(visit) !== "saved") return null;
+  saveToken(visit.access_token);
+  return visit.access_token;
 }
 
 /** Record that the called screen was shown. Only while called, and only once. */

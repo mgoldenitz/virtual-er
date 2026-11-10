@@ -1,13 +1,15 @@
 "use client";
 
-// The staff screen: check patients in, see who is waiting off-site, call them back.
+// The staff screen: check patients in (new at the desk, or expected from home), see who is
+// waiting off-site, and call them back.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStorageProblem } from "@/data/useStorageProblem";
 import { useVisits } from "@/data/useVisits";
 import { activeLine } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { CheckInPanel } from "@/components/staff/CheckInPanel";
+import { ExpectedArrivals } from "@/components/staff/ExpectedArrivals";
 import { ProgressAnnouncer } from "@/components/staff/ProgressAnnouncer";
 import { RecentlyClosed } from "@/components/staff/RecentlyClosed";
 import { StorageWarning } from "@/components/staff/StorageWarning";
@@ -21,7 +23,17 @@ export default function StaffPage() {
   const [site, setSite] = useState<Site>("A");
   const [slip, setSlip] = useState<Visit | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [homeVisit, setHomeVisit] = useState<Visit | null>(null);
   const problem = useStorageProblem();
+
+  // Staff chose an expected arrival: hide any old slip and move focus to the check-in form.
+  const chooseHomeVisit = (visit: Visit) => {
+    setSlip(null);
+    setHomeVisit(visit);
+  };
+  useEffect(() => {
+    if (homeVisit) document.getElementById("checkin-heading")?.focus();
+  }, [homeVisit]);
   const listHeading = useRef<HTMLHeadingElement>(null);
 
   // A patient just left the list: say so, and move keyboard focus from the vanished row
@@ -52,6 +64,7 @@ export default function StaffPage() {
             onChange={(e) => {
               setSite(e.target.value as Site);
               setSlip(null);
+              setHomeVisit(null);
             }}
             className="min-h-11 rounded-lg border-2 border-slate-400 px-3"
           >
@@ -66,7 +79,14 @@ export default function StaffPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          <CheckInPanel site={site} onAttempt={() => setSlip(null)} onCreated={showSlip} />
+          {visits && now && <ExpectedArrivals visits={visits} site={site} now={now} onChoose={chooseHomeVisit} />}
+          <CheckInPanel
+            site={site}
+            onAttempt={() => setSlip(null)}
+            onCreated={showSlip}
+            homeVisit={homeVisit}
+            onHomeDone={() => setHomeVisit(null)}
+          />
           {slip && <VisitSlip code={slip.code} token={slip.access_token} onClose={() => setSlip(null)} />}
         </div>
 

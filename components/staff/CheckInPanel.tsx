@@ -1,10 +1,11 @@
 "use client";
 
 // Staff check-in after triage: CTAS level, eligibility checklist, language, then one of
-// "start off-site waiting", "offered, declined" or "not eligible".
+// "start off-site waiting", "offered, declined" or "not eligible". It checks in either a new
+// desk visit, or a visit the patient started from home (chosen from Expected arrivals).
 
 import { useState, type FormEvent } from "react";
-import { createDeskVisit } from "@/data/staffActions";
+import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
 import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
 import { Button } from "@/components/Button";
@@ -20,13 +21,55 @@ type Props = {
   /** Called when staff try a new check-in, before saving, so the last patient's slip is hidden. */
   onAttempt: () => void;
   onCreated: (visit: Visit) => void;
+  /** A visit started from home that staff chose to check in, or null for a new desk visit. */
+  homeVisit: Visit | null;
+  /** Leave the home visit: after it is checked in, or when staff cancel. */
+  onHomeDone: () => void;
 };
 
-export function CheckInPanel({ site, onAttempt, onCreated }: Props) {
+export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone }: Props) {
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [language, setLanguage] = useState("en");
   const [message, setMessage] = useState("");
+
+  // A different home visit was chosen: start the form fresh, with the language the patient picked.
+  const [formFor, setFormFor] = useState<string | null>(null);
+  const homeId = homeVisit?.id ?? null;
+  if (homeId !== formFor) {
+    setFormFor(homeId);
+    if (homeVisit) {
+      setCtas(null);
+      setTicked({});
+      setLanguage(homeVisit.language);
+      setMessage("");
+    }
+  }
+
+  /** Save the check-in; returns the visit code, or null after showing why it was not saved. */
+  function save(outcome: DeskOutcome, ctasLevel: 4 | 5): string | null {
+    const form = { site, ctas_level: ctasLevel, language };
+    if (homeVisit) {
+      const result = checkInVisitFromHome(homeVisit.id, form, outcome);
+      if (result === "saved") {
+        onHomeDone();
+        return homeVisit.code;
+      }
+      setMessage(
+        result === "not_saved"
+          ? "Not saved: this browser could not store the check-in. Nothing was recorded. Try again."
+          : `Visit ${homeVisit.code} changed or is already checked in. Find it again under Expected arrivals.`,
+      );
+      return null;
+    }
+    const visit = createDeskVisit(form, outcome);
+    if (!visit) {
+      setMessage("Not saved: this browser could not store the visit. Nothing was recorded. Try again.");
+      return null;
+    }
+    onCreated(visit);
+    return visit.code;
+  }
 
   function finish(outcome: DeskOutcome) {
     // Hide the previous patient's slip first, so a failed save never leaves it on screen
@@ -40,19 +83,15 @@ export function CheckInPanel({ site, onAttempt, onCreated }: Props) {
       setMessage("Tick all three checklist items to start off-site waiting.");
       return;
     }
-    const visit = createDeskVisit({ site, ctas_level: ctas, language }, outcome);
-    if (!visit) {
-      setMessage("Not saved: this browser could not store the visit. Nothing was recorded. Try again.");
-      return;
-    }
+    const code = save(outcome, ctas);
+    if (!code) return;
     setCtas(null);
     setTicked({});
     setMessage(
       outcome === "waiting"
-        ? `Visit ${visit.code} is now waiting off-site.`
-        : `Recorded as ${outcome === "declined" ? "offered, declined" : "not eligible"}. The patient waits on-site as usual.`,
+        ? `Visit ${code} is now waiting off-site.`
+        : `Visit ${code} recorded as ${outcome === "declined" ? "offered, declined" : "not eligible"}. The patient waits on-site as usual.`,
     );
-    onCreated(visit);
   }
 
   const onSubmit = (event: FormEvent) => {
@@ -62,9 +101,17 @@ export function CheckInPanel({ site, onAttempt, onCreated }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" aria-labelledby="checkin-heading">
-      <h2 id="checkin-heading" className="text-xl font-bold">
-        Check in a patient after triage
+      <h2 id="checkin-heading" tabIndex={-1} className="text-xl font-bold">
+        {homeVisit ? `Check in visit ${homeVisit.code} after triage` : "Check in a patient after triage"}
       </h2>
+      {homeVisit && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-100 p-3">
+          <p>Started from home. The patient already has this visit on their phone.</p>
+          <Button variant="secondary" onClick={onHomeDone}>
+            Cancel: check in a new patient instead
+          </Button>
+        </div>
+      )}
 
       <fieldset>
         <legend className="font-semibold">CTAS level (chosen by the triage nurse)</legend>

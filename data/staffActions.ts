@@ -1,11 +1,12 @@
 // What staff screens can do to visits. Phase 2 replaces the insides with Supabase calls
 // behind staff login; the screens keep calling these same functions.
 
-import { makeAccessToken, makeUniqueDisplayCode } from "@/lib/codes";
+import { makeAccessToken, makeUniqueDisplayCode, normalizeDisplayCode } from "@/lib/codes";
 import type { Site, Visit } from "@/lib/visit";
 import {
   callBack,
   checkInAtDesk,
+  checkInHomeVisit,
   markArrived,
   markRemoved,
   undoClose,
@@ -33,6 +34,16 @@ export function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Visit 
     new Date(),
   );
   return addVisit(visit) === "saved" ? visit : null;
+}
+
+/** Check in, after triage, a visit the patient started from home. */
+export const checkInVisitFromHome = (id: string, form: CheckInForm, outcome: DeskOutcome) =>
+  updateVisit(id, (v) => (v.site === form.site ? checkInHomeVisit(v, form, outcome, new Date()) : null));
+
+/** Staff-only lookup of a visit by the short code the patient reads out or shows. */
+export function findVisitByCode(typed: string): Visit | null {
+  const code = normalizeDisplayCode(typed);
+  return readVisits().find((v) => v.code === code) ?? null;
 }
 
 export const callBackVisit = (id: string) => updateVisit(id, (v) => callBack(v, new Date()));

@@ -64,7 +64,7 @@ function Called({ view, onOnMyWay }: Props) {
 const OTHER: Record<string, { heading: string; text: string }> = {
   pre_arrival: {
     heading: "Status: Checked in from home, not yet triaged",
-    text: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.",
+    text: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first. After triage, show your visit code to staff.",
   },
   needs_reassessment: {
     heading: "Please go to the triage desk",
