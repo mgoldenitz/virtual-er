@@ -5,13 +5,15 @@
 
 import { QRCodeSVG } from "qrcode.react";
 import { groupToken } from "@/lib/codes";
+import { slipOrigin } from "@/lib/slipOrigin";
 import { patientLink } from "@/data/savedToken";
 import { Button } from "@/components/Button";
 
 type Props = { code: string; token: string; onClose: () => void };
 
 export function VisitSlip({ code, token, onClose }: Props) {
-  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  // Always the live link, except on localhost while testing (lib/slipOrigin.ts).
+  const origin = slipOrigin(typeof window === "undefined" ? "" : window.location.origin);
   const scanLink = patientLink(origin, token);
   const typedLink = patientLink(origin, groupToken(token));
 
