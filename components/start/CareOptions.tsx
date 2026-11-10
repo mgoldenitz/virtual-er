@@ -2,7 +2,7 @@
 // Only names and links: nothing is copied from THP's site (SPEC rule 8), and hours change,
 // so patients are sent to THP's page for them.
 
-const THP_EMERGENCY_PAGE = "https://trilliumhealthpartners.ca/emergency/a/visit.html";
+const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
 const linkStyle = "font-semibold text-blue-900 underline underline-offset-2";
 
