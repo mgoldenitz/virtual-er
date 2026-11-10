@@ -37,14 +37,23 @@ export async function POST(request: Request): Promise<Response> {
         p_code: makeDisplayCode(),
         p_token: token,
       });
-      if (error) break;
+      if (error) {
+        // Written to the server log only (Vercel's runtime logs). Holds no token or key.
+        console.error("start-visit: database refused", { code: error.code, message: error.message });
+        break;
+      }
       if (data === "saved") return answer({ result: "saved", token }, 200);
       if (data === "paused") return answer({ result: "paused" }, 409);
       if (data === "busy") return answer({ result: "busy" }, 429);
-      if (data !== "taken") break;
+      if (data !== "taken") {
+        console.error("start-visit: unexpected answer from start_home_visit", { answer: String(data).slice(0, 40) });
+        break;
+      }
     }
-  } catch {
-    // A missing setting or an unreachable database: the phone gets the same plain answer.
+  } catch (problem) {
+    // A missing setting or an unreachable database: the phone gets the same plain answer,
+    // and the reason goes to the server log only.
+    console.error("start-visit: could not reach the database", problem instanceof Error ? problem.message : "unknown");
   }
   return answer({ result: "error" }, 500);
 }
