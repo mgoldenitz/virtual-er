@@ -36,6 +36,24 @@ Notes:
 - Another copy of this project, in OneDrive\Desktop\Career\virtual-er, may be running on port 3000. Run this one with `npx next dev -p 3100`.
 - `npm audit` shows 7 moderate warnings, all from one old `minimatch` inside `typescript-eslint` (code checker only, not in the app). No fix exists yet: `typescript-eslint` 8.72.2 accepts only `minimatch` 10.x, and the fix is in 11.0.1. Decided on 2026-11-09 to wait instead of forcing the newer version. **At the start of each phase, run `npm update` and then `npm audit` to see if the warnings are gone.**
 
-## Next: Phase 2 (Supabase, realtime, staff login, row-level security, Vercel)
+## Phase 2: Supabase, realtime, staff login, row-level security, Vercel (in progress)
 
-Not started. It begins only after the owner has tested Phase 1.
+Started 2026-11-09 by the owner. The minimatch check at the start: still not fixed upstream.
+
+Done:
+- Supabase project `virtual-er` in ca-central-1. `.mcp.json` is locked to it with only the docs, database, debugging and development tools.
+- The database setup ran on 2026-11-10 (`supabase/migrations/`): the `visits`, `site_settings` and `change_signal` tables with row-level security, plus the patient functions (`get_patient_visit`, `record_seen`, `confirm_on_my_way`) and `start_home_visit` (server only).
+- Reviewed before it ran: Gemini 3.1 Pro (instead of Argon) and Grok. Sol and Kimi were skipped. The handoff is `handoffs/2026-11-10-sol-review-phase2-database-design.md`; the responses are in `handoffs/2026-11-10-phase2-database-review-responses.md`.
+- `supabase/checks/permissions.sql` matched its expected list, no table is missing row-level security, and the security advisor showed only the expected warnings. A test as `anon` was refused on `visits`. **Run the check and the advisor after every database change.**
+
+Decided:
+- The database checking allowed steps (for example, "Call back only while waiting") waits until Phase 3, when the remaining steps are added. Raise it in GPT-6 Astra's review.
+- Staff can read tokens because "Show QR again" needs them. Raise it in Astra's review.
+
+Next steps:
+1. Add the Supabase library and the keys in `.env.local` (owner).
+2. Create the staff account and mark it as staff.
+3. Replace `data/` browser storage with Supabase calls, and add the staff login screen.
+4. Live updates through `change_signal`.
+5. Deploy to Vercel, with a per-device limit on starting from home.
+6. Playwright laptop and phone test (about 2 seconds). Then Gemini 4 Argon (High) and GPT-6 Astra (High).

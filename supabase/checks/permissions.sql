@@ -15,7 +15,12 @@
 --   authenticated  function  get_patient_visit   EXECUTE
 --   authenticated  function  is_staff            EXECUTE
 --   authenticated  function  record_seen         EXECUTE
+-- Also listed, and fine: rls_auto_enable, for both roles. Supabase made it when the project
+-- was created; it turns on row-level security for each new table. It is an event trigger
+-- function, which Postgres refuses to run as an ordinary call.
 -- Also expected: every table listed has row-level security on (see the second query).
+-- Supabase's security advisor warns that anon can run get_patient_visit, record_seen and
+-- confirm_on_my_way. That is on purpose (SPEC hard rule 5); each needs the visit's token.
 
 select grantee as role, 'table' as kind, table_name as name,
        string_agg(privilege_type, ', ' order by privilege_type) as rights
