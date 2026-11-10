@@ -2,6 +2,7 @@
 
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Footer } from "@/components/Footer";
 import "./globals.css";
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-full flex-col bg-white text-slate-900" suppressHydrationWarning>
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
+        <SpeedInsights />
       </body>
     </html>
   );
