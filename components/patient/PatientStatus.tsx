@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { PatientView } from "@/lib/patientView";
 import { Button } from "@/components/Button";
 
-type Props = { view: PatientView; onOnMyWay: () => void };
+type Props = { view: PatientView; onOnMyWay: () => void; sending: boolean };
 
 function Waiting({ view }: { view: PatientView }) {
   return (
@@ -32,7 +32,7 @@ function Waiting({ view }: { view: PatientView }) {
   );
 }
 
-function Called({ view, onOnMyWay }: Props) {
+function Called({ view, onOnMyWay, sending }: Props) {
   const confirmed = view.status === "on_the_way";
   return (
     <section
@@ -48,8 +48,8 @@ function Called({ view, onOnMyWay }: Props) {
           Thank you. Staff know you are on your way.
         </p>
       ) : (
-        <Button onClick={onOnMyWay} className="w-full text-lg">
-          I&apos;m on my way
+        <Button onClick={onOnMyWay} aria-disabled={sending} className="w-full text-lg">
+          {sending ? <>Sending…</> : <>I&apos;m on my way</>}
         </Button>
       )}
       <p className="text-sm text-slate-800">
@@ -131,11 +131,11 @@ function Expired() {
   );
 }
 
-export function PatientStatus({ view, onOnMyWay }: Props) {
+export function PatientStatus({ view, onOnMyWay, sending }: Props) {
   if (view.expired) return <Expired />;
   if (view.status === "waiting") return <Waiting view={view} />;
   if (view.status === "called" || view.status === "on_the_way") {
-    return <Called view={view} onOnMyWay={onOnMyWay} />;
+    return <Called view={view} onOnMyWay={onOnMyWay} sending={sending} />;
   }
   return <OtherStatus view={view} />;
 }

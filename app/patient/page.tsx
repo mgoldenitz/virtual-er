@@ -15,6 +15,7 @@ export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [problem, setProblem] = useState("");
   const [brokenLink, setBrokenLink] = useState(false);
+  const [sending, setSending] = useState(false);
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
@@ -39,17 +40,29 @@ export default function PatientPage() {
   // (shown, not necessarily read). A tab in the background waits until it is brought forward.
   useEffect(() => {
     if (!token || view?.status !== "called" || view.seen) return;
-    const recordIfVisible = () => {
-      if (document.visibilityState === "visible") recordSeen(token);
+    let stopped = false;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const recordIfVisible = async () => {
+      clearTimeout(retry);
+      if (stopped || document.visibilityState !== "visible") return;
+      const result = await recordSeen(token);
+      // Could not reach the database: try again shortly, for as long as the called screen is showing.
+      if (result === "not_saved" && !stopped) retry = setTimeout(recordIfVisible, 10_000);
     };
-    recordIfVisible();
+    void recordIfVisible();
     document.addEventListener("visibilitychange", recordIfVisible);
-    return () => document.removeEventListener("visibilitychange", recordIfVisible);
+    return () => {
+      stopped = true;
+      clearTimeout(retry);
+      document.removeEventListener("visibilitychange", recordIfVisible);
+    };
   }, [token, view?.status, view?.seen]);
 
-  function onOnMyWay() {
-    if (!token) return;
-    const result = confirmOnMyWayByToken(token);
+  async function onOnMyWay() {
+    if (!token || sending) return;
+    setSending(true);
+    const result = await confirmOnMyWayByToken(token);
+    setSending(false);
     setProblem(
       result === "not_saved"
         ? "Your answer was not saved, so staff have not been told. Please try again, or come back to the desk."
@@ -94,7 +107,7 @@ export default function PatientPage() {
             Visit code: <strong className="font-mono tracking-widest">{view.code}</strong> · Demo
             Site {view.site}
           </p>
-          <PatientStatus view={view} onOnMyWay={onOnMyWay} />
+          <PatientStatus view={view} onOnMyWay={onOnMyWay} sending={sending} />
           {problem && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {problem}
