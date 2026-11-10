@@ -17,7 +17,7 @@ Next.js 16 App Router + TypeScript + Tailwind. Phase 1 has no server: visits liv
 | — | "Seen" meaning | Row now says "Seen (screen shown, not necessarily read)" |
 | — | Wait-interval label | Not changed yet; waiting for the owner's decision |
 
-43 unit tests pass; lint and type check are clean. Checked in a real browser (two tabs): call-back → Seen announced to staff; Left → row in Recently closed after 12 s; Undo → back to called, patient call-back announced again; failed check-in hides old slip; damaged record shows the warning; broken link then refresh shows no older visit.
+40 unit tests pass; lint and type check are clean. Checked in a real browser (two tabs): call-back → Seen announced to staff; Left → row in Recently closed after 12 s; Undo → back to called, patient call-back announced again; failed check-in hides old slip; damaged record shows the warning; broken link then refresh shows no older visit.
 
 ## Questions for you
 
