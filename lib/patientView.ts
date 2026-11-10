@@ -1,6 +1,7 @@
 // What a patient's phone is allowed to see about its own visit (SPEC rule 5).
 // In Phase 2 a database function returns this same shape; nothing else leaves the database.
 
+import { isExpected } from "./expectedArrivals";
 import { averageCallGap, placeInLine, waitRange } from "./queue";
 import type { Site, Visit, VisitStatus } from "./visit";
 
@@ -16,10 +17,12 @@ export type PatientView = {
   lastStillHereAt: string | null;
   seen: boolean;
   closed: boolean;
+  /** Started from home, never triaged, and past the 6 hours staff keep expecting it. */
+  expired: boolean;
 };
 
 /** Find the visit with this token and return only the patient-safe fields, or null. */
-export function patientViewFor(visits: Visit[], token: string): PatientView | null {
+export function patientViewFor(visits: Visit[], token: string, now: Date): PatientView | null {
   const visit = visits.find((v) => v.access_token === token);
   if (!visit) return null;
   const place = placeInLine(visits, visit);
@@ -36,5 +39,6 @@ export function patientViewFor(visits: Visit[], token: string): PatientView | nu
     lastStillHereAt: visit.last_still_here_at,
     seen: visit.seen_at !== null,
     closed: visit.closed_at !== null,
+    expired: visit.status === "pre_arrival" && !isExpected(visit, now),
   };
 }

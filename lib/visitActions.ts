@@ -2,6 +2,7 @@
 // and returns the updated visit, or null when the step is not allowed right now
 // (for example a second click after the list already changed).
 
+import { isExpected } from "./expectedArrivals";
 import { type Site, type Visit, type VisitStatus } from "./visit";
 
 export type DeskCheckIn = {
@@ -84,7 +85,8 @@ export function checkInHomeVisit(
   outcome: DeskOutcome,
   now: Date,
 ): Visit | null {
-  if (visit.status !== "pre_arrival" || visit.triaged_at) return null;
+  // Only while still expected: not triaged yet, and under 6 hours old.
+  if (!isExpected(visit, now)) return null;
   return applyTriage(visit, triage.ctas_level, triage.language, outcome, now.toISOString());
 }
 

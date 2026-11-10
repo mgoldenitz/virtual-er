@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStorageProblem } from "@/data/useStorageProblem";
 import { useVisits } from "@/data/useVisits";
+import { homeCheckInProblem } from "@/lib/homeCheckIn";
 import { activeLine } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { CheckInPanel } from "@/components/staff/CheckInPanel";
@@ -50,6 +51,11 @@ export default function StaffPage() {
   };
 
   const line = visits ? activeLine(visits, site) : [];
+  // The chosen home visit may have been checked in on another screen, or expired, since staff opened it.
+  const homeProblem =
+    homeVisit && visits && now
+      ? homeCheckInProblem(homeVisit, visits.find((v) => v.id === homeVisit.id) ?? null, now)
+      : null;
   // Show a slip only for a visit that is waiting off-site; declined and not-eligible get none.
   const showSlip = (visit: Visit) => setSlip(visit.status === "waiting" || visit.called_at ? visit : null);
 
@@ -79,12 +85,16 @@ export default function StaffPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          {visits && now && <ExpectedArrivals visits={visits} site={site} now={now} onChoose={chooseHomeVisit} />}
+          {visits && now && (
+            <ExpectedArrivals visits={visits} site={site} now={now} onChoose={chooseHomeVisit} />
+          )}
           <CheckInPanel
+            key={site}
             site={site}
             onAttempt={() => setSlip(null)}
             onCreated={showSlip}
             homeVisit={homeVisit}
+            homeProblem={homeProblem}
             onHomeDone={() => setHomeVisit(null)}
           />
           {slip && <VisitSlip code={slip.code} token={slip.access_token} onClose={() => setSlip(null)} />}
@@ -92,7 +102,7 @@ export default function StaffPage() {
 
         <section aria-labelledby="list-heading" className="space-y-3">
           <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-xl font-bold">
-            Waiting off-site ({line.length})
+            Off-site: waiting or called back ({line.length})
           </h2>
           <p role="status" className="min-h-6 font-semibold">
             {announcement}

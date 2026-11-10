@@ -23,11 +23,13 @@ type Props = {
   onCreated: (visit: Visit) => void;
   /** A visit started from home that staff chose to check in, or null for a new desk visit. */
   homeVisit: Visit | null;
+  /** Set when the chosen home visit changed elsewhere or expired, so it can no longer be checked in. */
+  homeProblem: string | null;
   /** Leave the home visit: after it is checked in, or when staff cancel. */
   onHomeDone: () => void;
 };
 
-export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone }: Props) {
+export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProblem, onHomeDone }: Props) {
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [language, setLanguage] = useState("en");
@@ -46,6 +48,15 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone
     }
   }
 
+  // Staff leave the home visit: clear its choices so none carry over to the next patient.
+  function cancelHome() {
+    setCtas(null);
+    setTicked({});
+    setLanguage("en");
+    setMessage("");
+    onHomeDone();
+  }
+
   /** Save the check-in; returns the visit code, or null after showing why it was not saved. */
   function save(outcome: DeskOutcome, ctasLevel: 4 | 5): string | null {
     const form = { site, ctas_level: ctasLevel, language };
@@ -58,7 +69,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone
       setMessage(
         result === "not_saved"
           ? "Not saved: this browser could not store the check-in. Nothing was recorded. Try again."
-          : `Visit ${homeVisit.code} changed or is already checked in. Find it again under Expected arrivals.`,
+          : `Visit ${homeVisit.code} changed or is already checked in. No check-in was saved.`,
       );
       return null;
     }
@@ -75,6 +86,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone
     // Hide the previous patient's slip first, so a failed save never leaves it on screen
     // where it could be handed to the next patient.
     onAttempt();
+    if (homeProblem) return;
     if (ctas === null) {
       setMessage("Choose CTAS 4 or 5 first.");
       return;
@@ -107,17 +119,26 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone
       {homeVisit && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-100 p-3">
           <p>Started from home. The patient already has this visit on their phone.</p>
-          <Button variant="secondary" onClick={onHomeDone}>
+          <Button variant="secondary" onClick={cancelHome}>
             Cancel: check in a new patient instead
           </Button>
         </div>
       )}
 
-      <fieldset>
+      {homeProblem && (
+        <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
+          {homeProblem}
+        </p>
+      )}
+
+      <fieldset disabled={!!homeProblem}>
         <legend className="font-semibold">CTAS level (chosen by the triage nurse)</legend>
         <div className="mt-2 flex gap-3">
           {([4, 5] as const).map((level) => (
-            <label key={level} className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-slate-400 px-4">
+            <label
+              key={level}
+              className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-slate-400 px-4"
+            >
               <input
                 type="radio"
                 name="ctas"
@@ -131,7 +152,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset disabled={!!homeProblem}>
         <legend className="font-semibold">Eligibility checklist</legend>
         <div className="mt-2 space-y-2">
           {CHECKLIST.map((item) => (
@@ -160,15 +181,17 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, onHomeDone
         <span className="mt-1 block text-sm text-slate-700">Two more languages come in Phase 3.</span>
       </label>
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit">Start off-site waiting</Button>
-        <Button variant="secondary" onClick={() => finish("declined")}>
-          Offered, declined
-        </Button>
-        <Button variant="secondary" onClick={() => finish("not_eligible")}>
-          Not eligible
-        </Button>
-      </div>
+      {!homeProblem && (
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit">Start off-site waiting</Button>
+          <Button variant="secondary" onClick={() => finish("declined")}>
+            Offered, declined
+          </Button>
+          <Button variant="secondary" onClick={() => finish("not_eligible")}>
+            Not eligible
+          </Button>
+        </div>
+      )}
 
       <p role="status" className="min-h-6 font-semibold">
         {message}

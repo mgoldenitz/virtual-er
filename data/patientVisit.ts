@@ -3,6 +3,7 @@
 // so Phase 2 can swap these for database functions without touching the screens.
 
 import { useCallback, useSyncExternalStore } from "react";
+import { useNow } from "@/components/useNow";
 import { patientViewFor, type PatientView } from "@/lib/patientView";
 import { makeAccessToken, makeUniqueDisplayCode } from "@/lib/codes";
 import type { Site } from "@/lib/visit";
@@ -55,7 +56,7 @@ let lastKey = "";
 let lastView: PatientView | null | "unavailable" = null;
 
 function readView(token: string): PatientView | null | "unavailable" {
-  const found = patientViewFor(readVisits(), token);
+  const found = patientViewFor(readVisits(), token, new Date());
   // Not found because the saved data is damaged: say the visit cannot be loaded, never "no visit".
   const view = found === null && storageMayHideToken(token) ? "unavailable" : found;
   const key = token + JSON.stringify(view);
@@ -73,6 +74,8 @@ function readView(token: string): PatientView | null | "unavailable" {
  * and "unavailable" if damaged saved data may be hiding it.
  */
 export function usePatientView(token: string | null): PatientView | null | "unavailable" | undefined {
+  // Re-read on the clock too, so a home visit shows as expired once its 6 hours pass.
+  useNow();
   const getSnapshot = useCallback(() => (token ? readView(token) : null), [token]);
   return useSyncExternalStore(subscribeToVisits, getSnapshot, () => undefined);
 }

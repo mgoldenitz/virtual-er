@@ -3,6 +3,7 @@
 // The main part of the patient screen, which changes with the visit's status:
 // Waiting, Please head back now, Ready at the desk, and the states before and after those.
 
+import Link from "next/link";
 import type { PatientView } from "@/lib/patientView";
 import { Button } from "@/components/Button";
 
@@ -18,8 +19,7 @@ function Waiting({ view }: { view: PatientView }) {
         Your place in line: <strong className="text-3xl">{view.placeInLine}</strong>
       </p>
       <p className="text-base">
-        Your place can change if more urgent patients arrive. The most urgent patients are always
-        seen first.
+        Your place can change if more urgent patients arrive. The most urgent patients are always seen first.
       </p>
       <p className="text-lg">
         Estimated time until you&apos;re called back:{" "}
@@ -61,10 +61,14 @@ function Called({ view, onOnMyWay }: Props) {
 
 // Heading and message for every status that has no place-in-line or call-back screen.
 // Placeholder wording until the Phase 3 wording review.
-const OTHER: Record<string, { heading: string; text: string }> = {
+const OTHER: Record<string, { heading: string; text: string | string[] }> = {
   pre_arrival: {
     heading: "Status: Checked in from home, not yet triaged",
-    text: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first. After triage, show your visit code to staff.",
+    text: [
+      "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.",
+      "Starting this demo visit does not register you with a hospital, reserve a place, or give permission to wait off-site.",
+      "If you go to the emergency department, follow its normal arrival, triage and registration steps. Show this visit code when staff ask. Only staff can approve waiting off-site.",
+    ],
   },
   needs_reassessment: {
     heading: "Please go to the triage desk",
@@ -96,12 +100,39 @@ function OtherStatus({ view }: { view: PatientView }) {
       <h2 id="status-heading" className="text-2xl font-bold">
         {heading}
       </h2>
-      <p className="text-lg">{text}</p>
+      {(Array.isArray(text) ? text : [text]).map((paragraph) => (
+        <p key={paragraph} className="text-lg">
+          {paragraph}
+        </p>
+      ))}
+    </section>
+  );
+}
+
+// A visit started from home that was never triaged within 6 hours: staff no longer expect it.
+function Expired() {
+  return (
+    <section aria-labelledby="status-heading" className="space-y-3">
+      <h2 id="status-heading" className="text-2xl font-bold">
+        This visit request has expired
+      </h2>
+      <p className="text-lg">
+        It was started more than 6 hours ago and was never checked in at triage, so staff no longer expect it.
+      </p>
+      <p className="text-lg">
+        If you still need care, go to the emergency department and follow its normal arrival and triage steps.
+        You can also{" "}
+        <Link href="/" className="font-semibold text-blue-900 underline underline-offset-2">
+          start a new demo visit on the start page
+        </Link>
+        .
+      </p>
     </section>
   );
 }
 
 export function PatientStatus({ view, onOnMyWay }: Props) {
+  if (view.expired) return <Expired />;
   if (view.status === "waiting") return <Waiting view={view} />;
   if (view.status === "called" || view.status === "on_the_way") {
     return <Called view={view} onOnMyWay={onOnMyWay} />;

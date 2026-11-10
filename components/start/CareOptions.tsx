@@ -19,8 +19,12 @@ export function CareOptions() {
   return (
     <section aria-labelledby="options-heading" className="space-y-3">
       <h2 id="options-heading" className="text-xl font-bold">
-        Other options before you travel
+        Official information about care options
       </h2>
+      <p>
+        This demo cannot tell which service is right for you. Check eligibility, availability and hours on
+        each linked site before you go.
+      </p>
       <ul className="list-disc space-y-2 pl-6 text-base">
         <li>
           Health811: call{" "}
@@ -34,7 +38,8 @@ export function CareOptions() {
         </li>
         <li>
           The Urgent Care Centre at Queensway Health Centre, and the pharmacist assessment pilot at three
-          Mississauga Shoppers Drug Mart locations. For hours and details, see{" "}
+          Mississauga Shoppers Drug Mart locations. The pilot may change or end, so check that it is still
+          running. For hours and details, see{" "}
           <External href={THP_EMERGENCY_PAGE}>THP&apos;s emergency page</External>.
         </li>
       </ul>

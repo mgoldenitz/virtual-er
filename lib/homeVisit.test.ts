@@ -44,6 +44,11 @@ describe("starting a visit from home", () => {
     expect(notEligible.offered_at).toBeNull();
     expect(checkInHomeVisit(declined, { ctas_level: 5, language: "en" }, "waiting", at(6))).toBeNull();
   });
+
+  it("refuses to check in a home visit that expired after 6 hours", () => {
+    expect(checkInHomeVisit(home("h1", 0), { ctas_level: 5, language: "en" }, "waiting", at(360))).toBeNull();
+    expect(checkInHomeVisit(home("h1", 0), { ctas_level: 5, language: "en" }, "waiting", at(359))).not.toBeNull();
+  });
 });
 
 describe("expected arrivals", () => {
