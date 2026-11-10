@@ -81,6 +81,8 @@ Decided:
   - Firewall rule for `/api/start-visit`: approved by the owner (POST, 20 per 10 minutes per IP, fixed window, answer 429). The Vercel MCP may not change firewall settings (403) and the Vercel CLI is not installed, so the owner added it in the dashboard on 2026-11-10. Read back: active, path equals `/api/start-visit`, 20 per 600 seconds per IP, fixed window, answers 429 (no method condition; harmless, the route only accepts POST). A normal request still reaches the route. The limit itself was not triggered on purpose (that would make 20 test visits).
 - THP links now go to https://www.thp.ca/emergency/A/visit.html (owner, 2026-11-10; SPEC updated).
 
+- **Phase 2 goal met (2026-11-10):** the owner ran the loop on https://virtual-er-izpf.vercel.app with the laptop signed in as staff and the phone as the patient (two visits, sites A and B: start from home, check in, call back, "I'm on my way", removed). Each step showed on the other screen within about 2 seconds. Test visits deleted; the `visits` table is empty. Playwright could not run the staff half (it cannot sign in without the owner's password), so the owner's own run counts as the phone and laptop test.
+
 ## Where to pick up (written 2026-11-10)
 
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
