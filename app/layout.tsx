@@ -13,7 +13,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    // suppressHydrationWarning: browser extensions (for example writing tools) add their own
+    // attributes to <html> before React loads. This ignores attribute differences on this one
+    // tag only; mismatches inside the app's own screens are still reported.
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-white text-slate-900">
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
