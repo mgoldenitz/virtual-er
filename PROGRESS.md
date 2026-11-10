@@ -50,10 +50,11 @@ Decided:
 - The database checking allowed steps (for example, "Call back only while waiting") waits until Phase 3, when the remaining steps are added. Raise it in GPT-6 Astra's review.
 - Staff can read tokens because "Show QR again" needs them. Raise it in Astra's review.
 
+- The Supabase library is installed (`@supabase/supabase-js` 2.119.0, `@supabase/ssr` 0.12.7). The keys are in `.env.local` (not in git); `.env.example` lists the names.
+- One staff account exists (created by the owner, marked `role: staff` on 2026-11-10). Public sign-up and anonymous sign-ins are off.
+
 Next steps:
-1. Add the Supabase library and the keys in `.env.local` (owner).
-2. Create the staff account and mark it as staff.
-3. Replace `data/` browser storage with Supabase calls, and add the staff login screen.
-4. Live updates through `change_signal`.
-5. Deploy to Vercel, with a per-device limit on starting from home.
-6. Playwright laptop and phone test (about 2 seconds). Then Gemini 4 Argon (High) and GPT-6 Astra (High).
+1. Replace `data/` browser storage with Supabase calls, and add the staff login screen.
+2. Live updates through `change_signal`.
+3. Deploy to Vercel, with a per-device limit on starting from home.
+4. Playwright laptop and phone test (about 2 seconds). Then Gemini 4 Argon (High) and GPT-6 Astra (High).
