@@ -8,7 +8,7 @@ const desk = (id: string, site: "A" | "B" = "A") =>
   checkInAtDesk({ id, code: id, access_token: id, site, ctas_level: 4, language: "en" }, "waiting", t0);
 
 describe("recently closed list", () => {
-  it("lists arrived and removed visits at the site, newest first, up to the limit", () => {
+  it("lists every arrived and removed visit at the site, newest first", () => {
     const visits = [
       markArrived(desk("a"), at(1))!,
       markRemoved(desk("b"), "left", at(3))!,
@@ -18,7 +18,6 @@ describe("recently closed list", () => {
       markRemoved(desk("f"), "no_show", at(2))!,
     ];
     expect(recentlyClosed(visits, "A").map((v) => v.id)).toEqual(["b", "f", "a"]);
-    expect(recentlyClosed(visits, "A", 2).map((v) => v.id)).toEqual(["b", "f"]);
   });
 
   it("describes how each visit was closed", () => {

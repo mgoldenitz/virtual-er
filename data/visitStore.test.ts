@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { checkInAtDesk, callBack } from "@/lib/visitActions";
-import { addVisit, readStorageProblem, readVisits, updateVisit } from "./visitStore";
+import { addVisit, readStorageProblem, readVisits, resetUnreadableStorage, updateVisit } from "./visitStore";
 
 const visit = checkInAtDesk(
   { id: "v1", code: "ABC234", access_token: "T", site: "A", ctas_level: 4, language: "en" },
@@ -8,8 +8,10 @@ const visit = checkInAtDesk(
   new Date(Date.UTC(2026, 10, 9, 20, 0)),
 );
 
+let saved = new Map<string, string>();
+
 function fakeBrowser(setItemWorks: () => boolean) {
-  const saved = new Map<string, string>();
+  saved = new Map<string, string>();
   vi.stubGlobal("window", {
     localStorage: {
       getItem: (key: string) => saved.get(key) ?? null,
@@ -17,6 +19,7 @@ function fakeBrowser(setItemWorks: () => boolean) {
         if (!setItemWorks()) throw new Error("QuotaExceededError");
         saved.set(key, value);
       },
+      removeItem: (key: string) => saved.delete(key),
     },
   });
 }
@@ -54,9 +57,27 @@ describe("damaged saved data", () => {
     expect(readStorageProblem()).toEqual({ damaged: 1, unreadable: false });
   });
 
-  it("reports saved text that is not a list at all", () => {
+  it("reports saved text that is not a list at all, and refuses to save over it", () => {
     fakeBrowser(() => true);
     window.localStorage.setItem("vwr.visits.v1", "{broken");
     expect(readStorageProblem()).toEqual({ damaged: 0, unreadable: true });
+    expect(addVisit(visit)).toBe("not_saved");
+    expect(saved.get("vwr.visits.v1")).toBe("{broken");
+  });
+
+  it("starts a new list only after keeping a backup of the unreadable text", () => {
+    let works = true;
+    fakeBrowser(() => works);
+    window.localStorage.setItem("vwr.visits.v1", "{broken");
+    works = false;
+    expect(resetUnreadableStorage()).toBe("not_saved");
+    expect(saved.get("vwr.visits.v1")).toBe("{broken");
+    works = true;
+    expect(resetUnreadableStorage()).toBe("saved");
+    expect(saved.has("vwr.visits.v1")).toBe(false);
+    const backups = [...saved.entries()].filter(([key]) => key.startsWith("vwr.visits.v1.unreadable-backup."));
+    expect(backups.map(([, value]) => value)).toEqual(["{broken"]);
+    expect(addVisit(visit)).toBe("saved");
+    expect(resetUnreadableStorage()).toBe("refused");
   });
 });

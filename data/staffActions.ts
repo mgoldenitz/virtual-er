@@ -9,6 +9,7 @@ import {
   markArrived,
   markRemoved,
   undoClose,
+  type Closure,
   type DeskOutcome,
 } from "@/lib/visitActions";
 import { addVisit, readVisits, updateVisit } from "./visitStore";
@@ -38,5 +39,8 @@ export const callBackVisit = (id: string) => updateVisit(id, (v) => callBack(v, 
 export const markVisitArrived = (id: string) => updateVisit(id, (v) => markArrived(v, new Date()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
   updateVisit(id, (v) => markRemoved(v, reason, new Date()));
-/** Undo one closure; `closedAt` is the closed_at of the closure the Undo button belongs to. */
-export const undoCloseVisit = (id: string, closedAt: string) => updateVisit(id, (v) => undoClose(v, closedAt));
+/** Undo one closure; `closure` is the closure the Undo button belongs to. */
+export const undoCloseVisit = (id: string, closure: Closure) => updateVisit(id, (v) => undoClose(v, closure));
+
+/** Staff confirmed: back up the unreadable saved list, then start a new one. */
+export { resetUnreadableStorage as startNewVisitList } from "./visitStore";

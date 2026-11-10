@@ -20,6 +20,6 @@ describe("staff progress announcements", () => {
     expect(progressChanges([], [waiting])).toEqual([]);
     expect(progressChanges([waiting], [called])).toEqual([]);
     const arrived = markArrived(onTheWay, at(4))!;
-    expect(progressChanges([arrived], [undoClose(arrived, arrived.closed_at!)!])).toEqual([]);
+    expect(progressChanges([arrived], [undoClose(arrived, arrived)!])).toEqual([]);
   });
 });

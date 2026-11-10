@@ -51,6 +51,10 @@ export function readStorageProblem(): StorageProblem {
 }
 
 function writeVisits(visits: Visit[]): ChangeResult {
+  refresh();
+  // The saved text could not be read at all. Writing now would replace it, so nothing is saved
+  // until staff choose "Start a new list", which keeps a backup copy first.
+  if (cached.unreadable) return "not_saved";
   try {
     // Damaged entries are written back untouched, so saving never silently deletes them.
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...visits, ...cached.damaged]));
@@ -74,6 +78,25 @@ export function updateVisit(id: string, step: (visit: Visit) => Visit | null): C
   const next = step(current);
   if (!next) return "refused";
   return writeVisits(visits.map((v) => (v.id === id ? next : v)));
+}
+
+const BACKUP_PREFIX = "vwr.visits.v1.unreadable-backup.";
+
+/**
+ * Staff confirmed "Start a new list": copy the unreadable saved text to a backup key
+ * (named with the time), then clear the list. If the backup cannot be stored, nothing is cleared.
+ */
+export function resetUnreadableStorage(): ChangeResult {
+  refresh();
+  if (!cached.unreadable || cachedRaw === null) return "refused";
+  try {
+    window.localStorage.setItem(BACKUP_PREFIX + new Date().toISOString(), cachedRaw);
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    return "not_saved";
+  }
+  listeners.forEach((notify) => notify());
+  return "saved";
 }
 
 /** Call `onChange` whenever visits change in this tab or another tab. Returns an unsubscribe. */

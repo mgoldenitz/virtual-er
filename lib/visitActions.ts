@@ -106,15 +106,26 @@ export function statusBeforeClose(visit: Visit): VisitStatus {
   return "waiting";
 }
 
+/** What one closure left behind; the Undo button for that closure carries a copy. */
+export type Closure = Pick<Visit, "status" | "removed_reason" | "arrived_at" | "closed_at">;
+
 /**
  * Staff press Undo on one closure in the "Recently closed" list. There is no time limit.
- * `closedAt` names the exact closure the button belongs to: if the visit was reopened and
- * closed again since, closed_at differs and the old button is refused, so it can never
- * reverse a newer action. The visit goes back to exactly its state before that closure.
+ * `closure` names the exact closure the button belongs to: if the visit was reopened and
+ * closed again since, its status, reason or times differ and the old button is refused, so it
+ * can never reverse a newer action. (Two closures could only match on all four if they were
+ * the same kind and happened in the same millisecond, and then undoing either gives the same
+ * result.) The visit goes back to exactly its state before that closure.
  */
-export function undoClose(visit: Visit, closedAt: string): Visit | null {
+export function undoClose(visit: Visit, closure: Closure): Visit | null {
   if (visit.status !== "arrived" && visit.status !== "removed") return null;
-  if (!visit.triaged_at || !visit.closed_at || visit.closed_at !== closedAt) return null;
+  if (!visit.triaged_at || !visit.closed_at) return null;
+  const sameClosure =
+    visit.status === closure.status &&
+    visit.removed_reason === closure.removed_reason &&
+    visit.arrived_at === closure.arrived_at &&
+    visit.closed_at === closure.closed_at;
+  if (!sameClosure) return null;
   return {
     ...visit,
     status: statusBeforeClose(visit),

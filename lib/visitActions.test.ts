@@ -95,28 +95,37 @@ describe("undo after Mark arrived, Left or No-show", () => {
   it("puts each closed visit back exactly as it was before closing", () => {
     for (const before of [waiting, called, onTheWay]) {
       const arrived = markArrived(before, sec(0))!;
-      expect(undoClose(arrived, arrived.closed_at!)).toEqual(before);
+      expect(undoClose(arrived, arrived)).toEqual(before);
       const removed = markRemoved(before, "no_show", sec(0))!;
-      expect(undoClose(removed, removed.closed_at!)).toEqual(before);
+      expect(undoClose(removed, removed)).toEqual(before);
     }
   });
 
   it("has no time limit", () => {
     const arrived = markArrived(waiting, sec(0))!;
-    expect(undoClose(arrived, arrived.closed_at!)).toEqual(waiting);
+    expect(undoClose(arrived, arrived)).toEqual(waiting);
   });
 
   it("refuses a stale Undo: an old removal's button cannot reverse a newer arrival", () => {
     const removed = markRemoved(waiting, "left", sec(0))!;
-    const reopened = undoClose(removed, removed.closed_at!)!;
+    const reopened = undoClose(removed, removed)!;
     const arrived = markArrived(reopened, sec(30))!;
-    expect(undoClose(arrived, removed.closed_at!)).toBeNull();
-    expect(undoClose(arrived, arrived.closed_at!)).toEqual(waiting);
+    expect(undoClose(arrived, removed)).toBeNull();
+    expect(undoClose(arrived, arrived)).toEqual(waiting);
+  });
+
+  it("refuses a stale Undo even when both closures share the same millisecond", () => {
+    const removed = markRemoved(waiting, "left", sec(0))!;
+    const arrived = markArrived(undoClose(removed, removed)!, sec(0))!;
+    expect(arrived.closed_at).toBe(removed.closed_at);
+    expect(undoClose(arrived, removed)).toBeNull();
+    const noShow = markRemoved(undoClose(removed, removed)!, "no_show", sec(0))!;
+    expect(undoClose(noShow, removed)).toBeNull();
   });
 
   it("refuses open visits and visits closed at check-in", () => {
-    expect(undoClose(waiting, "anything")).toBeNull();
+    expect(undoClose(waiting, waiting)).toBeNull();
     const declined = checkInAtDesk(input, "declined", sec(0));
-    expect(undoClose(declined, declined.closed_at!)).toBeNull();
+    expect(undoClose(declined, declined)).toBeNull();
   });
 });

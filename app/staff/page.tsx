@@ -95,7 +95,7 @@ export default function StaffPage() {
               ))}
             </ol>
           )}
-          {visits && <RecentlyClosed visits={visits} site={site} onUndoResult={onUndoResult} />}
+          {visits && <RecentlyClosed key={site} visits={visits} site={site} onUndoResult={onUndoResult} />}
           {visits && <ProgressAnnouncer visits={visits} site={site} />}
         </section>
       </div>

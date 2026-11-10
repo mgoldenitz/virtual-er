@@ -1,11 +1,12 @@
 "use client";
 
-// The staff "Recently closed" list: the last few patients marked arrived, left or no-show at
-// this site, each with its own Undo button. There is no time limit, so nobody has to hurry.
+// The staff "Recently closed" list: patients marked arrived, left or no-show at this site,
+// newest first, each with its own Undo button. There is no time limit, and older closures
+// stay reachable with "Show older closures", so nobody has to hurry.
 
 import { useState } from "react";
 import { undoCloseVisit } from "@/data/staffActions";
-import { closedLabel, recentlyClosed } from "@/lib/recentlyClosed";
+import { CLOSED_PAGE_SIZE, closedLabel, recentlyClosed } from "@/lib/recentlyClosed";
 import type { Site, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -19,11 +20,14 @@ type Props = {
 export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
   // A failure note stays beside its own row, and the row (with its Undo button) stays too.
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const closed = recentlyClosed(visits, site);
-  if (closed.length === 0) return null;
+  const [shownCount, setShownCount] = useState(CLOSED_PAGE_SIZE);
+  const all = recentlyClosed(visits, site);
+  if (all.length === 0) return null;
+  const closed = all.slice(0, shownCount);
+  const older = all.length - closed.length;
 
   const undo = (visit: Visit) => {
-    const result = undoCloseVisit(visit.id, visit.closed_at!);
+    const result = undoCloseVisit(visit.id, visit);
     const note =
       result === "saved"
         ? ""
@@ -55,6 +59,11 @@ export function RecentlyClosed({ visits, site, onUndoResult }: Props) {
           </li>
         ))}
       </ul>
+      {older > 0 && (
+        <Button variant="secondary" onClick={() => setShownCount(shownCount + CLOSED_PAGE_SIZE)}>
+          Show older closures ({older} more)
+        </Button>
+      )}
     </section>
   );
 }
