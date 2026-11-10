@@ -29,85 +29,29 @@
 
 ```mermaid
 flowchart TD
-    A[Project idea<br>Virtual ER Waiting Room] --> B[Research and discovery]
+    A([Project idea: Virtual ER Waiting Room])
 
-    subgraph B[1. Research and discovery]
-        B1[GPT-6.1 Sol<br>High<br>Research brief] --> B2[Gemini 4 Argon<br>High<br>Deep research and second opinion]
-        B2 --> B3[Kimi K3.1 Pro<br>High<br>Long-document and prior-work analysis]
-        B3 --> B4[Grok 4.7<br>Low/Medium<br>Challenge assumptions and brainstorm]
-        B4 --> B5[GPT-6.1 Sol<br>Medium<br>Synthesize findings]
+    subgraph R1[" "]
+        direction LR
+        B["<b>1. Research and discovery</b><br>GPT-6.1 Sol, High: research brief<br>Gemini 4 Argon, High: deep research<br>Kimi K3.1 Pro, High: long documents, prior work<br>Grok 4.7, Low/Med: challenge assumptions<br>GPT-6.1 Sol, Medium: synthesize"]
+        C["<b>2. Define the project</b><br>GPT-6.1 Sol, High: charter, risks<br>GPT-6.1 Sol, Medium: user stories<br>Kimi K3.1 Pro, Medium: alignment<br>Grok 4.7, Low: challenge scope<br>You approve scope"]
+        D["<b>3. Design the app</b><br>GPT-6.1 Sol, High: architecture<br>Gemini 4 Argon, High: second opinion<br>Claude Code: implementation plan<br>GPT-6 Astra, High: privacy review<br>You approve design"]
+        E["<b>4. Phase 1: prototype</b><br>Claude Code: core queue loop<br>Playwright: phone and desktop tests<br>GPT-6.1 Sol, Medium: UX review<br>Grok 4.7, Low: UI ideas<br>Git save point"]
+        B --> C --> D --> E
     end
 
-    B --> C[Project definition]
-
-    subgraph C[2. Define the project]
-        C1[GPT-6.1 Sol<br>High<br>Charter, risks, objectives] --> C2[GPT-6.1 Sol<br>Medium<br>User stories and backlog]
-        C2 --> C3[Kimi K3.1 Pro<br>Medium<br>Strategic alignment and edge cases]
-        C3 --> C4[Grok 4.7<br>Low<br>Challenge scope and assumptions]
-        C4 --> C5[You approve scope]
+    subgraph R2[" "]
+        direction LR
+        F["<b>5. Phase 2: database and deploy</b><br>Claude Code: Supabase, RLS, Vercel<br>Supabase MCP: SQL for approval<br>Playwright: realtime, deploy tests<br>Gemini 4 Argon, High: security review<br>GPT-6 Astra, High: final security review<br>Git save point"]
+        G["<b>6. Phase 3: safety and equity</b><br>Claude Code: safety, accessibility<br>GPT-6.1 Terra, Medium: wording<br>DeepSeek V4.1-Flash, Low: translations<br>Fluent human approves translations<br>Kimi K3.1 Pro, High: equity review<br>Gemini 4 Argon, Medium: UX review<br>Git save point"]
+        H["<b>7. Phase 4: dashboard and demo</b><br>Kimi K3.1 Pro, Medium: metric definitions<br>Claude Code: dashboard<br>DeepSeek V4.1-Flash, Low: demo scenarios<br>Playwright: verify dashboard<br>GPT-6.1 Sol, Medium: check definitions<br>Git save point"]
+        I["<b>8. Test and launch</b><br>Claude Code: fix defects<br>Playwright: end-to-end tests<br>Gemini 4 Argon, High: code review<br>GPT-6 Astra, High: final review<br>GPT-6.1 Terra, Medium: README, deck<br>3 to 5 real testers<br>Final Git save point"]
+        F --> G --> H --> I
     end
 
-    C --> D[Solution design]
+    J([Course submission and future improvements])
 
-    subgraph D[3. Design the app]
-        D1[GPT-6.1 Sol<br>High<br>Architecture and data model] --> D2[Gemini 4 Argon<br>High<br>Architecture second opinion]
-        D2 --> D3[Claude Opus 5.5<br>Claude Code<br>Implementation plan]
-        D3 --> D4[GPT-6 Astra<br>High<br>Privacy and security review]
-        D4 --> D5[You approve design]
-    end
-
-    D --> E[Build Phase 1<br>Clickable prototype]
-
-    subgraph E[4. Build Phase 1]
-        E1[Claude Opus 5.5<br>Claude Code<br>Core queue loop] --> E2[Playwright MCP<br>Phone and desktop tests]
-        E2 --> E3[GPT-6.1 Sol<br>Medium<br>UX and workflow review]
-        E3 --> E4[Grok 4.7<br>Low<br>Quick UI ideas]
-        E4 --> E5[Git save point]
-    end
-
-    E --> F[Build Phase 2<br>Database and deployment]
-
-    subgraph F[5. Build Phase 2]
-        F1[Claude Opus 5.5<br>Claude Code<br>Supabase, RLS, Vercel] --> F2[Supabase MCP<br>Show SQL for approval]
-        F2 --> F3[Playwright MCP<br>Realtime and deployment tests]
-        F3 --> F4[Gemini 4 Argon<br>High<br>Security and architecture review]
-        F4 --> F5[GPT-6 Astra<br>High<br>Final security review]
-        F5 --> F6[Git save point]
-    end
-
-    F --> G[Build Phase 3<br>Safety and equity]
-
-    subgraph G[6. Build Phase 3]
-        G1[Claude Opus 5.5<br>Claude Code<br>Safety and accessibility] --> G2[GPT-6.1 Terra<br>Medium<br>Patient-facing wording]
-        G2 --> G3[DeepSeek V4.1-Flash<br>Low<br>Translation drafts]
-        G3 --> G4[Fluent human reviewer<br>Approve translations]
-        G4 --> G5[Kimi K3.1 Pro<br>High<br>Equity and accessibility review]
-        G5 --> G6[Gemini 4 Argon<br>Medium<br>Workflow and UX review]
-        G6 --> G7[Git save point]
-    end
-
-    G --> H[Build Phase 4<br>Dashboard and demo mode]
-
-    subgraph H[7. Build Phase 4]
-        H1[Kimi K3.1 Pro<br>Medium<br>Validate metric definitions] --> H2[Claude Opus 5.5<br>Claude Code<br>Implement dashboard]
-        H2 --> H3[DeepSeek V4.1-Flash<br>Low<br>Generate demo scenarios]
-        H3 --> H4[Playwright MCP<br>Verify dashboard and demo mode]
-        H4 --> H5[GPT-6.1 Sol<br>Medium<br>Check dashboard definitions]
-        H5 --> H6[Git save point]
-    end
-
-    H --> I[Testing and launch]
-
-    subgraph I[8. Test and launch]
-        I1[Claude Opus 5.5<br>Claude Code<br>Fix defects] --> I2[Playwright MCP<br>Full end-to-end tests]
-        I2 --> I3[Gemini 4 Argon<br>High<br>Independent code review]
-        I3 --> I4[GPT-6 Astra<br>High<br>Final security and quality review]
-        I4 --> I5[GPT-6.1 Terra<br>Medium<br>README and presentation]
-        I5 --> I6[Real testers<br>3 to 5 people]
-        I6 --> I7[Final Git save point]
-    end
-
-    I --> J[Course submission<br>and future improvements]
+    A --> R1 --> R2 --> J
 ```
 
 ## Stage-by-stage usage
