@@ -86,6 +86,8 @@ Decided:
 - /security-review (2026-11-10), run over all Phase 2 changes (`git diff 01a3e40..HEAD`), not only the last save point: no high-confidence findings. Checked grants and row-level security, `is_staff()` (reads `app_metadata`), the security definer functions, filter building, the start route, the sign-in check (`getClaims`), the secret key and token handling, and XSS. Only the already-accepted items came close (staff can read tokens; staff status changes are checked in the database only from Phase 3).
 - Phase 2 handoffs: Gemini 3.1 Pro (High) security and architecture review, file `handoffs/2026-11-10-gemini-review-phase2-security-architecture.md` (no keys, project id or patient data). Then GPT-6 Astra (High) security review. **Both not done yet.**
 
+- Desk slip (2026-11-10, owner's request): the QR code and written link always use https://virtual-er-izpf.vercel.app (`lib/slipOrigin.ts`, with tests), whatever address the staff screen is open on; on localhost they keep the local address for testing. Live and in Montreal. Not yet seen on a real slip (needs the owner signed in).
+
 ## Where to pick up (written 2026-11-10)
 
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
