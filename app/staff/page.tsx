@@ -13,6 +13,7 @@ import { CheckInPanel } from "@/components/staff/CheckInPanel";
 import { ExpectedArrivals } from "@/components/staff/ExpectedArrivals";
 import { ProgressAnnouncer } from "@/components/staff/ProgressAnnouncer";
 import { RecentlyClosed } from "@/components/staff/RecentlyClosed";
+import { SignOutButton } from "@/components/staff/SignOutButton";
 import { StorageWarning } from "@/components/staff/StorageWarning";
 import { VisitRow } from "@/components/staff/VisitRow";
 import { VisitSlip } from "@/components/staff/VisitSlip";
@@ -78,9 +79,11 @@ export default function StaffPage() {
             <option value="B">Demo Site B</option>
           </select>
         </label>
+        <SignOutButton />
       </header>
       <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
-        Phase 1 demo: no staff login yet, and all data stays in this browser.
+        Phase 2 demo, in progress: you are signed in as staff, but visits are still saved only in this
+        browser until the next step.
       </p>
 
       <div className="grid gap-6 lg:grid-cols-2">

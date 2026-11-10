@@ -1,7 +1,8 @@
-// The dashboard screen: a Phase 1 placeholder. The numbers, their definitions and demo mode
-// come in Phase 4; staff login comes in Phase 2.
+// The dashboard screen: a placeholder, open only to signed-in staff (see proxy.ts).
+// The numbers, their definitions and demo mode come in Phase 4.
 
 import Link from "next/link";
+import { SignOutButton } from "@/components/staff/SignOutButton";
 
 const COMING = [
   "Patients waiting off-site now, and patients called but not yet arrived",
@@ -15,10 +16,12 @@ const COMING = [
 export default function DashboardPage() {
   return (
     <main className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <SignOutButton />
+      </header>
       <p className="rounded-lg bg-amber-50 p-3 text-amber-950">
-        Placeholder for the Phase 1 demo. No numbers are shown yet; they come in Phase 4. Staff login
-        comes in Phase 2.
+        Placeholder: no numbers are shown yet; they come in Phase 4.
       </p>
       <section aria-labelledby="coming-heading" className="space-y-2">
         <h2 id="coming-heading" className="text-xl font-bold">
