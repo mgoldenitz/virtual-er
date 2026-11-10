@@ -35,10 +35,11 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 2. The app never makes clinical decisions. Staff choose the CTAS level and confirm eligibility. No symptom checker, no AI triage.
 3. Every patient screen, in every state and every language, shows: "If your symptoms get worse, call 911 or come back to the emergency department now."
 4. Visits older than 24 hours are deleted automatically. Just before a visit is deleted, add its contribution to a daily_stats table, counting each number on the date of its own event (survey responses count on the closed_at date). No survey can arrive after deletion, so no day ever needs reprocessing; do not use a once-a-night summary job. The dashboard shows a day as its daily_stats totals plus the visits still in the visits table. daily_stats holds only totals (no codes, tokens or single-visit times).
-5. A patient's token can read only its own visit, through one database function that returns only the fields a patient may see. Patients can do exactly four things, each through its own narrow function or server route: start a visit from home (a rate-limited server route that itself sets source = home and status = pre_arrival; the browser never sets them, and this never grants a place in line), confirm "I'm on my way" (only while called), tap "I'm still here" (only while waiting), and submit the survey score once (only after the visit is closed, and only if the visit waited off-site and arrived). Everything else, including the queue, is staff only (Supabase row-level security). Patient pages learn about changes from a signal that holds no visit data (for example a one-row table touched on every change) and then re-read through the function, so they never subscribe to visit rows.
+5. A patient's token can read only its own visit, through one database function that returns only the fields a patient may see. Patients can do exactly five things, each through its own narrow function or server route: start a visit from home (a rate-limited server route that itself sets source = home and status = pre_arrival; the browser never sets them, it is refused while off-site waiting is paused, and this never grants a place in line), record that the called screen was shown (sets seen_at once, only while called), confirm "I'm on my way" (only while called), tap "I'm still here" (only while waiting), and submit the survey score once (only after the visit is closed, and only if the visit waited off-site and arrived). Everything else, including the queue, is staff only (Supabase row-level security). Patient pages learn about changes from a signal that holds no visit data (for example a one-row table touched on every change) and then re-read through the function, so they never subscribe to visit rows.
 6. No hospital logos or official branding.
 7. Joining from home never holds a place in the doctor's line. A patient's place in line starts when a nurse triages them at the hospital, because urgent patients are always seen first.
 8. Do not copy or display THP's wait-time numbers. Link to THP's dashboard on THP's own site (https://trilliumhealthpartners.ca/emergency/a/visit.html, also served at https://www.thp.ca/emergency/A/visit.html). THP's terms prohibit reuse of its site material without written permission. All wait estimates inside the app are simulated.
+9. Accessibility target: WCAG 2.2 AA (Ontario's legal minimum for public websites is WCAG 2.0 AA; 2.2 AA is the stronger design target). That means keyboard access, visible focus, labelled controls, touch targets of at least 24 by 24 CSS pixels, enough colour contrast, text that still works at 200% size, and pages that reflow on a small phone without sideways scrolling. Never rely on sound or colour alone: every alert and status also appears as words on screen.
 
 ## Screens
 
@@ -48,18 +49,22 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 - Other options before travelling: Health811 (call 811 for a free nurse line), the regional virtual urgent care program (https://www.regional-virtual-urgent-care.ca/), and THP's own alternatives listed on its emergency page: the Urgent Care Centre at Queensway Health Centre and the pharmacist assessment pilot at three Mississauga Shoppers Drug Mart locations. Link to THP's pages for both and copy nothing beyond their names; hours change, so send patients to THP's page for them.
 - Link: "See current wait times on THP's website" (opens THP's page; nothing copied).
 - "Start a visit" button: choose one of two demo sites ("Demo Site A", "Demo Site B") and a language. The app creates the visit code and a QR code and saves the code in the phone's browser storage, so the patient never types it and reopening the site brings the visit back.
+- While staff have paused off-site waiting, "Start a visit" is replaced by: "Off-site waiting is paused right now. Please come to the emergency department and wait there."
 - A visit started from home has status "Checked in from home, not yet triaged" and shows: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first."
 - The footer disclaimer and the 911 line appear here too.
 
 ### /patient (phone, no login)
 
-- Opens the visit saved on this phone automatically. For patients who did not start on their own phone, the triage desk prints a slip with a QR code (carrying the token) and the short code. The patient scans the QR code with the phone camera; if that fails, staff show the QR code again from /staff. Typing the short code on /patient does not open a visit.
+- Opens the visit saved on this phone automatically. For patients who did not start on their own phone, the triage desk prints a slip with a QR code (carrying the token), the short code, and the full link written out under the QR code with a label ("Or type this link into your phone's browser"), so a patient whose camera cannot scan still has a way in. The patient scans the QR code with the phone camera; if that fails, staff show the QR code again from /staff. Typing the short code on /patient does not open a visit.
 - Shows: place in line, estimated time to see a doctor after triage, as a range (for example "40 to 60 minutes", simulated; THP's own dashboard also measures waits from triage), and status: Waiting, Please head back now, Ready at the desk.
+- Under the place in line, always show: "Your place can change if more urgent patients arrive. The most urgent patients are always seen first."
 - "I'm on my way" button after the patient is called.
-- Every 30 minutes while waiting off-site, an "I'm still here" button appears. A missed tap (no tap within 10 minutes of the prompt) flags the patient on the staff screen.
+- Every 30 minutes while waiting off-site, an "I'm still here" button appears. A missed tap (no tap within 10 minutes of the prompt) flags the patient on the staff screen. "I'm still here" only tells staff the patient is still following the visit; it is not a clinical reassessment, and neither the patient screen nor the staff screen may describe it as one. If symptoms change, the 911 line applies.
+- The first time the called screen is shown, the page records seen_at. This means the screen was displayed in an open browser, not that the patient read it or is coming; staff still wait for "I'm on my way" and arrival. Sent, seen, on my way and arrived are tracked separately.
 - While called but unconfirmed, the screen alerts with sound and vibration where the phone allows. These are on-screen demo alerts: they work only while the page is open and the phone is unlocked, and the demo must say so. Do not claim the app can wake a locked phone. A hospital version would use text messages or push notifications (iPhones allow web push only for sites added to the home screen). After the 20-minute step it shows: "Please return now. Staff will review your visit if you do not respond."
 - Language switch: English plus two languages (TBD). All text comes from one translation file so it can be checked by a fluent speaker.
 - Text size control. Works on a small phone. Screen-reader labels on all controls.
+- Screen readers announce meaningful status changes (for example "You have been called back") through a polite live region, or an assertive one for the call-back. The wait range and any countdown are not announced on every update.
 - After the visit is closed, only for patients who waited off-site and arrived: one survey question, "How would you rate your waiting experience?" on a 0 to 10 scale.
 - Updates live without refreshing.
 
@@ -69,7 +74,8 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 - "Expected arrivals" list: visits started from home that have not reached triage yet. These are not in the waiting line. Remove them automatically after 6 hours if they never arrive.
 - Patient declines or is not eligible: record "offered, declined" or "not eligible" with no other details (for the dashboard), and the patient waits on-site as usual.
 - List of patients waiting off-site with minutes waited, sorted by arrival.
-- "Call back" button per patient; shows when the patient confirms.
+- "Call back" button per patient; shows "Seen" when seen_at is set and "On the way" when the patient confirms.
+- "Pause off-site waiting" switch per site, for downtime or a contact problem, with a confirmation step. While paused: no new off-site sign-ups (the start-from-home route refuses, and check-in offers on-site waiting only), visits already waiting off-site keep working, and the staff list shows a banner asking staff to check every outstanding call-back and offer on-site waiting. Turning it off needs a second confirmation.
 - Confirmed but not arrived: a set time after confirmed_at (a setting, default 30 minutes), flag "On the way, not arrived". Never remove the visit automatically. This is a demo setting, not a clinically validated deadline.
 - No-response follow-up after "Call back" (all times are settings so I can shorten them for testing; they are placeholders, and a hospital's clinical lead would set the real ones):
   - 0 minutes: patient screen alert (plus optional text in the Twilio add-on).
@@ -107,7 +113,9 @@ One button that creates 15 to 20 fake visits spread over the last few hours and 
 
 ## Data (one main table)
 
-visits: id, code (6-character display code), access_token (long random token), site (A or B), source (home or desk), ctas_level (4 or 5, empty until triage), language, status (pre_arrival, waiting, called, on_the_way, arrived, unable_to_reach, needs_reassessment, removed, declined, not_eligible), removed_reason (left or no_show, only when removed), created_at, triaged_at, offered_at (when staff offered off-site waiting), last_still_here_at, called_at, confirmed_at, review_flagged_at, arrived_at, closed_at, phone_attempts (count of simulated calls), last_phone_result (answered or no_answer), followup_paused_until, survey_score (0 to 10, optional), is_demo.
+visits: id, code (6-character display code), access_token (long random token), site (A or B), source (home or desk), ctas_level (4 or 5, empty until triage), language, status (pre_arrival, waiting, called, on_the_way, arrived, unable_to_reach, needs_reassessment, removed, declined, not_eligible), removed_reason (left or no_show, only when removed), created_at, triaged_at, offered_at (when staff offered off-site waiting), last_still_here_at, called_at, seen_at (first time the called screen was shown), confirmed_at, review_flagged_at, arrived_at, closed_at, phone_attempts (count of simulated calls), last_phone_result (answered or no_answer), followup_paused_until, survey_score (0 to 10, optional), is_demo.
+
+site_settings: site, offsite_paused (true or false), paused_at. Staff only.
 
 daily_stats: key (day, site, is_demo), and one total per dashboard number. No codes, tokens or single-visit times.
 
@@ -119,7 +127,7 @@ Add other fields only if a phase needs them, and tell me why.
 
 1. Clickable prototype with in-browser fake data, no Supabase: start page, /patient, /staff, /dashboard. Build the core loop first: staff check in a desk visit, the patient screen shows it, staff press Call back, the patient taps "I'm on my way", staff mark arrived. Add starting a visit from home on the start page only after that loop works. Done when I can run the core loop across two tabs, then start a visit on the start page, check it in on /staff, and watch it change on /patient.
 2. Supabase: table, realtime, staff login, row-level security. Then deploy to Vercel. Done when my laptop (staff) and my phone (patient) update each other within about 2 seconds on the vercel.app link.
-3. Safety and equity: 911 line, start-page emergency check, no-response follow-up steps, "I'm still here" prompt, call-everyone-back, languages, text size, screen-reader labels, footer, 24-hour deletion.
+3. Safety and equity: 911 line, start-page emergency check, no-response follow-up steps, "I'm still here" prompt, call-everyone-back, the pause off-site waiting switch, languages, text size, screen-reader labels and live regions, a WCAG 2.2 AA check (hard rule 9), footer, 24-hour deletion.
 4. Dashboard, survey and demo mode.
 5. Testing with real people and a README explaining how to run the project.
 
