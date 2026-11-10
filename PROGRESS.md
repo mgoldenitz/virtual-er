@@ -74,6 +74,9 @@ Decided:
 - Production build checked (2026-11-10, after the owner made a new secret key): it builds, and the secret key is in none of the browser files (by value or by name). Starting from home works with the new key.
 - Per-device limit, decided by the owner on 2026-11-10: a Vercel firewall rule on `/api/start-visit`, 20 starts per 10 minutes per connection (so a class on one Wi-Fi can all start visits). The database's 10 starts per site per minute stays as the main brake. Nothing about the device is stored. A 429 answer from either one shows the start page's "busy" message (`data/patientVisit.ts`).
 
+- Vercel (2026-11-10): the owner imported the repo. The live project is `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4, address virtual-er-izpf-michael-e6bb.vercel.app); an empty, never-deployed project `virtual-er` also exists, and the owner decides whether to delete it. Vercel Authentication (SSO protection, "all except custom domains") is ON, so the vercel.app address asks for a Vercel login; it must be turned off before phones or testers can open it. Still to do: check the build of e3cd010 (THP link fix), the firewall rule (20 starts per 10 minutes, shown to the owner first), the Montreal function region (ask first), and the phone and laptop test.
+- THP links now go to https://www.thp.ca/emergency/A/visit.html (owner, 2026-11-10; SPEC updated).
+
 ## Where to pick up (written 2026-11-10)
 
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
