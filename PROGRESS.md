@@ -52,9 +52,14 @@ Decided:
 
 - The Supabase library is installed (`@supabase/supabase-js` 2.119.0, `@supabase/ssr` 0.12.7). The keys are in `.env.local` (not in git); `.env.example` lists the names.
 - One staff account exists (created by the owner, marked `role: staff` on 2026-11-10). Public sign-up and anonymous sign-ins are off.
+- Staff login screen (`/login`): `/staff` and `/dashboard` need a signed-in staff account (`proxy.ts`). The owner signed in and out successfully on 2026-11-10.
+- New look (2026-11-10): patient screens use the "clean" style (white boxes on light grey); staff screens use the "glass" style (frosted panels, Plus Jakarta Sans). Colours are tokens in `app/globals.css`. Input and select borders were darkened to pass the WCAG 3:1 rule. The review was skipped.
+- Accessibility check (2026-11-10): axe-core (WCAG 2.2 AA rules) on every screen at phone and laptop size, including `/staff` and `/dashboard` signed in: no failures. Text axe could not judge on the glass panels was measured from the screen pixels; the lowest was 8.2:1. Run it again after any change to colours or layout.
+- Model handoffs changed (2026-11-10): GPT-6.1 Sol and Gemini 4 Argon are not available. Gemini 3.1 Pro (High) does their reviews; Kimi K3.1 Pro runs at Thinking Max (CLAUDE.md and `ai_model_workflow_virtual_er.md`).
+- Fixed: a hydration warning on `<body>` caused by the Grammarly browser extension (`app/layout.tsx`).
 
 Next steps:
-1. Replace `data/` browser storage with Supabase calls, and add the staff login screen.
+1. Replace `data/` browser storage with Supabase calls. Plan: `handoffs/2026-11-10-gemini-review-supabase-storage-plan.md`, to be checked by Gemini 3.1 Pro (High) before any code.
 2. Live updates through `change_signal`.
 3. Deploy to Vercel, with a per-device limit on starting from home.
-4. Playwright laptop and phone test (about 2 seconds). Then Gemini 4 Argon (High) and GPT-6 Astra (High).
+4. Playwright laptop and phone test (about 2 seconds). Then Gemini 3.1 Pro (High) and GPT-6 Astra (High).
