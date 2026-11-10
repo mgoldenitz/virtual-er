@@ -61,6 +61,9 @@ export default function PatientPage() {
   async function onOnMyWay() {
     if (!token || sending) return;
     setSending(true);
+    // "Seen" can only be recorded while the visit is still "called". A very quick tap could
+    // otherwise confirm first and leave the seen time empty, so make sure it is recorded first.
+    if (view && !view.seen) await recordSeen(token);
     const result = await confirmOnMyWayByToken(token);
     setSending(false);
     setProblem(
