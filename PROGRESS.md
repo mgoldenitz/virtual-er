@@ -71,6 +71,9 @@ Decided:
 
 - Live updates (2026-11-10): `data/changeSignal.ts` listens to the `change_signal` row over Supabase Realtime (one connection per tab; nothing about a visit travels over it). `data/keepFresh.ts` reads again on every signal, and once more if a signal came in during a read. The 15-second timer stays as a fallback. Checked with two phone sessions: phone A re-read its visit 0.5 seconds after phone B started a visit. The owner checked the staff screen on 2026-11-10 (start from home, check in, call back, arrived): each step showed on the other screen within about 2 seconds. Still to check: phone and laptop over the vercel.app link. The Gemini review (`handoffs/2026-11-10-gemini-review-live-updates.md`) was skipped by the owner. The test visits were deleted; the `visits` table is empty.
 
+- Production build checked (2026-11-10, after the owner made a new secret key): it builds, and the secret key is in none of the browser files (by value or by name). Starting from home works with the new key.
+- Per-device limit, decided by the owner on 2026-11-10: a Vercel firewall rule on `/api/start-visit`, 20 starts per 10 minutes per connection (so a class on one Wi-Fi can all start visits). The database's 10 starts per site per minute stays as the main brake. Nothing about the device is stored. A 429 answer from either one shows the start page's "busy" message (`data/patientVisit.ts`).
+
 ## Where to pick up (written 2026-11-10)
 
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
