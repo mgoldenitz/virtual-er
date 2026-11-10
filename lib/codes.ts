@@ -68,3 +68,8 @@ export function normalizeToken(typed: string): string {
     .replace(/O/g, "0")
     .replace(/[IL]/g, "1");
 }
+
+/** True only for something shaped like a token from makeAccessToken (26 Crockford characters). */
+export function isAccessToken(token: string): boolean {
+  return /^[0-9A-HJKMNP-TV-Z]{26}$/.test(token);
+}

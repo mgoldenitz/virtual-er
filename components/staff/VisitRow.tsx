@@ -4,11 +4,21 @@
 
 import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
+import type { ChangeResult } from "@/data/visitStore";
 import { minutesBetween } from "@/lib/queue";
 import type { Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
-type Props = { visit: Visit; now: Date; onShowSlip: (visit: Visit) => void };
+type Props = {
+  visit: Visit;
+  now: Date;
+  onShowSlip: (visit: Visit) => void;
+  /** Called after a change that takes this patient off the list, with a message for screen readers. */
+  onLeftList: (message: string) => void;
+};
+
+const NOT_SAVED = "Not saved: this browser could not store the change. Try again.";
+const CHANGED = "The list just changed. Check this patient again.";
 
 function progress(visit: Visit, now: Date): string {
   if (visit.status === "waiting") return "Waiting off-site";
@@ -19,9 +29,13 @@ function progress(visit: Visit, now: Date): string {
   return steps.join(" · ");
 }
 
-export function VisitRow({ visit, now, onShowSlip }: Props) {
+export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const [note, setNote] = useState("");
-  const act = (ok: boolean) => setNote(ok ? "" : "The list just changed. Check this patient again.");
+  /** Show what happened. `leftListMessage` is announced when the patient leaves the list. */
+  const act = (result: ChangeResult, leftListMessage?: string) => {
+    if (result === "saved" && leftListMessage) onLeftList(leftListMessage);
+    setNote(result === "saved" ? "" : result === "not_saved" ? NOT_SAVED : CHANGED);
+  };
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
 
   return (
@@ -39,7 +53,7 @@ export function VisitRow({ visit, now, onShowSlip }: Props) {
         {visit.status === "waiting" && (
           <Button onClick={() => act(callBackVisit(visit.id))}>Call back</Button>
         )}
-        <Button variant="secondary" onClick={() => act(markVisitArrived(visit.id))}>
+        <Button variant="secondary" onClick={() => act(markVisitArrived(visit.id), `Visit ${visit.code} marked arrived.`)}>
           Mark arrived
         </Button>
         <Button variant="secondary" onClick={() => onShowSlip(visit)}>
@@ -51,10 +65,10 @@ export function VisitRow({ visit, now, onShowSlip }: Props) {
           Remove from list
         </summary>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "left"))}>
+          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "left"), `Visit ${visit.code} removed: left.`)}>
             Left
           </Button>
-          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "no_show"))}>
+          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "no_show"), `Visit ${visit.code} removed: no-show.`)}>
             No-show
           </Button>
         </div>

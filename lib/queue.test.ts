@@ -57,3 +57,14 @@ describe("wait range", () => {
     expect(minutesBetween(at(10).toISOString(), at(0))).toBe(0);
   });
 });
+
+describe("ties in triage time", () => {
+  it("gives two patients triaged at the same moment different places, matching the staff order", () => {
+    const visits = [visit("b", 5), visit("a", 5)];
+    const places = visits.map((v) => placeInLine(visits, v));
+    expect(places.sort()).toEqual([1, 2]);
+    const staffOrder = activeLine(visits, "A").map((v) => v.id);
+    expect(staffOrder).toEqual(["a", "b"]);
+    expect(placeInLine(visits, visits[1])).toBe(1); // "a" is first in both
+  });
+});

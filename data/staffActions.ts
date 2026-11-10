@@ -14,8 +14,11 @@ import { addVisit, readVisits, updateVisit } from "./visitStore";
 
 export type CheckInForm = { site: Site; ctas_level: 4 | 5; language: string };
 
-/** Create a desk visit after triage. Returns the new visit so the slip can be shown. */
-export function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Visit {
+/**
+ * Create a desk visit after triage. Returns the new visit so the slip can be shown,
+ * or null if this browser could not save it.
+ */
+export function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Visit | null {
   const taken = new Set(readVisits().map((v) => v.code));
   const visit = checkInAtDesk(
     {
@@ -27,8 +30,7 @@ export function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Visit 
     outcome,
     new Date(),
   );
-  addVisit(visit);
-  return visit;
+  return addVisit(visit) === "saved" ? visit : null;
 }
 
 export const callBackVisit = (id: string) => updateVisit(id, (v) => callBack(v, new Date()));

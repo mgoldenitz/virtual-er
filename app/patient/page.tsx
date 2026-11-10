@@ -12,17 +12,44 @@ import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 
 export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
+  const [problem, setProblem] = useState("");
+
   // Reading the link and browser storage can only happen in the browser, after the first render.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setToken(takeTokenFromLink()), []);
+  // A new link opened on this same page (only the #t=... part changes) switches to that visit.
+  useEffect(() => {
+    const readLink = () => {
+      setToken(takeTokenFromLink());
+      setProblem("");
+    };
+    readLink();
+    window.addEventListener("hashchange", readLink);
+    return () => window.removeEventListener("hashchange", readLink);
+  }, []);
 
   const view = usePatientView(token ?? null);
   const loading = token === undefined || view === undefined;
 
-  // The first time the called screen is shown, record seen_at (shown, not necessarily read).
+  // The first time the called screen is actually on screen, record seen_at
+  // (shown, not necessarily read). A tab in the background waits until it is brought forward.
   useEffect(() => {
-    if (token && view?.status === "called" && !view.seen) recordSeen(token);
+    if (!token || view?.status !== "called" || view.seen) return;
+    const recordIfVisible = () => {
+      if (document.visibilityState === "visible") recordSeen(token);
+    };
+    recordIfVisible();
+    document.addEventListener("visibilitychange", recordIfVisible);
+    return () => document.removeEventListener("visibilitychange", recordIfVisible);
   }, [token, view?.status, view?.seen]);
+
+  function onOnMyWay() {
+    if (!token) return;
+    const result = confirmOnMyWayByToken(token);
+    setProblem(
+      result === "not_saved"
+        ? "Your answer was not saved, so staff have not been told. Please try again, or come back to the desk."
+        : "",
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
@@ -47,8 +74,13 @@ export default function PatientPage() {
             Visit code: <strong className="font-mono tracking-widest">{view.code}</strong> · Demo
             Site {view.site}
           </p>
-          <PatientStatus view={view} onOnMyWay={() => token && confirmOnMyWayByToken(token)} />
-          <StatusAnnouncer status={view.status} />
+          <PatientStatus view={view} onOnMyWay={onOnMyWay} />
+          {problem && (
+            <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
+              {problem}
+            </p>
+          )}
+          <StatusAnnouncer key={token} status={view.status} />
         </>
       )}
     </main>

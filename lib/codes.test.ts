@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CODE_ALPHABET,
   groupToken,
+  isAccessToken,
   makeAccessToken,
   makeDisplayCode,
   makeUniqueDisplayCode,
@@ -42,5 +43,16 @@ describe("access token", () => {
     const token = makeAccessToken();
     const typed = groupToken(token).toLowerCase().replace(/0/g, "o");
     expect(normalizeToken(typed)).toBe(token);
+  });
+});
+
+describe("checking a token from a link", () => {
+  it("accepts a real token, grouped or not, and refuses anything else", () => {
+    const token = makeAccessToken();
+    expect(isAccessToken(token)).toBe(true);
+    expect(isAccessToken(normalizeToken(groupToken(token)))).toBe(true);
+    for (const bad of ["", "ABC", token + "0", token.slice(1) + "U", "%%%"]) {
+      expect(isAccessToken(bad)).toBe(false);
+    }
   });
 });

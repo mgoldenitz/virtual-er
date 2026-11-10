@@ -19,7 +19,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`min-h-11 rounded-lg px-4 py-2 text-base font-semibold focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:opacity-50 ${styles[variant]} ${className}`}
+      className={`min-h-11 rounded-lg px-4 py-2 text-base font-semibold focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950 disabled:opacity-50 ${styles[variant]} ${className}`}
       {...props}
     />
   );

@@ -43,7 +43,7 @@ export function VisitSlip({ code, token, onClose }: Props) {
             href={scanLink}
             target="_blank"
             rel="noopener"
-            className="inline-block text-blue-800 underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-amber-500"
+            className="inline-block text-blue-800 underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-slate-950"
           >
             Demo: open the patient screen in a new tab
           </a>

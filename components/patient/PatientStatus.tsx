@@ -1,7 +1,7 @@
 "use client";
 
 // The main part of the patient screen, which changes with the visit's status:
-// Waiting, Please head back now, or Ready at the desk.
+// Waiting, Please head back now, Ready at the desk, and the states before and after those.
 
 import type { PatientView } from "@/lib/patientView";
 import { Button } from "@/components/Button";
@@ -59,18 +59,44 @@ function Called({ view, onOnMyWay }: Props) {
   );
 }
 
-function Closed({ view }: { view: PatientView }) {
-  const arrived = view.status === "arrived";
+// Heading and message for every status that has no place-in-line or call-back screen.
+// Placeholder wording until the Phase 3 wording review.
+const OTHER: Record<string, { heading: string; text: string }> = {
+  pre_arrival: {
+    heading: "Status: Checked in from home, not yet triaged",
+    text: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.",
+  },
+  needs_reassessment: {
+    heading: "Please go to the triage desk",
+    text: "A nurse will check you again before you rejoin the line.",
+  },
+  arrived: {
+    heading: "Status: Ready at the desk",
+    text: "Staff have marked you as back. Please stay in the waiting area until staff call you.",
+  },
+  declined: {
+    heading: "Status: Waiting in the emergency department",
+    text: "You are waiting on-site as usual. Staff will call you in the waiting area.",
+  },
+  not_eligible: {
+    heading: "Status: Waiting in the emergency department",
+    text: "You are waiting on-site as usual. Staff will call you in the waiting area.",
+  },
+};
+
+const ENDED = {
+  heading: "Your off-site wait has ended",
+  text: "Please check with the emergency department desk.",
+};
+
+function OtherStatus({ view }: { view: PatientView }) {
+  const { heading, text } = OTHER[view.status] ?? ENDED;
   return (
     <section aria-labelledby="status-heading" className="space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
-        {arrived ? "Status: Ready at the desk" : "Your off-site wait has ended"}
+        {heading}
       </h2>
-      <p className="text-lg">
-        {arrived
-          ? "Staff have marked you as back. Please stay in the waiting area until staff call you."
-          : "Please check with the emergency department desk."}
-      </p>
+      <p className="text-lg">{text}</p>
     </section>
   );
 }
@@ -80,5 +106,5 @@ export function PatientStatus({ view, onOnMyWay }: Props) {
   if (view.status === "called" || view.status === "on_the_way") {
     return <Called view={view} onOnMyWay={onOnMyWay} />;
   }
-  return <Closed view={view} />;
+  return <OtherStatus view={view} />;
 }

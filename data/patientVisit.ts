@@ -5,22 +5,22 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { patientViewFor, type PatientView } from "@/lib/patientView";
 import { confirmOnMyWay, markSeen } from "@/lib/visitActions";
-import { readVisits, subscribeToVisits, updateVisit } from "./visitStore";
+import { readVisits, subscribeToVisits, updateVisit, type ChangeResult } from "./visitStore";
 
 function idForToken(token: string): string | null {
   return readVisits().find((v) => v.access_token === token)?.id ?? null;
 }
 
 /** Record that the called screen was shown. Only while called, and only once. */
-export function recordSeen(token: string): boolean {
+export function recordSeen(token: string): ChangeResult {
   const id = idForToken(token);
-  return id ? updateVisit(id, (v) => markSeen(v, new Date())) : false;
+  return id ? updateVisit(id, (v) => markSeen(v, new Date())) : "refused";
 }
 
 /** The patient taps "I'm on my way". Only while called. */
-export function confirmOnMyWayByToken(token: string): boolean {
+export function confirmOnMyWayByToken(token: string): ChangeResult {
   const id = idForToken(token);
-  return id ? updateVisit(id, (v) => confirmOnMyWay(v, new Date())) : false;
+  return id ? updateVisit(id, (v) => confirmOnMyWay(v, new Date())) : "refused";
 }
 
 // Cache so React gets the same object until the view really changes.

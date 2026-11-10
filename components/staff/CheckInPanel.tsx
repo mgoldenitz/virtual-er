@@ -33,6 +33,10 @@ export function CheckInPanel({ site, onCreated }: Props) {
       return;
     }
     const visit = createDeskVisit({ site, ctas_level: ctas, language }, outcome);
+    if (!visit) {
+      setMessage("Not saved: this browser could not store the visit. Nothing was recorded. Try again.");
+      return;
+    }
     setCtas(null);
     setTicked({});
     setMessage(

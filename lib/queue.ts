@@ -3,8 +3,16 @@
 
 import { ACTIVE_STATUSES, type Site, type Visit } from "./visit";
 
-const byTriage = (a: Visit, b: Visit) =>
-  (a.triaged_at ?? "").localeCompare(b.triaged_at ?? "");
+/**
+ * Triage time first; two patients triaged at the same moment are put in a fixed order by id,
+ * so the staff list and each patient's place always agree.
+ */
+function byTriage(a: Visit, b: Visit): number {
+  const at = a.triaged_at ?? "";
+  const bt = b.triaged_at ?? "";
+  if (at !== bt) return at < bt ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
 
 /** Visits still in the off-site line at one site, oldest triage first. */
 export function activeLine(visits: Visit[], site: Site): Visit[] {
@@ -21,7 +29,7 @@ export function placeInLine(visits: Visit[], visit: Visit): number | null {
       v.site === visit.site &&
       v.status === "waiting" &&
       v.triaged_at !== null &&
-      v.triaged_at < visit.triaged_at!,
+      byTriage(v, visit) < 0,
   ).length;
   return ahead + 1;
 }

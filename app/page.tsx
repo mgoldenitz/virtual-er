@@ -5,7 +5,7 @@ import Link from "next/link";
 import { EmergencyLine } from "@/components/EmergencyLine";
 
 const linkStyle =
-  "inline-block min-h-11 rounded-lg border-2 border-slate-700 px-4 py-2 font-semibold focus-visible:outline-4 focus-visible:outline-amber-500";
+  "inline-block min-h-11 rounded-lg border-2 border-slate-700 px-4 py-2 font-semibold focus-visible:outline-4 focus-visible:outline-slate-950";
 
 export default function StartPage() {
   return (

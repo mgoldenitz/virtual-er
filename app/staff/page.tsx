@@ -2,7 +2,7 @@
 
 // The staff screen: check patients in, see who is waiting off-site, call them back.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useVisits } from "@/data/useVisits";
 import { activeLine } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
@@ -16,6 +16,15 @@ export default function StaffPage() {
   const now = useNow();
   const [site, setSite] = useState<Site>("A");
   const [slip, setSlip] = useState<Visit | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const listHeading = useRef<HTMLHeadingElement>(null);
+
+  // A patient just left the list: say so, and move keyboard focus from the vanished row
+  // to the list heading, so the next Tab lands on the next patient.
+  const onLeftList = (message: string) => {
+    setAnnouncement(message);
+    listHeading.current?.focus();
+  };
 
   const line = visits ? activeLine(visits, site) : [];
   // Show a slip only for a visit that is waiting off-site; declined and not-eligible get none.
@@ -51,9 +60,12 @@ export default function StaffPage() {
         </div>
 
         <section aria-labelledby="list-heading" className="space-y-3">
-          <h2 id="list-heading" className="text-xl font-bold">
+          <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-xl font-bold">
             Waiting off-site ({line.length})
           </h2>
+          <p role="status" className="min-h-6 font-semibold">
+            {announcement}
+          </p>
           {visits === null || now === null ? (
             <p>Loading…</p>
           ) : line.length === 0 ? (
@@ -61,7 +73,13 @@ export default function StaffPage() {
           ) : (
             <ol className="space-y-3">
               {line.map((visit) => (
-                <VisitRow key={visit.id} visit={visit} now={now} onShowSlip={setSlip} />
+                <VisitRow
+                  key={visit.id}
+                  visit={visit}
+                  now={now}
+                  onShowSlip={setSlip}
+                  onLeftList={onLeftList}
+                />
               ))}
             </ol>
           )}
