@@ -75,10 +75,10 @@ Decided:
 - Per-device limit, decided by the owner on 2026-11-10: a Vercel firewall rule on `/api/start-visit`, 20 starts per 10 minutes per connection (so a class on one Wi-Fi can all start visits). The database's 10 starts per site per minute stays as the main brake. Nothing about the device is stored. A 429 answer from either one shows the start page's "busy" message (`data/patientVisit.ts`).
 
 - Vercel (2026-11-10): the project is `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4). **Live link: https://virtual-er-izpf.vercel.app** (share only this one). The owner is deleting the empty `virtual-er` project. Vercel Authentication stays ON: it guards only the per-deployment and `-michael-e6bb` addresses; the live link opens for anyone. The start route writes failure reasons to Vercel's runtime logs (no token or key); Hobby keeps them for 1 hour. Vercel's own agent opened pull requests #1 (Web Analytics) and #2 (Speed Insights); the owner had them closed without merging and their branches deleted on 2026-11-10. Analytics on patient screens waits for the privacy review.
-- Vercel check (read only, 2026-11-10):
-  - Environment variables: all three are there (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, Production and Preview). But Supabase refuses the stored `SUPABASE_SECRET_KEY` ("Invalid API key"), and it has not been edited since the import. **The owner re-enters it from `.env.local` and redeploys.**
-  - Firewall rule for `/api/start-visit`: **missing** (the project has no firewall rules at all). To add after the owner approves it: POST to `/api/start-visit`, 20 per 10 minutes per IP, answer 429.
-  - Montreal region: **not set.** Functions run in `iad1` (Washington, D.C.). Earlier notes said yul1; that was the request's entry point in the logs, not where the code runs. To change after the owner approves: Settings > Functions > Function Region > Montreal, Canada (yul1), then redeploy.
+- Vercel settings (2026-11-10):
+  - Environment variables: all three set. The owner re-entered `SUPABASE_SECRET_KEY` and redeployed; the live start route now answers "saved".
+  - Function region: Montreal (yul1), set by the owner; the deploy confirms `regions: yul1`. (Montreal over Cleveland because the database is in Montreal.)
+  - Firewall rule for `/api/start-visit`: approved by the owner (POST, 20 per 10 minutes per IP, fixed window, answer 429). The Vercel MCP may not change firewall settings (403) and the Vercel CLI is not installed, so the owner adds it in the dashboard. **Not added yet.**
 - THP links now go to https://www.thp.ca/emergency/A/visit.html (owner, 2026-11-10; SPEC updated).
 
 ## Where to pick up (written 2026-11-10)
