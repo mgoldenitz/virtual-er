@@ -42,7 +42,7 @@ export async function startVisitFromHome(site: Site, language: string): Promise<
 /** A visit, null if the token matches no visit, or "unavailable" if it could not be read. */
 type Shown = PatientView | null | "unavailable";
 
-const REREAD_MS = 15_000; // until live updates arrive in the next step
+const REREAD_MS = 15_000; // in case a live update was missed
 
 // What each token last showed, kept in memory only (nothing about the visit is saved on the phone).
 type Entry = {
@@ -92,7 +92,8 @@ async function refreshPatientView(token: string): Promise<void> {
 }
 
 /**
- * While a screen is showing this token: read now, every 15 seconds, and when the tab comes back.
+ * While a screen is showing this token: read now, on every live update, every 15 seconds, and
+ * when the tab comes back.
  * There is one timer per token however many parts of the screen are listening.
  */
 function watch(token: string | null, onChange: () => void): () => void {

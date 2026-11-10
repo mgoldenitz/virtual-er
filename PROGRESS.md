@@ -69,6 +69,8 @@ Decided:
   - Checked in the browser (phone 390 x 844 and laptop): the whole loop through the database, run again after the last changes (start from home, find by code, check in, call back, seen, "I'm on my way", mark arrived, Undo); a new desk visit with its slip; two staff tabs pressing "Call back" on one patient (the second was refused); a blocked database on both screens (they recover by themselves); axe-core on the new staff states and the start page: no failures. 72 unit tests, type check and lint pass.
   - Fixed after the last full run: a tap on "I'm on my way" before the automatic "seen" call landed left `seen_at` empty. The tap now records "seen" first (`app/patient/page.tsx`).
 
+- Live updates (2026-11-10): `data/changeSignal.ts` listens to the `change_signal` row over Supabase Realtime (one connection per tab; nothing about a visit travels over it). `data/keepFresh.ts` reads again on every signal, and once more if a signal came in during a read. The 15-second timer stays as a fallback. Checked with two phone sessions: phone A re-read its visit 0.5 seconds after phone B started a visit. Not checked yet: the staff screen (needs the owner signed in) and phone-to-laptop on Vercel. Review file: `handoffs/2026-11-10-gemini-review-live-updates.md`.
+
 ## Where to pick up (written 2026-11-10)
 
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
@@ -92,6 +94,6 @@ Working notes for a new session:
 - Long shell commands with quotes inside a heredoc fail in this setup; write a script file in the scratchpad folder and run that.
 
 Next steps:
-1. Live updates through `change_signal`: patient pages listen for the signal (it carries no visit data) and re-read through `get_patient_visit`; staff pages re-read the list. Keep the 15-second timer as a fallback. Write a plan and give the owner the handoff note first if anything is unclear.
+1. Done: live updates (see above). The owner checks it with the staff screen signed in.
 2. Deploy to Vercel, with a per-device limit on starting from home (the start route stays local until then).
 3. Playwright laptop and phone test (about 2 seconds). Then Gemini 3.1 Pro (High) reviews security and architecture, and GPT-6 Astra (High) does the security review. Run /security-review at the end of the phase.

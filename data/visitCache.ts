@@ -1,6 +1,6 @@
 // The staff screens' copy of the visits: read from the database (row-level security lets only
-// signed-in staff do this), held in memory, and read again on a timer, when the tab comes
-// back, and after every staff action. Nothing here is saved in the browser.
+// signed-in staff do this), held in memory, and read again on every live update, on a timer,
+// when the tab comes back, and after every staff action. Nothing here is saved in the browser.
 
 import { ACTIVE_STATUSES, type Visit } from "@/lib/visit";
 import { keepFresh } from "./keepFresh";
@@ -15,7 +15,7 @@ export type VisitList = { visits: StoredVisit[] | null; outOfDate: boolean };
 export const EMPTY_LIST: VisitList = { visits: null, outOfDate: false };
 
 const LIST_HOURS = 24; // plus everyone still in the line, however long ago they were triaged
-const REREAD_MS = 15_000; // until live updates arrive in the next step
+const REREAD_MS = 15_000; // in case a live update was missed
 
 let list: VisitList = EMPTY_LIST;
 let visitsKey = "";
@@ -72,7 +72,8 @@ export function putVisit(visit: StoredVisit): void {
 let stopReading: (() => void) | null = null;
 
 /**
- * While any staff screen is open: read now, every 15 seconds, and when the tab comes back.
+ * While any staff screen is open: read now, on every live update, every 15 seconds, and when
+ * the tab comes back.
  * There is one timer however many parts of the screen are listening.
  */
 export function watchVisits(onChange: () => void): () => void {
