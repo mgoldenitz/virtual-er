@@ -83,6 +83,9 @@ Decided:
 
 - **Phase 2 goal met (2026-11-10):** the owner ran the loop on https://virtual-er-izpf.vercel.app with the laptop signed in as staff and the phone as the patient (two visits, sites A and B: start from home, check in, call back, "I'm on my way", removed). Each step showed on the other screen within about 2 seconds. Test visits deleted; the `visits` table is empty. Playwright could not run the staff half (it cannot sign in without the owner's password), so the owner's own run counts as the phone and laptop test.
 
+- /security-review (2026-11-10), run over all Phase 2 changes (`git diff 01a3e40..HEAD`), not only the last save point: no high-confidence findings. Checked grants and row-level security, `is_staff()` (reads `app_metadata`), the security definer functions, filter building, the start route, the sign-in check (`getClaims`), the secret key and token handling, and XSS. Only the already-accepted items came close (staff can read tokens; staff status changes are checked in the database only from Phase 3).
+- Phase 2 handoffs: Gemini 3.1 Pro (High) security and architecture review, file `handoffs/2026-11-10-gemini-review-phase2-security-architecture.md` (no keys, project id or patient data). Then GPT-6 Astra (High) security review. **Both not done yet.**
+
 ## Where to pick up (written 2026-11-10)
 
 State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
