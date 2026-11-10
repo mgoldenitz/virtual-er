@@ -36,13 +36,15 @@ export function CareOptions() {
         <li>
           <External href="https://www.regional-virtual-urgent-care.ca/">Regional virtual urgent care</External>
         </li>
+        <li>Urgent Care Centre at Queensway Health Centre in Etobicoke.</li>
         <li>
-          The Urgent Care Centre at Queensway Health Centre, and the pharmacist assessment pilot at three
-          Mississauga Shoppers Drug Mart locations. The pilot may change or end, so check that it is still
-          running. For hours and details, see{" "}
-          <External href={THP_EMERGENCY_PAGE}>THP&apos;s emergency page</External>.
+          A pharmacist can assess you at three Shoppers Drug Mart stores in Mississauga. This is a pilot, so
+          check that it is still running before you go.
         </li>
       </ul>
+      <p>
+        For hours and addresses, see <External href={THP_EMERGENCY_PAGE}>THP&apos;s emergency page</External>.
+      </p>
       <p>
         <External href={THP_EMERGENCY_PAGE}>See current wait times on THP&apos;s website</External>
       </p>
