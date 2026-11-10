@@ -59,7 +59,7 @@ Decided:
 - Fixed: a hydration warning on `<body>` caused by the Grammarly browser extension (`app/layout.tsx`).
 
 Next steps:
-1. Replace `data/` browser storage with Supabase calls. Plan: `handoffs/2026-11-10-gemini-review-supabase-storage-plan.md`, to be checked by Gemini 3.1 Pro (High) before any code.
+1. Replace `data/` browser storage with Supabase calls. Plan: `handoffs/2026-11-10-gemini-review-supabase-storage-plan.md`; Gemini 3.1 Pro's answers and what was done about them: `...-plan-response.md`. Done so far: the database change `20261110090134_visit_version_and_database_times.sql` (a version number on each visit, and the database sets every time), run on 2026-11-10 after approval; checks passed. Changed from the plan: staff saves use `version`, not `status`; the staff list loads only the line plus the last 24 hours. Next: steps A to D of the plan.
 2. Live updates through `change_signal`.
 3. Deploy to Vercel, with a per-device limit on starting from home.
 4. Playwright laptop and phone test (about 2 seconds). Then Gemini 3.1 Pro (High) and GPT-6 Astra (High).
