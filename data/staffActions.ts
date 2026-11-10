@@ -1,0 +1,37 @@
+// What staff screens can do to visits. Phase 2 replaces the insides with Supabase calls
+// behind staff login; the screens keep calling these same functions.
+
+import { makeAccessToken, makeUniqueDisplayCode } from "@/lib/codes";
+import type { Site, Visit } from "@/lib/visit";
+import {
+  callBack,
+  checkInAtDesk,
+  markArrived,
+  markRemoved,
+  type DeskOutcome,
+} from "@/lib/visitActions";
+import { addVisit, readVisits, updateVisit } from "./visitStore";
+
+export type CheckInForm = { site: Site; ctas_level: 4 | 5; language: string };
+
+/** Create a desk visit after triage. Returns the new visit so the slip can be shown. */
+export function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Visit {
+  const taken = new Set(readVisits().map((v) => v.code));
+  const visit = checkInAtDesk(
+    {
+      id: crypto.randomUUID(),
+      code: makeUniqueDisplayCode(taken),
+      access_token: makeAccessToken(),
+      ...form,
+    },
+    outcome,
+    new Date(),
+  );
+  addVisit(visit);
+  return visit;
+}
+
+export const callBackVisit = (id: string) => updateVisit(id, (v) => callBack(v, new Date()));
+export const markVisitArrived = (id: string) => updateVisit(id, (v) => markArrived(v, new Date()));
+export const removeVisit = (id: string, reason: "left" | "no_show") =>
+  updateVisit(id, (v) => markRemoved(v, reason, new Date()));
