@@ -17,8 +17,13 @@ const MESSAGES: Partial<Record<VisitStatus, string>> = {
   needs_reassessment: "Please go to the triage desk.",
 };
 
+/** One status change waiting to be announced. `round` makes every change new, even a repeat. */
+type Pending = { round: number; status: VisitStatus };
+
 export function StatusAnnouncer({ status }: { status: VisitStatus }) {
-  const [previous, setPrevious] = useState(status);
+  const [previous, setPrevious] = useState<VisitStatus | null>(null);
+  // A call-back already on screen when the page opens is announced; other opening statuses are not.
+  const [pending, setPending] = useState<Pending | null>(null);
   const [polite, setPolite] = useState("");
   const [urgent, setUrgent] = useState("");
   const current = useRef(status);
@@ -26,32 +31,38 @@ export function StatusAnnouncer({ status }: { status: VisitStatus }) {
     current.current = status;
   }, [status]);
 
-  // Update the messages while rendering, the moment the status changes.
+  // On every status change, empty both regions at once. The new text is put in a moment later,
+  // so a screen reader hears it even when it is the same words as last time
+  // (for example called, arrived, then Undo back to called).
   if (status !== previous) {
     setPrevious(status);
-    const text = MESSAGES[status] ?? "";
-    if (status === "called") setUrgent(text);
-    else setPolite(text);
+    setPolite("");
+    setUrgent("");
+    if (previous !== null || status === "called") {
+      setPending((p) => ({ round: (p?.round ?? 0) + 1, status }));
+    }
   }
 
-  // Routine statuses already on screen when the page opened are not announced, but a call-back is:
-  // once, shortly after the page is on screen (screen readers miss text present at load).
-  const [openedWith] = useState(status);
+  // Put the text in only while the page is on screen; a background tab waits until it is brought
+  // forward, then announces the status if it has not changed in the meantime.
   useEffect(() => {
-    if (openedWith !== "called") return;
+    if (!pending) return;
+    const text = MESSAGES[pending.status] ?? "";
+    if (!text) return;
     let done = false;
     const announce = () => {
-      if (done || document.visibilityState !== "visible" || current.current !== "called") return;
+      if (done || document.visibilityState !== "visible" || current.current !== pending.status) return;
       done = true;
-      setUrgent(CALLED);
+      if (pending.status === "called") setUrgent(text);
+      else setPolite(text);
     };
-    const timer = window.setTimeout(announce, 500);
+    const timer = window.setTimeout(announce, 300);
     document.addEventListener("visibilitychange", announce);
     return () => {
       window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", announce);
     };
-  }, [openedWith]);
+  }, [pending]);
 
   return (
     <>

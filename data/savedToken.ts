@@ -21,6 +21,14 @@ export function saveToken(token: string): void {
   }
 }
 
+function forgetSavedToken(): void {
+  try {
+    window.localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Storage blocked: nothing was saved anyway.
+  }
+}
+
 function decodeLinkPart(text: string): string | null {
   try {
     return decodeURIComponent(text);
@@ -29,20 +37,27 @@ function decodeLinkPart(text: string): string | null {
   }
 }
 
+/** The token to open (or null), and whether the link just opened was damaged. */
+export type LinkResult = { token: string | null; brokenLink: boolean };
+
 /**
  * Take a token from the link's #t=... part (never sent to a server), save it,
  * and remove it from the address bar. Falls back to the token saved earlier.
- * A link whose token is damaged opens no visit (null), rather than an older saved one.
+ * A damaged link opens no visit and also forgets the saved one, so neither now nor after a
+ * refresh does the phone quietly show an older visit than the one the patient tried to open.
  */
-export function takeTokenFromLink(): string | null {
+export function takeTokenFromLink(): LinkResult {
   const match = window.location.hash.match(/[#&]t=([^&]*)/);
-  if (!match) return loadSavedToken();
+  if (!match) return { token: loadSavedToken(), brokenLink: false };
   window.history.replaceState(null, "", window.location.pathname);
   const decoded = decodeLinkPart(match[1]);
   const token = decoded === null ? null : normalizeToken(decoded);
-  if (token === null || !isAccessToken(token)) return null;
+  if (token === null || !isAccessToken(token)) {
+    forgetSavedToken();
+    return { token: null, brokenLink: true };
+  }
   saveToken(token);
-  return token;
+  return { token, brokenLink: false };
 }
 
 /** The link printed on the desk slip and carried by the QR code. */

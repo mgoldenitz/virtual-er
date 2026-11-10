@@ -15,15 +15,23 @@ const CHECKLIST = [
   { id: "agrees", label: "Agrees to wait off-site" },
 ] as const;
 
-type Props = { site: Site; onCreated: (visit: Visit) => void };
+type Props = {
+  site: Site;
+  /** Called when staff try a new check-in, before saving, so the last patient's slip is hidden. */
+  onAttempt: () => void;
+  onCreated: (visit: Visit) => void;
+};
 
-export function CheckInPanel({ site, onCreated }: Props) {
+export function CheckInPanel({ site, onAttempt, onCreated }: Props) {
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [language, setLanguage] = useState("en");
   const [message, setMessage] = useState("");
 
   function finish(outcome: DeskOutcome) {
+    // Hide the previous patient's slip first, so a failed save never leaves it on screen
+    // where it could be handed to the next patient.
+    onAttempt();
     if (ctas === null) {
       setMessage("Choose CTAS 4 or 5 first.");
       return;

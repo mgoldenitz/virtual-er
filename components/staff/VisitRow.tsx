@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
 import type { ChangeResult } from "@/data/visitStore";
-import type { Closed } from "@/components/staff/UndoBanner";
 import { minutesBetween } from "@/lib/queue";
 import type { Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -14,8 +13,8 @@ type Props = {
   visit: Visit;
   now: Date;
   onShowSlip: (visit: Visit) => void;
-  /** Called after a change that takes this patient off the list, so the page can offer Undo. */
-  onLeftList: (closed: Closed) => void;
+  /** Called after a change takes this patient off the list, so the page can say so and move focus. */
+  onLeftList: (message: string) => void;
 };
 
 const NOT_SAVED = "Not saved: this browser could not store the change. Try again.";
@@ -25,7 +24,8 @@ function progress(visit: Visit, now: Date): string {
   if (visit.status === "waiting") return "Waiting off-site";
   const sinceCall = visit.called_at ? minutesBetween(visit.called_at, now) : 0;
   const steps = [`Called ${sinceCall} min ago`];
-  if (visit.seen_at) steps.push("Seen");
+  // seen_at means the called screen was displayed on the phone, not that the patient read it.
+  if (visit.seen_at) steps.push("Seen (screen shown, not necessarily read)");
   if (visit.status === "on_the_way") steps.push("On the way");
   return steps.join(" · ");
 }
@@ -35,7 +35,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   /** Show what happened. `leftListMessage` is announced when the patient leaves the list. */
   const act = (result: ChangeResult, leftListMessage?: string) => {
     if (result === "saved" && leftListMessage) {
-      onLeftList({ id: visit.id, code: visit.code, previous: visit.status, message: leftListMessage });
+      onLeftList(leftListMessage);
     }
     setNote(result === "saved" ? "" : result === "not_saved" ? NOT_SAVED : CHANGED);
   };
@@ -56,7 +56,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
         {visit.status === "waiting" && (
           <Button onClick={() => act(callBackVisit(visit.id))}>Call back</Button>
         )}
-        <Button variant="secondary" onClick={() => act(markVisitArrived(visit.id), `Visit ${visit.code} marked arrived.`)}>
+        <Button variant="secondary" onClick={() => act(markVisitArrived(visit.id), `Visit ${visit.code} marked arrived. Undo is under Recently closed.`)}>
           Mark arrived
         </Button>
         <Button variant="secondary" onClick={() => onShowSlip(visit)}>
@@ -68,10 +68,10 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
           Remove from list
         </summary>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "left"), `Visit ${visit.code} removed: left.`)}>
+          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "left"), `Visit ${visit.code} removed: left. Undo is under Recently closed.`)}>
             Left
           </Button>
-          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "no_show"), `Visit ${visit.code} removed: no-show.`)}>
+          <Button variant="danger" onClick={() => act(removeVisit(visit.id, "no_show"), `Visit ${visit.code} removed: no-show. Undo is under Recently closed.`)}>
             No-show
           </Button>
         </div>

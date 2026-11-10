@@ -13,12 +13,15 @@ import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [problem, setProblem] = useState("");
+  const [brokenLink, setBrokenLink] = useState(false);
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
   useEffect(() => {
     const readLink = () => {
-      setToken(takeTokenFromLink());
+      const link = takeTokenFromLink();
+      setToken(link.token);
+      setBrokenLink(link.brokenLink);
       setProblem("");
     };
     readLink();
@@ -61,8 +64,11 @@ export default function PatientPage() {
       ) : view === null ? (
         <section aria-labelledby="none-heading" className="space-y-2">
           <h2 id="none-heading" className="text-2xl font-bold">
-            No visit found on this phone
+            {brokenLink ? "This link did not work" : "No visit found on this phone"}
           </h2>
+          {brokenLink && (
+            <p className="text-lg">The link may have been cut short or mistyped, so no visit was opened.</p>
+          )}
           <p className="text-lg">
             Scan the QR code on your desk slip with your phone&apos;s camera, or type the link
             printed under it. If that doesn&apos;t work, ask the desk to show the QR code again.

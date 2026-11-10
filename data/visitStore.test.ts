@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { checkInAtDesk, callBack } from "@/lib/visitActions";
-import { addVisit, readVisits, updateVisit } from "./visitStore";
+import { addVisit, readStorageProblem, readVisits, updateVisit } from "./visitStore";
 
 const visit = checkInAtDesk(
   { id: "v1", code: "ABC234", access_token: "T", site: "A", ctas_level: 4, language: "en" },
@@ -40,5 +40,23 @@ describe("saving visits", () => {
     expect(updateVisit("v1", (v) => callBack(v, new Date()))).toBe("not_saved");
     expect(readVisits()[0].status).toBe("waiting");
     expect(addVisit({ ...visit, id: "v2" })).toBe("not_saved");
+  });
+});
+
+describe("damaged saved data", () => {
+  it("counts damaged entries and keeps them when saving", () => {
+    fakeBrowser(() => true);
+    window.localStorage.setItem("vwr.visits.v1", JSON.stringify([{ ...visit, ctas_level: { x: 1 } }]));
+    expect(readVisits()).toEqual([]);
+    expect(readStorageProblem()).toEqual({ damaged: 1, unreadable: false });
+    expect(addVisit({ ...visit, id: "v2" })).toBe("saved");
+    expect(readVisits().map((v) => v.id)).toEqual(["v2"]);
+    expect(readStorageProblem()).toEqual({ damaged: 1, unreadable: false });
+  });
+
+  it("reports saved text that is not a list at all", () => {
+    fakeBrowser(() => true);
+    window.localStorage.setItem("vwr.visits.v1", "{broken");
+    expect(readStorageProblem()).toEqual({ damaged: 0, unreadable: true });
   });
 });

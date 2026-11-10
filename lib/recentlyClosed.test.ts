@@ -1,0 +1,29 @@
+import { describe, expect, it } from "vitest";
+import { closedLabel, recentlyClosed } from "./recentlyClosed";
+import { checkInAtDesk, markArrived, markRemoved } from "./visitActions";
+
+const t0 = new Date("2026-11-09T20:00:00Z");
+const at = (min: number) => new Date(t0.getTime() + min * 60_000);
+const desk = (id: string, site: "A" | "B" = "A") =>
+  checkInAtDesk({ id, code: id, access_token: id, site, ctas_level: 4, language: "en" }, "waiting", t0);
+
+describe("recently closed list", () => {
+  it("lists arrived and removed visits at the site, newest first, up to the limit", () => {
+    const visits = [
+      markArrived(desk("a"), at(1))!,
+      markRemoved(desk("b"), "left", at(3))!,
+      markArrived(desk("c", "B"), at(4))!,
+      desk("d"),
+      checkInAtDesk({ id: "e", code: "e", access_token: "e", site: "A", ctas_level: 5, language: "en" }, "declined", at(5)),
+      markRemoved(desk("f"), "no_show", at(2))!,
+    ];
+    expect(recentlyClosed(visits, "A").map((v) => v.id)).toEqual(["b", "f", "a"]);
+    expect(recentlyClosed(visits, "A", 2).map((v) => v.id)).toEqual(["b", "f"]);
+  });
+
+  it("describes how each visit was closed", () => {
+    expect(closedLabel(markArrived(desk("a"), at(1))!)).toBe("marked arrived");
+    expect(closedLabel(markRemoved(desk("a"), "left", at(1))!)).toBe("removed: left");
+    expect(closedLabel(markRemoved(desk("a"), "no_show", at(1))!)).toBe("removed: no-show");
+  });
+});

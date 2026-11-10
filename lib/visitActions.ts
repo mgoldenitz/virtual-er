@@ -2,7 +2,7 @@
 // and returns the updated visit, or null when the step is not allowed right now
 // (for example a second click after the list already changed).
 
-import { ACTIVE_STATUSES, type Site, type Visit, type VisitStatus } from "./visit";
+import { type Site, type Visit, type VisitStatus } from "./visit";
 
 export type DeskCheckIn = {
   id: string;
@@ -95,19 +95,31 @@ export function markRemoved(visit: Visit, reason: "left" | "no_show", now: Date)
   return { ...visit, status: "removed", removed_reason: reason, closed_at: now.toISOString() };
 }
 
-/** How long the staff screen shows the Undo banner after Mark arrived, Left or No-show. */
-export const UNDO_BANNER_SECONDS = 10;
-/** The rule allows a little longer than the banner, so a last-second click still works. */
-const UNDO_LIMIT_SECONDS = UNDO_BANNER_SECONDS + 5;
+/**
+ * The status a closed visit had just before Mark arrived, Left or No-show.
+ * Statuses only move forward (waiting, then called, then on the way) and closing keeps
+ * called_at and confirmed_at, so the visit's own times say where it was.
+ */
+export function statusBeforeClose(visit: Visit): VisitStatus {
+  if (visit.confirmed_at) return "on_the_way";
+  if (visit.called_at) return "called";
+  return "waiting";
+}
 
 /**
- * Staff press Undo after Mark arrived, Left or No-show: the visit goes back to the status it had
- * just before (waiting, called or on the way) and is open again. Only shortly after closing.
+ * Staff press Undo on one closure in the "Recently closed" list. There is no time limit.
+ * `closedAt` names the exact closure the button belongs to: if the visit was reopened and
+ * closed again since, closed_at differs and the old button is refused, so it can never
+ * reverse a newer action. The visit goes back to exactly its state before that closure.
  */
-export function undoClose(visit: Visit, previous: VisitStatus, now: Date): Visit | null {
+export function undoClose(visit: Visit, closedAt: string): Visit | null {
   if (visit.status !== "arrived" && visit.status !== "removed") return null;
-  if (!visit.closed_at || !ACTIVE_STATUSES.includes(previous)) return null;
-  const secondsSinceClosed = (now.getTime() - new Date(visit.closed_at).getTime()) / 1000;
-  if (secondsSinceClosed > UNDO_LIMIT_SECONDS) return null;
-  return { ...visit, status: previous, arrived_at: null, removed_reason: null, closed_at: null };
+  if (!visit.triaged_at || !visit.closed_at || visit.closed_at !== closedAt) return null;
+  return {
+    ...visit,
+    status: statusBeforeClose(visit),
+    arrived_at: null,
+    removed_reason: null,
+    closed_at: null,
+  };
 }

@@ -89,30 +89,34 @@ describe("core loop", () => {
 describe("undo after Mark arrived, Left or No-show", () => {
   const sec = (s: number) => new Date(later(5).getTime() + s * 1000);
   const waiting = checkInAtDesk(input, "waiting", t0);
-  const onTheWay = confirmOnMyWay(callBack(waiting, later(1))!, later(2))!;
+  const called = markSeen(callBack(waiting, later(1))!, later(1))!;
+  const onTheWay = confirmOnMyWay(called, later(2))!;
 
-  it("puts an arrived visit back to its earlier status and clears closed_at", () => {
-    const arrived = markArrived(onTheWay, sec(0))!;
-    const undone = undoClose(arrived, "on_the_way", sec(9))!;
-    expect(undone.status).toBe("on_the_way");
-    expect(undone.closed_at).toBeNull();
-    expect(undone.arrived_at).toBeNull();
-    expect(undone.confirmed_at).toBe(onTheWay.confirmed_at); // the rest of the history stays
+  it("puts each closed visit back exactly as it was before closing", () => {
+    for (const before of [waiting, called, onTheWay]) {
+      const arrived = markArrived(before, sec(0))!;
+      expect(undoClose(arrived, arrived.closed_at!)).toEqual(before);
+      const removed = markRemoved(before, "no_show", sec(0))!;
+      expect(undoClose(removed, removed.closed_at!)).toEqual(before);
+    }
   });
 
-  it("puts a removed visit back and forgets the removal reason", () => {
-    const removed = markRemoved(waiting, "no_show", sec(0))!;
-    const undone = undoClose(removed, "waiting", sec(9))!;
-    expect(undone.status).toBe("waiting");
-    expect(undone.removed_reason).toBeNull();
-    expect(undone.closed_at).toBeNull();
-  });
-
-  it("refuses once the undo time is over, for open visits, and for a closed earlier status", () => {
+  it("has no time limit", () => {
     const arrived = markArrived(waiting, sec(0))!;
-    expect(undoClose(arrived, "waiting", sec(16))).toBeNull();
-    expect(undoClose(waiting, "waiting", sec(1))).toBeNull();
-    expect(undoClose(arrived, "declined", sec(1))).toBeNull();
-    expect(undoClose(checkInAtDesk(input, "declined", sec(0)), "waiting", sec(1))).toBeNull();
+    expect(undoClose(arrived, arrived.closed_at!)).toEqual(waiting);
+  });
+
+  it("refuses a stale Undo: an old removal's button cannot reverse a newer arrival", () => {
+    const removed = markRemoved(waiting, "left", sec(0))!;
+    const reopened = undoClose(removed, removed.closed_at!)!;
+    const arrived = markArrived(reopened, sec(30))!;
+    expect(undoClose(arrived, removed.closed_at!)).toBeNull();
+    expect(undoClose(arrived, arrived.closed_at!)).toEqual(waiting);
+  });
+
+  it("refuses open visits and visits closed at check-in", () => {
+    expect(undoClose(waiting, "anything")).toBeNull();
+    const declined = checkInAtDesk(input, "declined", sec(0));
+    expect(undoClose(declined, declined.closed_at!)).toBeNull();
   });
 });

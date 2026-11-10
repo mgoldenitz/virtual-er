@@ -2,7 +2,7 @@
 // Every tab of the same browser shares it, and other tabs hear about changes
 // through the browser's "storage" event, so two tabs stay in sync without a server.
 
-import { parseVisits } from "@/lib/parseVisits";
+import { parseVisits, type ParsedVisits } from "@/lib/parseVisits";
 import type { Visit } from "@/lib/visit";
 
 /**
@@ -16,7 +16,11 @@ const STORAGE_KEY = "vwr.visits.v1";
 const listeners = new Set<() => void>();
 
 let cachedRaw: string | null = null;
-let cachedVisits: Visit[] = [];
+let cached: ParsedVisits = { visits: [], damaged: [], unreadable: false };
+let cachedProblem: StorageProblem = { damaged: 0, unreadable: false };
+
+/** Saved data this browser could not read: damaged entries, or saved text that is not a list at all. */
+export type StorageProblem = { damaged: number; unreadable: boolean };
 
 function safeGet(): string | null {
   try {
@@ -26,19 +30,30 @@ function safeGet(): string | null {
   }
 }
 
-/** All visits, as one stable array until something changes. */
-export function readVisits(): Visit[] {
+function refresh(): void {
   const raw = safeGet();
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-    cachedVisits = parseVisits(raw);
-  }
-  return cachedVisits;
+  if (raw === cachedRaw) return;
+  cachedRaw = raw;
+  cached = parseVisits(raw);
+  cachedProblem = { damaged: cached.damaged.length, unreadable: cached.unreadable };
+}
+
+/** All readable visits, as one stable array until something changes. */
+export function readVisits(): Visit[] {
+  refresh();
+  return cached.visits;
+}
+
+/** What could not be read, as one stable object until something changes. */
+export function readStorageProblem(): StorageProblem {
+  refresh();
+  return cachedProblem;
 }
 
 function writeVisits(visits: Visit[]): ChangeResult {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(visits));
+    // Damaged entries are written back untouched, so saving never silently deletes them.
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...visits, ...cached.damaged]));
   } catch {
     // Storage blocked (private mode, full disk): report it so the screen never claims success.
     return "not_saved";
