@@ -69,7 +69,7 @@ Decided:
   - Checked in the browser (phone 390 x 844 and laptop): the whole loop through the database, run again after the last changes (start from home, find by code, check in, call back, seen, "I'm on my way", mark arrived, Undo); a new desk visit with its slip; two staff tabs pressing "Call back" on one patient (the second was refused); a blocked database on both screens (they recover by themselves); axe-core on the new staff states and the start page: no failures. 72 unit tests, type check and lint pass.
   - Fixed after the last full run: a tap on "I'm on my way" before the automatic "seen" call landed left `seen_at` empty. The tap now records "seen" first (`app/patient/page.tsx`).
 
-- Live updates (2026-11-10): `data/changeSignal.ts` listens to the `change_signal` row over Supabase Realtime (one connection per tab; nothing about a visit travels over it). `data/keepFresh.ts` reads again on every signal, and once more if a signal came in during a read. The 15-second timer stays as a fallback. Checked with two phone sessions: phone A re-read its visit 0.5 seconds after phone B started a visit. The owner checked the staff screen on 2026-11-10 (start from home, check in, call back, arrived): each step showed on the other screen within about 2 seconds. Still to check: phone and laptop over the vercel.app link. The Gemini review (`handoffs/2026-11-10-gemini-review-live-updates.md`) was skipped by the owner. The test visits were deleted; the `visits` table is empty.
+- Live updates (2026-11-10): `data/changeSignal.ts` listens to the `change_signal` row over Supabase Realtime (one connection per tab; nothing about a visit travels over it). `data/keepFresh.ts` reads again on every signal, and once more if a signal came in during a read. The 15-second timer stays as a fallback. Checked with two phone sessions: phone A re-read its visit 0.5 seconds after phone B started a visit. The owner checked the staff screen on 2026-11-10 (start from home, check in, call back, arrived): each step showed on the other screen within about 2 seconds. Phone and laptop over the live link were checked later (see "Phase 2 goal met"). The Gemini review (`handoffs/2026-11-10-gemini-review-live-updates.md`) was skipped by the owner. The test visits were deleted; the `visits` table is empty.
 
 - Production build checked (2026-11-10, after the owner made a new secret key): it builds, and the secret key is in none of the browser files (by value or by name). Starting from home works with the new key.
 - Per-device limit, decided by the owner on 2026-11-10: a Vercel firewall rule on `/api/start-visit`, 20 starts per 10 minutes per connection (so a class on one Wi-Fi can all start visits). The database's 10 starts per site per minute stays as the main brake. Nothing about the device is stored. A 429 answer from either one shows the start page's "busy" message (`data/patientVisit.ts`).
@@ -90,29 +90,40 @@ Decided:
 
 - Desk slip (2026-11-10, owner's request): the QR code and written link always use https://virtual-er-izpf.vercel.app (`lib/slipOrigin.ts`, with tests), whatever address the staff screen is open on; on localhost they keep the local address for testing. Live and in Montreal. Not yet seen on a real slip (needs the owner signed in).
 
-## Where to pick up (written 2026-11-10)
+## Where to pick up (updated 2026-11-10, evening)
 
-State: everything above is saved in Git (last save point: "Patient screen: record 'seen' before 'I'm on my way'", plus this log). The `visits` table is empty; every test visit was deleted.
+**Live link: https://virtual-er-izpf.vercel.app** (Vercel project `virtual-er-izpf`; share only this address). GitHub `mgoldenitz/virtual-er`, branch `main`, matches this laptop; every push to `main` deploys to the live link.
+
+State:
+- Phase 2's goal is met: laptop (staff) and phone (patient) update each other within about 2 seconds on the live link.
+- /security-review and the Gemini security and architecture review are done; the security headers from Gemini's review are live.
+- The `visits` table is empty; every test visit was deleted. No unsaved changes.
 
 Waiting on the owner:
-- Nothing right now. The Gemini review of the review fixes and step D (`handoffs/2026-11-10-gemini-review-storage-fixes-and-step-d.md`) was skipped by the owner on 2026-11-10.
+- **Model handoff not done yet:** GPT-6 Astra (High), Phase 2 security review. File: `handoffs/2026-11-10-astra-security-review-phase2.md` (no keys, project id, emails or patient data). The owner pastes the answer or says "skip". Check each point against the code before changing anything, and save the answer as `handoffs/2026-11-10-astra-security-review-phase2-response.md`.
+
+Left in Phase 2 (named by the owner on 2026-11-10; nothing built yet, and the details below are Claude's reading, to confirm with the owner before starting):
+1. **Keep-alive job.** Most likely: Supabase pauses a free project after about a week without activity, which would take the live link down between demos. A small scheduled job (for example a Vercel cron that calls a harmless read) would keep it awake. It must read no visit data, and any new Vercel or Supabase setting needs the owner's approval first.
+2. **Phase 1 backup link.** Most likely: a second link to the Phase 1 version (all data kept in the browser, no Supabase), so a demo can still run if the database or the live link is down. Ask where it should live (a separate Vercel project, or a branch with its own preview address), and make sure it shows the same footer, 911 line and demo notices.
+
+Before the Phase 2 closing save point:
+- List any Phase 2 handoff still not done (only Astra, unless done or skipped by then).
+- SPEC: the Supabase MCP runs read_only after Phase 2. Remind the owner, and change `.mcp.json` only with approval.
+- At the start of Phase 3: `npm update`, then `npm audit` (the minimatch warnings, see Phase 1 notes).
 
 Not checked yet:
-- The start route's "paused" and "busy" answers (they need database changes, so they need the owner's approval).
-- A production build (`npm run build`), which also proves the secret key never reaches the browser bundle. Do it before the Vercel step.
+- The start route's "paused" and "busy" answers on purpose (they need database changes or 20 test visits, so they need the owner's approval).
+- A real desk slip on the live site showing the live link (needs the owner signed in).
 
 Carry into later steps:
 - While off-site waiting is paused, the start page still shows "Start a visit" and gives the pause message after the tap. Hiding the button first needs a patient-safe way to read the pause; do it with the pause switch in Phase 3.
 - Phase 3, database: have `confirm_on_my_way` fill `seen_at` itself when it is empty, and move the allowed-step checks into the database (already decided above).
-- The single `change_signal` row is fine at demo size; Supabase Realtime Broadcast could replace it in the live-updates step (from Gemini's answer on the plan).
+- The single `change_signal` row is fine at demo size; Supabase Realtime Broadcast could replace it later (Gemini, twice).
+- Analytics (Vercel Web Analytics, Speed Insights) only after a privacy review; pull requests #1 and #2 were closed for that reason.
 
 Working notes for a new session:
 - The owner usually has this project's dev server running on port 3000. A second `next dev` in the same folder refuses to start, so use the one on 3000.
-- Browser tests that make visits go through the app itself. Removing them afterwards is a `delete from public.visits where code in (...)` through the Supabase MCP: show the SQL, wait for "approved", and the owner must confirm Supabase's own prompt within 2 minutes or it expires and has to be sent again.
-- In Playwright, wait for the staff list to load before choosing the site, and use `main:visible` (Next.js keeps the previous page hidden in the document).
+- Vercel: team `team_YrtMKwQ7fPtnSdNJHMrFEJlI`, project `prj_9I2BWSDoNacI6gjVldBYA8CaAmo4`. The Vercel MCP can read projects, deployments, logs and the firewall, but may not change firewall settings (403); the Vercel CLI is not installed. If the MCP says "not authorized" for the team, call `authorize_team_access` and give the owner the link. Runtime logs on Hobby go back only 1 hour.
+- Test visits made through the app must be deleted afterwards with `delete from public.visits where code in (...)` through the Supabase MCP: show the SQL, wait for "approved", and the owner must confirm Supabase's own prompt within 2 minutes or it expires and has to be sent again.
+- Playwright cannot sign in as staff (it needs the owner's password), so the staff half of any check is done by the owner. In Playwright, wait for the staff list to load before choosing the site, and use `main:visible` (Next.js keeps the previous page hidden in the document).
 - Long shell commands with quotes inside a heredoc fail in this setup; write a script file in the scratchpad folder and run that.
-
-Next steps:
-1. Done: live updates (see above).
-2. Deploy to Vercel, with a per-device limit on starting from home (the start route stays local until then).
-3. Playwright laptop and phone test (about 2 seconds). Then Gemini 3.1 Pro (High) reviews security and architecture, and GPT-6 Astra (High) does the security review. Run /security-review at the end of the phase.
