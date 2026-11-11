@@ -87,6 +87,7 @@ Decided:
 - Phase 2 handoffs:
   - Gemini 3.1 Pro (High) security and architecture review: done (`handoffs/2026-11-10-gemini-review-phase2-security-architecture.md`, answer and checks in `...-response.md`). No access-control problems. Done from it: security headers on every page (`next.config.ts`: frame-ancestors 'none', X-Frame-Options DENY, nosniff, Referrer-Policy), checked locally and live. Kept as accepted trade-offs: the signal's time is public; the average gap is rounded to minutes; the one-row signal (Broadcast later).
   - GPT-6 Astra (High) security review: **not done yet.** File: `handoffs/2026-11-10-astra-security-review-phase2.md`.
+  - Extra (2026-11-10): the owner gave the Astra file to Gemini 3.1 Pro (High). Nothing to change in any of the five areas; every claim checked against the code (`handoffs/2026-11-10-gemini-review-astra-security-handoff-phase2-response.md`). It does not cover the keep-alive job. This does not count as the Astra review.
 
 - Desk slip (2026-11-10, owner's request): the QR code and written link always use https://virtual-er-izpf.vercel.app (`lib/slipOrigin.ts`, with tests), whatever address the staff screen is open on; on localhost they keep the local address for testing. Live and in Montreal. Not yet seen on a real slip (needs the owner signed in).
 
