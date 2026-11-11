@@ -10,10 +10,11 @@ import { EmergencyLine } from "@/components/EmergencyLine";
 import { PatientShell } from "@/components/PatientShell";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
+import { textFor } from "@/lib/text";
 
 export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
-  const [problem, setProblem] = useState("");
+  const [notSaved, setNotSaved] = useState(false);
   const [brokenLink, setBrokenLink] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -24,7 +25,7 @@ export default function PatientPage() {
       const link = takeTokenFromLink();
       setToken(link.token);
       setBrokenLink(link.brokenLink);
-      setProblem("");
+      setNotSaved(false);
     };
     readLink();
     window.addEventListener("hashchange", readLink);
@@ -35,6 +36,8 @@ export default function PatientPage() {
   const loading = token === undefined || result === undefined;
   const unavailable = result === "unavailable";
   const view = result === "unavailable" ? null : result;
+  const t = textFor(view?.language);
+  const p = t.patient;
 
   // The first time the called screen is actually on screen, record seen_at
   // (shown, not necessarily read). A tab in the background waits until it is brought forward.
@@ -66,57 +69,47 @@ export default function PatientPage() {
     if (view && !view.seen) await recordSeen(token);
     const result = await confirmOnMyWayByToken(token);
     setSending(false);
-    setProblem(
-      result === "not_saved"
-        ? "Your answer was not saved, so staff have not been told. Please try again, or come back to the desk."
-        : "",
-    );
+    setNotSaved(result === "not_saved");
   }
 
   return (
     <PatientShell>
     <main className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
-      <h1 className="text-xl font-bold">Virtual Waiting Room</h1>
-      <EmergencyLine />
+      <h1 className="text-xl font-bold">{t.appName}</h1>
+      <EmergencyLine language={view?.language} />
 
       {loading ? (
-        <p>Loading your visit…</p>
+        <p>{p.loading}</p>
       ) : unavailable ? (
         <section aria-labelledby="unavailable-heading" className="clean-card space-y-2">
           <h2 id="unavailable-heading" className="text-2xl font-bold">
-            We cannot load your visit right now
+            {p.unavailableHeading}
           </h2>
-          <p className="text-lg">
-            Nothing you do on this page can be saved at the moment, so staff may not see it. Please
-            contact the emergency department desk.
-          </p>
+          <p className="text-lg">{p.unavailableText}</p>
         </section>
       ) : !view ? (
         <section aria-labelledby="none-heading" className="clean-card space-y-2">
           <h2 id="none-heading" className="text-2xl font-bold">
-            {brokenLink ? "This link did not work" : "No visit found on this phone"}
+            {brokenLink ? p.brokenLinkHeading : p.noVisitHeading}
           </h2>
           {brokenLink && (
-            <p className="text-lg">The link may have been cut short or mistyped, so no visit was opened.</p>
+            <p className="text-lg">{p.brokenLinkText}</p>
           )}
-          <p className="text-lg">
-            Scan the QR code on your desk slip with your phone&apos;s camera, or type the link
-            printed under it. If that doesn&apos;t work, ask the desk to show the QR code again.
-          </p>
+          <p className="text-lg">{p.findVisitHelp}</p>
         </section>
       ) : (
         <>
           <p className="text-base">
-            Visit code: <strong className="font-mono tracking-widest">{view.code}</strong> · Demo
-            Site {view.site}
+            {t.visitCode}: <strong className="font-mono tracking-widest">{view.code}</strong> ·{" "}
+            {t.siteName(view.site)}
           </p>
           <PatientStatus view={view} onOnMyWay={onOnMyWay} sending={sending} />
-          {problem && (
+          {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
-              {problem}
+              {p.notSaved}
             </p>
           )}
-          <StatusAnnouncer key={token} status={view.status} />
+          <StatusAnnouncer key={token} status={view.status} language={view.language} />
         </>
       )}
     </main>

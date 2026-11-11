@@ -2,51 +2,57 @@
 // Only names and links: nothing is copied from THP's site (SPEC rule 8), and hours change,
 // so patients are sent to THP's page for them.
 
+import { textFor } from "@/lib/text";
+
 const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
 const linkStyle = "font-semibold text-blue-900 underline underline-offset-2";
 
-function External({ href, children }: { href: string; children: string }) {
+function External({ href, children, newTab }: { href: string; children: string; newTab: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={linkStyle}>
       {children}
-      <span className="sr-only"> (opens in a new tab)</span>
+      <span className="sr-only"> {newTab}</span>
     </a>
   );
 }
 
-export function CareOptions() {
+export function CareOptions({ language }: { language?: string }) {
+  const t = textFor(language);
+  const s = t.start;
   return (
     <section aria-labelledby="options-heading" className="space-y-3">
       <h2 id="options-heading" className="text-xl font-bold">
-        Official information about care options
+        {s.careHeading}
       </h2>
-      <p>
-        This demo cannot tell which service is right for you. Check eligibility, availability and hours on
-        each linked site before you go.
-      </p>
+      <p>{s.careIntro}</p>
       <ul className="list-disc space-y-2 pl-6 text-base">
         <li>
-          Health811: call{" "}
+          {s.health811Before}{" "}
           <a href="tel:811" className={linkStyle}>
             811
           </a>{" "}
-          for a free nurse line.
+          {s.health811After}
         </li>
         <li>
-          <External href="https://www.regional-virtual-urgent-care.ca/">Regional virtual urgent care</External>
+          <External href="https://www.regional-virtual-urgent-care.ca/" newTab={t.newTab}>
+            {s.virtualCare}
+          </External>
         </li>
-        <li>Urgent Care Centre at Queensway Health Centre in Etobicoke.</li>
-        <li>
-          A pharmacist can assess you at three Shoppers Drug Mart stores in Mississauga. This is a pilot, so
-          check that it is still running before you go.
-        </li>
+        <li>{s.urgentCare}</li>
+        <li>{s.pharmacist}</li>
       </ul>
       <p>
-        For hours and addresses, see <External href={THP_EMERGENCY_PAGE}>THP&apos;s emergency page</External>.
+        {s.hoursBefore}{" "}
+        <External href={THP_EMERGENCY_PAGE} newTab={t.newTab}>
+          {s.hoursLink}
+        </External>
+        .
       </p>
       <p>
-        <External href={THP_EMERGENCY_PAGE}>See current wait times on THP&apos;s website</External>
+        <External href={THP_EMERGENCY_PAGE} newTab={t.newTab}>
+          {s.waitTimesLink}
+        </External>
       </p>
     </section>
   );

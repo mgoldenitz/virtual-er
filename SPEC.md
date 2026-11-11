@@ -50,7 +50,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 - Link: "See current wait times on THP's website" (opens THP's page; nothing copied).
 - "Start a visit" button: choose one of two demo sites ("Demo Site A", "Demo Site B") and a language. The app creates the visit code and a QR code and saves the code in the phone's browser storage, so the patient never types it and reopening the site brings the visit back.
 - While staff have paused off-site waiting, "Start a visit" is replaced by: "Off-site waiting is paused right now. Please come to the emergency department and wait there."
-- A visit started from home has status "Checked in from home, not yet triaged" and shows: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first."
+- A visit started from home has status "Started from home, not yet triaged" (owner, 2026-11-10; was "Checked in from home") and shows: "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first."
 - The footer disclaimer and the 911 line appear here too.
 
 ### /patient (phone, no login)

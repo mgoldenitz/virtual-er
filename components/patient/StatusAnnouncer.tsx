@@ -4,23 +4,27 @@
 // an assertive message for the call-back, a polite one for everything else.
 
 import { useEffect, useRef, useState } from "react";
+import { textFor } from "@/lib/text";
 import type { VisitStatus } from "@/lib/visit";
 
-const CALLED = "You have been called back. Please head back to the emergency department now.";
-
-const MESSAGES: Partial<Record<VisitStatus, string>> = {
-  called: CALLED,
-  on_the_way: "Thank you. Staff know you are on your way.",
-  arrived: "Staff have marked you as back at the emergency department.",
-  removed: "Your off-site wait has ended.",
-  unable_to_reach: "Your off-site wait has ended.",
-  needs_reassessment: "Please go to the triage desk.",
-};
+/** What is announced for each status change, in the visit's language. */
+function messageFor(status: VisitStatus, language: string): string {
+  const a = textFor(language).announce;
+  const messages: Partial<Record<VisitStatus, string>> = {
+    called: a.called,
+    on_the_way: a.onTheWay,
+    arrived: a.arrived,
+    removed: a.ended,
+    unable_to_reach: a.ended,
+    needs_reassessment: a.reassess,
+  };
+  return messages[status] ?? "";
+}
 
 /** One status change waiting to be announced. `round` makes every change new, even a repeat. */
 type Pending = { round: number; status: VisitStatus };
 
-export function StatusAnnouncer({ status }: { status: VisitStatus }) {
+export function StatusAnnouncer({ status, language }: { status: VisitStatus; language: string }) {
   const [previous, setPrevious] = useState<VisitStatus | null>(null);
   // A call-back already on screen when the page opens is announced; other opening statuses are not.
   const [pending, setPending] = useState<Pending | null>(null);
@@ -47,7 +51,7 @@ export function StatusAnnouncer({ status }: { status: VisitStatus }) {
   // forward, then announces the status if it has not changed in the meantime.
   useEffect(() => {
     if (!pending) return;
-    const text = MESSAGES[pending.status] ?? "";
+    const text = messageFor(pending.status, language);
     if (!text) return;
     let done = false;
     const announce = () => {
@@ -62,7 +66,7 @@ export function StatusAnnouncer({ status }: { status: VisitStatus }) {
       window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", announce);
     };
-  }, [pending]);
+  }, [pending, language]);
 
   return (
     <>

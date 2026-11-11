@@ -71,7 +71,7 @@ export function checkInAtDesk(input: DeskCheckIn, outcome: DeskOutcome, now: Dat
 }
 
 /**
- * A patient starts a visit from home on the start page: "Checked in from home, not yet triaged".
+ * A patient starts a visit from home on the start page: "Started from home, not yet triaged".
  * This never gives a place in line (SPEC rule 7); that starts at triage.
  * In the app the database function start_home_visit does this; this copy is used by the tests.
  */

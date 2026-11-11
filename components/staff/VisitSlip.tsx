@@ -8,6 +8,7 @@ import { groupToken } from "@/lib/codes";
 import { slipOrigin } from "@/lib/slipOrigin";
 import { patientLink } from "@/data/savedToken";
 import { Button } from "@/components/Button";
+import { textFor } from "@/lib/text";
 
 type Props = { code: string; token: string; onClose: () => void };
 
@@ -37,7 +38,7 @@ export function VisitSlip({ code, token, onClose }: Props) {
           <p>
             Visit code: <strong className="font-mono text-2xl tracking-widest">{code}</strong>
           </p>
-          <p className="text-sm">Or type this link into your phone&apos;s browser:</p>
+          <p className="text-sm">{textFor("en").slip.typeLink}</p>
           <p className="font-mono text-sm break-all" data-testid="slip-link">
             {typedLink}
           </p>

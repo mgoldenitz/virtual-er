@@ -5,34 +5,33 @@
 
 import Link from "next/link";
 import type { PatientView } from "@/lib/patientView";
+import { textFor, type PatientText } from "@/lib/text";
 import { Button } from "@/components/Button";
 
 type Props = { view: PatientView; onOnMyWay: () => void; sending: boolean };
 
-function Waiting({ view }: { view: PatientView }) {
+function Waiting({ view, t }: { view: PatientView; t: PatientText }) {
+  const p = t.patient;
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
-        Status: Waiting
+        {p.waitingHeading}
       </h2>
       <p className="text-lg">
-        Your place in line: <strong className="text-3xl">{view.placeInLine}</strong>
+        {p.placeInLine} <strong className="text-3xl">{view.placeInLine}</strong>
       </p>
-      <p className="text-base">
-        Your place can change if more urgent patients arrive. The most urgent patients are always seen first.
-      </p>
+      <p className="text-base">{p.placeCanChange}</p>
       <p className="text-lg">
-        Estimated time until you&apos;re called back:{" "}
-        <strong>
-          {view.waitLow} to {view.waitHigh} minutes
-        </strong>
+        {p.waitLabel}{" "}
+        <strong>{view.waitLow !== null && view.waitHigh !== null && p.waitRange(view.waitLow, view.waitHigh)}</strong>
       </p>
-      <p className="text-sm text-slate-700">This estimate is simulated for the demo.</p>
+      <p className="text-sm text-slate-700">{p.simulated}</p>
     </section>
   );
 }
 
-function Called({ view, onOnMyWay, sending }: Props) {
+function Called({ view, onOnMyWay, sending, t }: Props & { t: PatientText }) {
+  const p = t.patient;
   const confirmed = view.status === "on_the_way";
   return (
     <section
@@ -40,67 +39,53 @@ function Called({ view, onOnMyWay, sending }: Props) {
       className="space-y-3 rounded-xl border-4 border-green-800 bg-green-50 p-4"
     >
       <h2 id="status-heading" className="text-2xl font-bold text-green-950">
-        Please head back now
+        {p.calledHeading}
       </h2>
-      <p className="text-lg">Please return to the emergency department and go to the desk.</p>
+      <p className="text-lg">{p.calledText}</p>
       {confirmed ? (
         <p className="text-lg font-semibold" data-testid="confirmed">
-          Thank you. Staff know you are on your way.
+          {p.confirmed}
         </p>
       ) : (
         <Button onClick={onOnMyWay} aria-disabled={sending} className="w-full text-lg">
-          {sending ? <>Sending…</> : <>I&apos;m on my way</>}
+          {sending ? p.sending : p.onMyWay}
         </Button>
       )}
-      <p className="text-sm text-slate-800">
-        Demo limits: alerts on this page only work while it is open and your phone is unlocked.
-      </p>
+      <p className="text-sm text-slate-800">{p.alertLimits}</p>
     </section>
   );
 }
 
-// Heading and message for every status that has no place-in-line or call-back screen.
-// Placeholder wording until the Phase 3 wording review.
-const OTHER: Record<string, { heading: string; text: string | string[] }> = {
-  pre_arrival: {
-    heading: "Status: Checked in from home, not yet triaged",
-    text: [
-      "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.",
-      "Starting this demo visit does not register you with a hospital, reserve a place, or give permission to wait off-site.",
-      "If you go to the emergency department, follow its normal arrival, triage and registration steps. Show this visit code when staff ask. Only staff can approve waiting off-site.",
-    ],
-  },
-  needs_reassessment: {
-    heading: "Please go to the triage desk",
-    text: "A nurse will check you again before you rejoin the line.",
-  },
-  arrived: {
-    heading: "Status: Ready at the desk",
-    text: "Staff have marked you as back. Please stay in the waiting area until staff call you.",
-  },
-  declined: {
-    heading: "Status: Waiting in the emergency department",
-    text: "You are waiting on-site as usual. Staff will call you in the waiting area.",
-  },
-  not_eligible: {
-    heading: "Status: Waiting in the emergency department",
-    text: "You are waiting on-site as usual. Staff will call you in the waiting area.",
-  },
-};
+/** Heading and paragraphs for every status that has no place-in-line or call-back screen. */
+function otherStatus(status: PatientView["status"], t: PatientText): { heading: string; text: string[] } {
+  const p = t.patient;
+  switch (status) {
+    case "pre_arrival":
+      return { heading: p.fromHomeHeading, text: p.fromHomeText };
+    case "needs_reassessment":
+      return { heading: p.reassessHeading, text: [p.reassessText] };
+    case "arrived":
+      return { heading: p.arrivedHeading, text: [p.arrivedText] };
+    case "declined":
+    case "not_eligible":
+      return { heading: p.onsiteHeading, text: [p.onsiteText] };
+    case "unable_to_reach":
+      return { heading: p.endedHeading, text: [p.unableText] };
+    case "removed":
+      return { heading: p.endedHeading, text: [p.removedText] };
+    default:
+      return { heading: p.endedHeading, text: [p.endedText] };
+  }
+}
 
-const ENDED = {
-  heading: "Your off-site wait has ended",
-  text: "Please check with the emergency department desk.",
-};
-
-function OtherStatus({ view }: { view: PatientView }) {
-  const { heading, text } = OTHER[view.status] ?? ENDED;
+function OtherStatus({ view, t }: { view: PatientView; t: PatientText }) {
+  const { heading, text } = otherStatus(view.status, t);
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
         {heading}
       </h2>
-      {(Array.isArray(text) ? text : [text]).map((paragraph) => (
+      {text.map((paragraph) => (
         <p key={paragraph} className="text-lg">
           {paragraph}
         </p>
@@ -110,32 +95,30 @@ function OtherStatus({ view }: { view: PatientView }) {
 }
 
 // A visit started from home that was never triaged within 6 hours: staff no longer expect it.
-function Expired() {
+function Expired({ t }: { t: PatientText }) {
+  const p = t.patient;
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
       <h2 id="status-heading" className="text-2xl font-bold">
-        This visit request has expired
+        {p.expiredHeading}
       </h2>
+      <p className="text-lg">{t.expiredText}</p>
+      <p className="text-lg">{p.expiredHelp}</p>
       <p className="text-lg">
-        It was started more than 6 hours ago and was never checked in at triage, so staff no longer expect it.
-      </p>
-      <p className="text-lg">
-        If you still need care, go to the emergency department and follow its normal arrival and triage steps.
-        You can also{" "}
         <Link href="/" className="font-semibold text-blue-900 underline underline-offset-2">
-          start a new demo visit on the start page
+          {p.expiredNewVisit}
         </Link>
-        .
       </p>
     </section>
   );
 }
 
 export function PatientStatus({ view, onOnMyWay, sending }: Props) {
-  if (view.expired) return <Expired />;
-  if (view.status === "waiting") return <Waiting view={view} />;
+  const t = textFor(view.language);
+  if (view.expired) return <Expired t={t} />;
+  if (view.status === "waiting") return <Waiting view={view} t={t} />;
   if (view.status === "called" || view.status === "on_the_way") {
-    return <Called view={view} onOnMyWay={onOnMyWay} sending={sending} />;
+    return <Called view={view} onOnMyWay={onOnMyWay} sending={sending} t={t} />;
   }
-  return <OtherStatus view={view} />;
+  return <OtherStatus view={view} t={t} />;
 }

@@ -11,6 +11,7 @@ import { useState, useSyncExternalStore } from "react";
 import { startVisitFromHome, usePatientView, type StartResult } from "@/data/patientVisit";
 import { loadSavedToken } from "@/data/savedToken";
 import { startPageState } from "@/lib/startPage";
+import { textFor } from "@/lib/text";
 import type { Site } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -20,50 +21,38 @@ const openLinkStyle =
   "inline-block min-h-11 rounded-xl bg-brand px-4 py-2 font-semibold text-white hover:bg-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
 const boxStyle = "clean-card space-y-3";
 
-// What the start page says about a visit already saved on this phone, before any new one.
-const SAVED_NOTE = {
-  closed: {
-    heading: "Your last visit on this phone",
-    text: "Off-site waiting has ended for this visit. You may still be waiting in the emergency department: open your visit to see its status.",
-  },
-  expired: {
-    heading: "Your visit request on this phone has expired",
-    text: "It was started more than 6 hours ago and was never checked in at triage, so staff no longer expect it.",
-  },
-};
-
-// What the patient is told when a visit could not be started.
-const START_PROBLEM: Record<Exclude<StartResult, "saved">, string> = {
-  paused: "Off-site waiting is paused right now. Please come to the emergency department and wait there.",
-  busy: "Too many visits have been started just now. Please wait a few minutes and try again, or go to the emergency department.",
-  not_saved: "Your visit was not saved. Please try again, or go to the emergency department desk.",
-};
-
 export function StartVisit() {
   const router = useRouter();
   const savedToken = useSyncExternalStore(noSubscribe, loadSavedToken, () => null);
   const saved = usePatientView(savedToken);
   const [site, setSite] = useState<Site>("A");
   const [language, setLanguage] = useState("en");
-  const [problem, setProblem] = useState("");
+  const [problem, setProblem] = useState<Exclude<StartResult, "saved"> | null>(null);
   const [starting, setStarting] = useState(false);
   const [wantsNew, setWantsNew] = useState(false);
   const state = startPageState(saved);
+  const t = textFor(language);
+  const s = t.start;
+
+  // What the patient is told when a visit could not be started.
+  const problemText = { paused: s.paused, busy: s.busy, not_saved: s.notSaved };
+  // What the start page says about a visit already saved on this phone, before any new one.
+  const savedNote = {
+    closed: { heading: s.closedHeading, text: s.closedText },
+    expired: { heading: s.expiredHeading, text: t.expiredText },
+  };
 
   if (state === "loading") {
-    return <p>Checking this phone for a saved visit…</p>;
+    return <p>{s.checkingSaved}</p>;
   }
 
   if (state === "unavailable") {
     return (
       <section aria-labelledby="start-heading" className={boxStyle}>
         <h2 id="start-heading" className="text-xl font-bold">
-          We cannot read the visit saved on this phone
+          {s.unavailableHeading}
         </h2>
-        <p>
-          The visit saved on this phone cannot be loaded right now, so a new visit is not offered. If you
-          need care, go to the emergency department and follow its normal arrival and triage steps.
-        </p>
+        <p>{s.unavailableText}</p>
       </section>
     );
   }
@@ -72,43 +61,43 @@ export function StartVisit() {
     return (
       <section aria-labelledby="start-heading" className={boxStyle}>
         <h2 id="start-heading" className="text-xl font-bold">
-          You have a visit on this phone
+          {s.openHeading}
         </h2>
         <p>
-          Visit code <strong className="font-mono tracking-widest">{saved.code}</strong> · Demo Site{" "}
-          {saved.site}
+          {t.visitCode} <strong className="font-mono tracking-widest">{saved.code}</strong> ·{" "}
+          {t.siteName(saved.site)}
         </p>
         <Link href="/patient" className={openLinkStyle}>
-          Open your visit
+          {s.openVisit}
         </Link>
       </section>
     );
   }
 
   // An ended or expired visit is shown first; starting another demo visit is a separate choice.
-  const savedNote =
+  const savedBox =
     saved && typeof saved === "object" && (state === "closed" || state === "expired") ? (
       <section aria-labelledby="saved-heading" className={boxStyle}>
         <h2 id="saved-heading" className="text-xl font-bold">
-          {SAVED_NOTE[state].heading}
+          {savedNote[state].heading}
         </h2>
         <p>
-          Visit code <strong className="font-mono tracking-widest">{saved.code}</strong> · Demo Site{" "}
-          {saved.site}
+          {t.visitCode} <strong className="font-mono tracking-widest">{saved.code}</strong> ·{" "}
+          {t.siteName(saved.site)}
         </p>
-        <p>{SAVED_NOTE[state].text}</p>
+        <p>{savedNote[state].text}</p>
         <Link href="/patient" className={openLinkStyle}>
-          Open your visit
+          {s.openVisit}
         </Link>
       </section>
     ) : null;
 
-  if (savedNote && !wantsNew) {
+  if (savedBox && !wantsNew) {
     return (
       <div className="space-y-4">
-        {savedNote}
+        {savedBox}
         <Button variant="secondary" onClick={() => setWantsNew(true)}>
-          Start a new demo visit instead
+          {s.startNew}
         </Button>
       </div>
     );
@@ -117,47 +106,44 @@ export function StartVisit() {
   const start = async () => {
     if (starting) return; // a second tap while the first is on its way must not start two visits
     setStarting(true);
-    setProblem("");
+    setProblem(null);
     const result = await startVisitFromHome(site, language);
     if (result === "saved") {
       router.push("/patient");
       return; // stays "Starting…" until the patient screen opens
     }
     setStarting(false);
-    setProblem(START_PROBLEM[result]);
+    setProblem(result);
   };
 
   return (
     <section aria-labelledby="start-heading" className="clean-card space-y-4">
       <h2 id="start-heading" className="text-xl font-bold">
-        Start a visit
+        {s.startHeading}
       </h2>
-      <p>
-        Starting a visit here does not hold a place in line. Your place in line starts when a nurse sees you
-        at triage. The most urgent patients are always seen first.
-      </p>
+      <p>{s.startIntro}</p>
       <fieldset>
-        <legend className="font-semibold">Which emergency department are you going to?</legend>
+        <legend className="font-semibold">{s.siteQuestion}</legend>
         <div className="mt-2 flex flex-wrap gap-3">
-          {(["A", "B"] as const).map((s) => (
+          {(["A", "B"] as const).map((option) => (
             <label
-              key={s}
+              key={option}
               className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-control px-4"
             >
               <input
                 type="radio"
                 name="site"
                 className="size-5"
-                checked={site === s}
-                onChange={() => setSite(s)}
+                checked={site === option}
+                onChange={() => setSite(option)}
               />
-              Demo Site {s}
+              {t.siteName(option)}
             </label>
           ))}
         </div>
       </fieldset>
       <label className="block">
-        <span className="font-semibold">Language</span>
+        <span className="font-semibold">{s.languageLabel}</span>
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
@@ -165,14 +151,14 @@ export function StartVisit() {
         >
           <option value="en">English</option>
         </select>
-        <span className="mt-1 block text-sm text-slate-700">Two more languages come in Phase 3.</span>
+        <span className="mt-1 block text-sm text-slate-700">{s.languageNote}</span>
       </label>
       <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
-        {starting ? "Starting…" : "Start a visit"}
+        {starting ? s.starting : s.startButton}
       </Button>
       {problem && (
         <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
-          {problem}
+          {problemText[problem]}
         </p>
       )}
     </section>
