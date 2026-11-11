@@ -24,6 +24,8 @@ I forget these handoffs. Whenever one of the steps below comes up, stop and give
 
 Save every handoff file in the handoffs/ folder of this project, never in a temporary folder. Name it date-model-topic.md (for example 2026-11-09-gemini-review-core-loop.md), and give that path in the "Model handoff:" note.
 
+Make one handoff file per review. When I paste the model's answer back, add it at the bottom of that same file under a "Response" heading (with your check of it below that), never in a separate -response file. Only reviews that are still open stay in handoffs/. Once a review is done or skipped, move its file into handoffs/archive/ and update any links to it.
+
 I do not have GPT-6.1 Sol, Gemini 4 Argon or GPT-6.1 Terra. Gemini 3.1 Pro, High, does their work; when I have no Gemini 3.1 Pro credits, Gemini 3.6 Flash, High, does it instead. Kimi K3.1 Pro always runs at Thinking Max; when Kimi is not working, give its step to Gemini 3.1 Pro, High, and say so in the note.
 
 - After each small change works and passes its tests: Gemini 3.1 Pro, High, reviews the result.

@@ -1,5 +1,5 @@
 // Every sentence a patient sees, in English. Other languages copy this shape (lib/text/index.ts).
-// Wording approved by the owner on 2026-11-10 (handoffs/2026-11-10-gemini-patient-wording-phase3-response.md).
+// Wording approved by the owner on 2026-11-10 (handoffs/archive/2026-11-10-gemini-patient-wording-phase3-response.md).
 // Sentences marked "SPEC" are fixed by SPEC.md: change them only if the owner changes SPEC.
 
 export const en = {
