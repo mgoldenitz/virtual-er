@@ -102,13 +102,13 @@ State:
 Waiting on the owner:
 - **Model handoff not done yet:** GPT-6 Astra (High), Phase 2 security review. File: `handoffs/2026-11-10-astra-security-review-phase2.md` (no keys, project id, emails or patient data). The owner pastes the answer or says "skip". Check each point against the code before changing anything, and save the answer as `handoffs/2026-11-10-astra-security-review-phase2-response.md`.
 
-Left in Phase 2 (named by the owner on 2026-11-10; nothing built yet, and the details below are Claude's reading, to confirm with the owner before starting):
-1. **Keep-alive job.** Most likely: Supabase pauses a free project after about a week without activity, which would take the live link down between demos. A small scheduled job (for example a Vercel cron that calls a harmless read) would keep it awake. It must read no visit data, and any new Vercel or Supabase setting needs the owner's approval first.
-2. **Phase 1 backup link.** Most likely: a second link to the Phase 1 version (all data kept in the browser, no Supabase), so a demo can still run if the database or the live link is down. Ask where it should live (a separate Vercel project, or a branch with its own preview address), and make sure it shows the same footer, 911 line and demo notices.
+Left in Phase 2 (confirmed by the owner on 2026-11-10):
+1. **Keep-alive job:** a daily Vercel Cron job that makes one tiny database read, so the free Supabase project never pauses (Supabase pauses Free projects after 7 days of low activity). Terms checked 2026-11-10: Supabase's Terms of Service, Acceptable Use Policy and pausing docs do not forbid it; the pausing docs suggest "making API calls to your project" to prevent pausing. Only general rules apply (do not degrade or disrupt the service; no denial of service). Caveat: the last third of the Terms was read as a summary, not word for word. The read must touch no visit data.
+2. **Phase 1 backup link:** branch `phase1-backup` from commit `f51eaac` (end of Phase 1, all data in the browser, no Supabase), and a separate Vercel project whose production branch is `phase1-backup`, so it gets its own short public address. Not a preview link (those need a Vercel login).
 
 Before the Phase 2 closing save point:
 - List any Phase 2 handoff still not done (only Astra, unless done or skipped by then).
-- SPEC: the Supabase MCP runs read_only after Phase 2. Remind the owner, and change `.mcp.json` only with approval.
+- Switch the Supabase MCP to read-only in `.mcp.json` (SPEC; approved by the owner on 2026-11-10 for the Phase 2 closing save point). Do any database change that is still needed before that.
 - At the start of Phase 3: `npm update`, then `npm audit` (the minimatch warnings, see Phase 1 notes).
 
 Not checked yet:
