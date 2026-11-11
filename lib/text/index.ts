@@ -5,7 +5,7 @@ import { en, type PatientText } from "./en";
 
 export type { PatientText };
 
-/** Text for each language the app has. French and one more language are added in Phase 3. */
+/** Text for each language the app has. French, Urdu, Arabic and Mandarin are added in Phase 3. */
 const TEXT: Record<string, PatientText> = { en };
 
 /** Puts values into a sentence's {braces}, for example fill("{low} to {high} minutes", { low: 40, high: 60 }). */
