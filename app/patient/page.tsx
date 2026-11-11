@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
-import { useChosenLanguage } from "@/data/savedLanguage";
+import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
 import { takeTokenFromLink } from "@/data/savedToken";
 import { EmergencyLine } from "@/components/EmergencyLine";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
@@ -28,6 +28,8 @@ export default function PatientPage() {
   useEffect(() => {
     const readLink = () => {
       const link = takeTokenFromLink();
+      // A desk QR link carries the visit's language: remember it, so it shows before the visit loads.
+      if (link.language) chooseLanguage(link.language);
       setToken(link.token);
       setBrokenLink(link.brokenLink);
       setNotSaved(false);
@@ -108,8 +110,11 @@ export default function PatientPage() {
       ) : (
         <>
           <p className="text-base">
-            {t.visitCode}: <strong className="font-mono tracking-widest">{view.code}</strong> ·{" "}
-            {fill(t.siteName, { site: view.site })}
+            {t.visitCode}:{" "}
+            <bdi>
+              <strong className="font-mono tracking-widest">{view.code}</strong>
+            </bdi>{" "}
+            · <bdi>{fill(t.siteName, { site: view.site })}</bdi>
           </p>
           {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
           <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} />

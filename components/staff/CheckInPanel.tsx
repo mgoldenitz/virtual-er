@@ -8,11 +8,8 @@ import { useState, type FormEvent } from "react";
 import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
 import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
-import { LANGUAGES } from "@/lib/text/languages";
+import { LANGUAGES, menuLabel } from "@/lib/text/languages";
 import { Button } from "@/components/Button";
-
-/** English names for the staff menu, next to each language's own name. */
-const STAFF_NAMES: Record<string, string> = { fr: "French", ur: "Urdu", ar: "Arabic", zh: "Mandarin" };
 
 const CHECKLIST = [
   { id: "phone", label: "Has a phone with them" },
@@ -187,7 +184,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>
-              {l.code === "en" ? l.name : `${l.name} (${STAFF_NAMES[l.code]}, draft until checked)`}
+              {l.approved ? menuLabel(l) : `${menuLabel(l)}, draft until checked`}
             </option>
           ))}
         </select>

@@ -109,7 +109,7 @@ export default function StaffPage() {
             homeProblem={homeProblem}
             onHomeDone={() => setHomeVisit(null)}
           />
-          {slip && <VisitSlip code={slip.code} token={slip.access_token} onClose={() => setSlip(null)} />}
+          {slip && <VisitSlip code={slip.code} token={slip.access_token} language={slip.language} onClose={() => setSlip(null)} />}
         </div>
 
         <section aria-labelledby="list-heading" className="glass-panel space-y-3">

@@ -10,12 +10,12 @@ import { patientLink } from "@/data/savedToken";
 import { Button } from "@/components/Button";
 import { textFor } from "@/lib/text";
 
-type Props = { code: string; token: string; onClose: () => void };
+type Props = { code: string; token: string; language: string; onClose: () => void };
 
-export function VisitSlip({ code, token, onClose }: Props) {
+export function VisitSlip({ code, token, language, onClose }: Props) {
   // Always the live link, except on localhost while testing (lib/slipOrigin.ts).
   const origin = slipOrigin(typeof window === "undefined" ? "" : window.location.origin);
-  const scanLink = patientLink(origin, token);
+  const scanLink = patientLink(origin, token, language);
   const typedLink = patientLink(origin, groupToken(token));
 
   return (

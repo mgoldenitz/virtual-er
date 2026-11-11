@@ -6,7 +6,7 @@
 
 import { chooseLanguage } from "@/data/savedLanguage";
 import { textFor } from "@/lib/text";
-import { languageInfo, LANGUAGES } from "@/lib/text/languages";
+import { languageInfo, LANGUAGES, menuLabel } from "@/lib/text/languages";
 
 export function LanguageSwitch({ language }: { language: string }) {
   const t = textFor(language);
@@ -22,7 +22,7 @@ export function LanguageSwitch({ language }: { language: string }) {
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code} lang={l.code} dir={l.dir}>
-              {l.name}
+              {menuLabel(l)}
             </option>
           ))}
         </select>

@@ -581,3 +581,23 @@ index 0000000..c26b72d
 +  return "en";
 +}
 ```
+
+## Response
+
+From Gemini 3.1 Pro, High (pasted by the owner, 2026-11-11), in short:
+
+1. A patient who scans a desk QR code has no saved language, so "Loading…", the 911 line and "We cannot load your visit" show in English until the visit loads (or for good on a bad connection). Fix: put the visit's language in the QR link (`#t=token&l=ur`).
+2. `dir` only on `<main>` leaves the footer left to right; codes, the 811 number, wait ranges and the "·" separator inside right-to-left text can be scrambled (for example "60 to 40"). Fix: `dir` on `<html>`, `<span dir="ltr">` around embedded values, direction marks around separators.
+3. Phone screen readers often ignore `lang` on `<option>`, so "اردو" may be read with an English voice; `<html lang="en">` never changes. Fix: add the English name to each option; change `<html lang>` on the client.
+4. "Phone's choice first" is wrong: a phone left on French overrides staff choosing Urdu at check-in. Fix: prefer the visit's language.
+5. The start page is built in English on the server and switches after loading, which "throws a React hydration error" and flashes. Fix: a cookie, or render the text only after mounting.
+
+## Claude's check (2026-11-11)
+
+1. Correct. Fixed: the desk slip's QR link now carries the visit's language (`&l=xx`, only a language code); the patient page remembers it at once (`linkLanguage` in `lib/text/languages.ts`, with tests; `takeTokenFromLink` returns it). The typed link is unchanged, to stay short.
+2. Partly. The footer is English, so left to right is correct. "60 to 40" is not what happens: Arabic reads right to left, so "40 إلى 60" shows 40 first on the right, which is the right order; the Urdu and Arabic screenshots read correctly. As a cheap safeguard, the visit code and the site name are now wrapped in `<bdi>` on the patient screen and the start page.
+3. Partly. Fixed: menu options now read "اردو (Urdu)" (own name, then English; `menuLabel`, with a test), on the patient menu and the staff check-in menu. Not changed: `<html lang="en">`; screen readers use the nearest `lang`, which is the patient's language on `<main>`, and the footer and page title really are English.
+4. Not accepted. With "visit's language first" the patient's own menu would do nothing on the patient screen. The case Gemini describes is solved by fix 1: opening the desk QR link sets the phone to the visit's language.
+5. Not correct about an error: `useSyncExternalStore` with a server value of null is React's intended way to do this; it hydrates with the server value and then re-renders, with no hydration error (none seen in the browser checks). There is a brief English flash on the start page for a phone that chose another language; accepted as a small known limit (a cookie would make the page build on every request).
+
+119 unit tests, type check and lint pass. Not yet checked in a browser (the local dev server was stopped for low memory); check on the live link after the next push. Review closed; file archived.

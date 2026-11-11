@@ -63,8 +63,11 @@ export function StartVisit({ language }: { language: string }) {
           {s.openHeading}
         </h2>
         <p>
-          {t.visitCode} <strong className="font-mono tracking-widest">{saved.code}</strong> ·{" "}
-          {fill(t.siteName, { site: saved.site })}
+          {t.visitCode}{" "}
+          <bdi>
+            <strong className="font-mono tracking-widest">{saved.code}</strong>
+          </bdi>{" "}
+          · <bdi>{fill(t.siteName, { site: saved.site })}</bdi>
         </p>
         <Link href="/patient" className={openLinkStyle}>
           {s.openVisit}
@@ -81,8 +84,11 @@ export function StartVisit({ language }: { language: string }) {
           {savedNote[state].heading}
         </h2>
         <p>
-          {t.visitCode} <strong className="font-mono tracking-widest">{saved.code}</strong> ·{" "}
-          {fill(t.siteName, { site: saved.site })}
+          {t.visitCode}{" "}
+          <bdi>
+            <strong className="font-mono tracking-widest">{saved.code}</strong>
+          </bdi>{" "}
+          · <bdi>{fill(t.siteName, { site: saved.site })}</bdi>
         </p>
         <p>{savedNote[state].text}</p>
         <Link href="/patient" className={openLinkStyle}>

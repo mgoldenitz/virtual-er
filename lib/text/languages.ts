@@ -6,16 +6,18 @@ export type LanguageInfo = {
   code: string;
   /** The language's name written in that language, so a patient can find their own. */
   name: string;
+  /** The English name, shown beside the own-script name (some phone screen readers cannot read the script). */
+  englishName: string;
   dir: "ltr" | "rtl";
   approved: boolean;
 };
 
 export const LANGUAGES: LanguageInfo[] = [
-  { code: "en", name: "English", dir: "ltr", approved: true },
-  { code: "fr", name: "Français", dir: "ltr", approved: false },
-  { code: "ur", name: "اردو", dir: "rtl", approved: false },
-  { code: "ar", name: "العربية", dir: "rtl", approved: false },
-  { code: "zh", name: "中文（简体）", dir: "ltr", approved: false },
+  { code: "en", name: "English", englishName: "English", dir: "ltr", approved: true },
+  { code: "fr", name: "Français", englishName: "French", dir: "ltr", approved: false },
+  { code: "ur", name: "اردو", englishName: "Urdu", dir: "rtl", approved: false },
+  { code: "ar", name: "العربية", englishName: "Arabic", dir: "rtl", approved: false },
+  { code: "zh", name: "中文（简体）", englishName: "Mandarin", dir: "ltr", approved: false },
 ];
 
 export const LANGUAGE_CODES = LANGUAGES.map((l) => l.code);
@@ -23,6 +25,20 @@ export const LANGUAGE_CODES = LANGUAGES.map((l) => l.code);
 /** The language's details; English for an unknown code. */
 export function languageInfo(code: string | null | undefined): LanguageInfo {
   return LANGUAGES.find((l) => l.code === code) ?? LANGUAGES[0];
+}
+
+/** How a language is listed in a menu: its own name, then the English name, for example "اردو (Urdu)". */
+export function menuLabel(info: LanguageInfo): string {
+  return info.code === "en" ? info.name : `${info.name} (${info.englishName})`;
+}
+
+/**
+ * The language carried by a desk QR link (the "l=" part after #), or null. The desk sets it from
+ * the visit, so a patient who scans the slip sees their language even before the visit loads.
+ */
+export function linkLanguage(hash: string): string | null {
+  const match = hash.match(/[#&]l=([a-z]{2,3})(?:&|$)/);
+  return match && LANGUAGE_CODES.includes(match[1]) ? match[1] : null;
 }
 
 /**

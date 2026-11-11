@@ -1,7 +1,7 @@
 // Checks the language list and which language a patient's screen shows.
 
 import { describe, expect, it } from "vitest";
-import { languageInfo, LANGUAGES, patientLanguage } from "./languages";
+import { languageInfo, LANGUAGES, linkLanguage, menuLabel, patientLanguage } from "./languages";
 import { textFor } from "./index";
 
 describe("the language list", () => {
@@ -24,6 +24,26 @@ describe("the language list", () => {
 
   it("gives English details for an unknown code", () => {
     expect(languageInfo("zz").code).toBe("en");
+  });
+});
+
+describe("menuLabel", () => {
+  it("shows the own-script name with the English name beside it", () => {
+    expect(menuLabel(languageInfo("ur"))).toBe("اردو (Urdu)");
+    expect(menuLabel(languageInfo("en"))).toBe("English");
+  });
+});
+
+describe("linkLanguage", () => {
+  it("reads the language from a desk QR link", () => {
+    expect(linkLanguage("#t=abc&l=ar")).toBe("ar");
+    expect(linkLanguage("#l=fr&t=abc")).toBe("fr");
+  });
+
+  it("ignores a missing or unknown language", () => {
+    expect(linkLanguage("#t=abc")).toBeNull();
+    expect(linkLanguage("#t=abc&l=zz")).toBeNull();
+    expect(linkLanguage("#t=abc&l=ar<script>")).toBeNull();
   });
 });
 
