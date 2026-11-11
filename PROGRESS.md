@@ -93,52 +93,68 @@ Decided:
 
 - Desk slip (2026-11-10, owner's request): the QR code and written link always use https://virtual-er-izpf.vercel.app (`lib/slipOrigin.ts`, with tests), whatever address the staff screen is open on; on localhost they keep the local address for testing. Live and in Montreal. Not yet seen on a real slip (needs the owner signed in).
 
-## Where to pick up (updated 2026-11-10, night: Phase 2 closed, the owner restarts Claude Code)
+## Where to pick up (updated 2026-11-11: Phase 3 in progress, the owner clears the chat before the no-response steps)
 
 Links (share only these two):
-- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here.
-- **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. It now builds only its production branch, so pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
+- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. Last push: `0a6d46d` plus this note's save point.
+- **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. Pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
-State:
-- **Phase 2 is closed** (closing save point `803fb2b`, 2026-11-10). Its goal is met: laptop (staff) and phone (patient) update each other within about 2 seconds on the live link.
-- Every Phase 2 handoff is done or skipped: Gemini's security and architecture review (done), GPT-6 Astra (skipped by the owner; Gemini reviewed the same file instead, nothing to change).
-- Closing checks passed: 80 unit tests, type check, lint, `supabase/checks/permissions.sql` (exact match), security advisor (only expected warnings, plus leaked password protection, see below).
-- **The Supabase MCP is now read-only** (`.mcp.json`, `read_only=true`, SPEC rule). It can read tables and logs but cannot change the database. Phase 3 database changes therefore go as migration files in `supabase/migrations/`; Claude shows the SQL, and the owner runs it in the Supabase dashboard's SQL Editor (or a later agreed route). Never switch read-only off without the owner asking.
-- The last save points (`c6f7d41` to the one with this note) are on this laptop only, **not pushed to GitHub yet**. They change notes and `.mcp.json`, not the app. Ask the owner before pushing (a push to `main` redeploys the live link).
+State on 2026-11-11:
+- **Phase 2 is closed** (`803fb2b`). **Phase 3 is in progress**; details in the Phase 3 section below.
+- Phase 3 done so far: package update; patient wording (Gemini) with the owner's corrections; all patient text in `lib/text/` (one file per language); five languages (English, French, Urdu, Arabic, Mandarin) with draft notices and a language switch (phone remembers the choice, desk QR link carries the language, Urdu and Arabic right to left); "I'm still here" (database change run, tested, reviewed). Every one of these is pushed and live.
+- 119 unit tests, type check and lint pass. axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
+- The `visits` table is empty (test visits deleted by the owner on 2026-11-11).
+- No review is open: `handoffs/` holds only `archive/`.
 - The untracked `.codex/` folder is the owner's; leave it.
-- The `visits` table is empty; every test visit was deleted.
 
-Waiting on the owner (none of these block Phase 3):
-1. After 12:00 UTC on 2026-11-11: confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` is listed with `0 12 * * *` and shows its first run. The MCP cannot list cron jobs.
-2. Optional: turn on leaked password protection (Supabase dashboard > Authentication, password settings). It refuses passwords found in known leaks. Only the owner's staff sign-in uses a password. It may need a paid plan (not checked).
+**Next: the no-response steps after a call-back** (SPEC, /staff section). What is already in place, and the plan:
+- Fields already in the `visits` table: `called_at`, `seen_at`, `confirmed_at`, `phone_attempts`, `last_phone_result` (answered or no_answer), `followup_paused_until`, `review_flagged_at`. The patient's phone already reads `calledAt` (`get_patient_visit`), so the patient-side steps may need no database change. Check whether the staff-side steps do (for example a database check on which steps are allowed).
+- Steps (all times are settings in `lib/demoTimes.ts`, placeholders a clinical lead would set; shorten them for testing):
+  - 0 minutes: the called screen alerts (already built; sound and vibration not built yet).
+  - 10 minutes without "I'm on my way": second alert on the patient screen (text ready: `secondAlert`, announcement `announce.secondAlert`); staff flag "Phone this patient" (SPEC wording, kept on purpose: "Call" clashes with "Call back", "Text" needs phone numbers the demo does not store). Staff record each simulated call: "Phoned, answered" or "Phoned, no answer". "Answered" saves `last_phone_result`, clears the phone flag and pauses the steps until `followup_paused_until` (setting, default 10 minutes); afterwards the steps continue from the time since `called_at`, they do not restart. An answered visit that still does not arrive is flagged "Contacted, not yet arrived", never "Review: unable to reach".
+  - 20 minutes: staff flag "Phone a second time"; the patient screen shows `returnNow.lead` + `returnNow.text` ("Please return now. Staff will review your visit if you do not respond.", SPEC sentence).
+  - 30 minutes with no answered call: "Review: unable to reach"; the visit stays in the line until a nurse confirms. On confirmation: status unable_to_reach, closed_at set, leaves the active line. Not recorded as left without being seen.
+  - Reopen an unable_to_reach visit: clears closed_at, status needs_reassessment (back to triage).
+  - Also "Confirmed but not arrived": a set time after `confirmed_at` (setting, default 30 minutes) flag "On the way, not arrived"; never remove automatically.
+- Put the rule in `lib/` as small functions with tests (like `lib/stillHere.ts`), staff flags in `components/staff/VisitRow.tsx` (split the file before it passes 300 lines), patient messages in the called screen (`components/patient/PatientStatus.tsx`).
+- After it works and passes its tests: save point, then a Gemini 3.1 Pro (High) review handoff in a new chat (CLAUDE.md).
 
-Start of Phase 3 (next steps, in order):
-1. Save point, then `npm update`, then `npm audit` (the minimatch warnings, see Phase 1 notes). Run tests, type check and lint after.
-2. Model handoff: GPT-6.1 Terra (Medium) writes the patient-facing wording and the survey question. Later in the phase: DeepSeek V4.1-Flash (Low) drafts translations; a fluent human reviewer approves them, safety messages first (remind the owner to find one); Kimi K3.1 Pro (Thinking Max) reviews equity and accessibility (Gemini 3.1 Pro, High, if Kimi is not working); Gemini 3.1 Pro (High) reviews workflow and screen consistency.
-3. Phase 3 database work already decided: `confirm_on_my_way` fills `seen_at` itself when empty; the allowed-step checks move into the database; the pause switch (see "Carry into later steps").
+Rest of Phase 3 after that (SPEC Phase 3 list):
+- "Call everyone back" with a confirmation step.
+- "Pause off-site waiting" per site with confirmation (and a second confirmation to turn it off); the start route already refuses while paused. Needs a patient-safe way to read the pause so the start page can hide "Start a visit" (text ready: `pausedHeading`, `start.paused`).
+- Offline banner (owner asked; text `offline`), text size control (text `textSize`), sound and vibration on the called screen (text `sound`; must say it only works while the page is open and the phone unlocked).
+- 24-hour deletion with the `daily_stats` table (SPEC hard rule 4).
+- Database decisions already made: `confirm_on_my_way` fills `seen_at` itself when empty; move the allowed-step checks into the database.
+- Closing Phase 3: WCAG 2.2 AA check (axe-core at phone and laptop size, 200% text), /security-review over all Phase 3 changes, Gemini 3.1 Pro (High, new chats) reviews equity and accessibility, then workflow and screen consistency; the fluent reviewers approve each language (set `approved: true` in `lib/text/languages.ts`); list any open handoff before the closing save point.
 
-Phase 2 items (both done 2026-11-10):
-1. **Keep-alive job: built and live.** `vercel.json` runs `/api/keep-alive` daily at 12:00 UTC (Hobby: any time in that hour). The route (`app/api/keep-alive/route.ts`) accepts only Vercel's call carrying `CRON_SECRET` (`lib/cronAuth.ts`, with tests) and reads the change signal's time with the publishable key (`data/keepAliveRead.ts`); no visit data. `CRON_SECRET` is in `.env.local` and in Vercel (Production). Checked live: refused without the secret (401), "ok" with it (200). Supabase pauses Free projects after 7 days of low activity; its Terms, Acceptable Use Policy and pausing docs do not forbid this (the pausing docs suggest "making API calls to your project"). Caveat: the last third of the Terms was read as a summary, not word for word.
-2. **Phase 1 backup link: live.** The branch is `f51eaac` (end of Phase 1, all data in the browser, no Supabase) plus one save point `9b789d0` (THP link fix, approved by the owner). Checked: start, patient, staff and dashboard pages load; `/login` and `/api/keep-alive` give 404; footer, 911 line and the www.thp.ca link are there. The empty `virtual-er` project is deleted.
+Waiting on the owner (none block the no-response steps):
+1. Fluent reviewers for French, Urdu, Arabic and Mandarin, safety messages first (notes for them at the top of `handoffs/archive/2026-11-10-gemini-translations-phase3.md`).
+2. Confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` ran (daily at 12:00 UTC). The MCP cannot list cron jobs.
+3. Optional: leaked password protection (Supabase dashboard > Authentication).
 
 Not checked yet:
-- The start route's "paused" and "busy" answers on purpose (they need database changes or 20 test visits, so they need the owner's approval).
-- A real desk slip on the live site showing the live link (needs the owner signed in).
+- The start route's "paused" and "busy" answers on purpose (need database changes or 20 test visits; ask the owner).
+- A real desk slip on the live site showing the live link and its QR code (needs the owner signed in).
+- A patient screen with a real visit open in a language other than English.
 
 Carry into later steps:
-- While off-site waiting is paused, the start page still shows "Start a visit" and gives the pause message after the tap. Hiding the button first needs a patient-safe way to read the pause; do it with the pause switch in Phase 3.
-- Phase 3, database: have `confirm_on_my_way` fill `seen_at` itself when it is empty, and move the allowed-step checks into the database (already decided above).
-- The single `change_signal` row is fine at demo size; Supabase Realtime Broadcast could replace it later (Gemini, twice).
-- Analytics (Vercel Web Analytics, Speed Insights) only after a privacy review; pull requests #1 and #2 were closed for that reason.
+- The single `change_signal` row is fine at demo size; Supabase Realtime Broadcast could replace it later.
+- Analytics (Vercel Web Analytics, Speed Insights) only after a privacy review.
+- A Nastaliq font for Urdu: ask the Urdu reviewer.
+- Phase 4 list (below): realistic simulated wait range from demo data.
 
 Working notes for a new session:
-- The owner usually has this project's dev server running on port 3000. A second `next dev` in the same folder refuses to start, so use the one on 3000.
-- Vercel: team `team_YrtMKwQ7fPtnSdNJHMrFEJlI`, project `prj_9I2BWSDoNacI6gjVldBYA8CaAmo4`. The Vercel MCP can read projects, deployments, logs and the firewall, but may not change firewall settings (403); the Vercel CLI is not installed. If the MCP says "not authorized" for the team, call `authorize_team_access` and give the owner the link. Runtime logs on Hobby go back only 1 hour.
-- Test visits made through the app must be deleted afterwards with `delete from public.visits where code in (...)` through the Supabase MCP: show the SQL, wait for "approved", and the owner must confirm Supabase's own prompt within 2 minutes or it expires and has to be sent again.
-- Playwright cannot sign in as staff (it needs the owner's password), so the staff half of any check is done by the owner. In Playwright, wait for the staff list to load before choosing the site, and use `main:visible` (Next.js keeps the previous page hidden in the document).
-- The Vercel MCP cannot set a project's production branch, cannot list cron jobs, and its create-project tool may reuse a project already linked to the same repository; leave those steps to the owner in the dashboard. Environment variable changes on Vercel need a redeploy; push after the owner adds one, so no separate redeploy is needed.
-- Secrets live only in `.env.local` (git ignores it) and in Vercel's settings: the Supabase URL, publishable key, secret key, and `CRON_SECRET`. Never print them; test with them by reading the file inside a command.
-- Long shell commands with quotes inside a heredoc fail in this setup; write a script file in the scratchpad folder and run that.
+- Models: Gemini only (CLAUDE.md). Handoffs: one file per review in `handoffs/`, the answer goes at the bottom with Claude's check, then the file moves to `handoffs/archive/`.
+- **Database changes**: the Supabase MCP is read-only (SPEC rule; never switch it off without the owner asking) and did not connect in the 2026-11-10/11 session. Write each change as a file in `supabase/migrations/`, explain it, and the owner runs it in the Supabase dashboard's SQL Editor (they open the .sql file in VS Code or SQL Server Management Studio only to copy it; SSMS cannot run it). Then the owner runs `supabase/checks/permissions.sql` (both queries; the editor shows only the last result, so run them separately) and pastes the result. Update the expected list in that file with every new function.
+- **Deleting test visits**: the owner runs `select code, site, source, status, created_at from public.visits order by created_at;` then `delete from public.visits where code in (...);` in the SQL Editor.
+- **Testing with short times**: set `lib/demoTimes.ts` to 1 minute locally (not committed), start a visit from home in Playwright, the owner checks it in on http://localhost:3000/staff (Playwright cannot sign in as staff), then put the times back with `git checkout -- lib/demoTimes.ts`. The owner can also watch the patient tab themselves (Show QR again, then "Demo: open the patient screen in a new tab").
+- **Dev server**: the owner usually runs it on port 3000. In the 2026-11-11 session Claude Code stopped the one Claude started because the computer was low on memory; ask before starting it (`npx next dev -p 3000`).
+- In Playwright, use `main:visible` (Next.js keeps the previous page hidden) and the browser may reset to a blank page between steps; the saved visit is in `localStorage` key `vwr.patientToken`, the language in `vwr.language`.
+- axe-core is in `node_modules/axe-core/axe.min.js`; load it with Playwright's `page.addScriptTag({ path })` and run `axe.run` with the WCAG 2.2 AA tags.
+- Vercel: team `team_YrtMKwQ7fPtnSdNJHMrFEJlI`. The MCP can read deployments and logs but may not change firewall settings or list cron jobs; the Vercel CLI is not installed. Ask the owner before every push (a push to `main` redeploys the live link).
+- Secrets live only in `.env.local` (git ignores it) and in Vercel's settings. Never print them; test with them by reading the file inside a command.
+- Long scripts inside a shell heredoc fail in this setup (quotes and backslashes get mangled); write the script to a file in the scratchpad folder with the Write tool and run it with `python -I`. Python's console here is not UTF-8: call `sys.stdout.reconfigure(encoding="utf-8")` before printing Urdu, Arabic or Chinese.
+- `npm audit` shows 7 moderate warnings from `minimatch` inside the code checker (not in the app); check again at the start of each phase.
 
 ## Phase 3: safety and equity (in progress)
 
@@ -157,6 +173,8 @@ Started 2026-11-10 (evening).
 - Still English: the footer (it is in the shared page frame, outside the patient screen) and staff screens. Possible later: a Nastaliq font for Urdu (it shows in the phone's default Arabic-script font now); ask the Urdu reviewer.
 - Still needed (owner): one fluent reviewer each for French, Urdu, Arabic and Mandarin, safety messages first.
 - "I'm still here" (built 2026-11-11, database change not run yet): `supabase/migrations/20261111050000_still_here.sql` adds `record_still_here` (tap recorded only while waiting) and makes `get_patient_visit` also return the visit's own `triaged_at`. Rule: `lib/stillHere.ts` (due 30 minutes after triage or the last tap, missed 10 minutes later; times in `lib/demoTimes.ts`), with tests. Patient prompt: `components/patient/StillHerePrompt.tsx` (polite screen-reader announcement, thank-you for 5 minutes). Staff row: last tap time and a red "Missed" flag. `supabase/checks/permissions.sql` expects the new function. 92 tests, type check and lint pass. Before the change runs, the app works as before (no prompt). Database change run by the owner on 2026-11-11: both functions answer; `permissions.sql` matched exactly; no table without row-level security. Tested with the times at 1 minute (owner, on localhost): prompt, staff flag, tap clears the flag. Times put back to 30 and 10. Test visits deleted by the owner in the SQL Editor; the `visits` table is empty. Gemini review done (`handoffs/archive/2026-11-11-gemini-review-still-here.md`): fixed a stale "last tap" time on reopened visits (`lastTapThisWait`); accepted limit: a phone with a wrong clock shows its prompt early or late (the staff flag uses the staff laptop's clock, so staff are still told). Kept "Phone this patient" for the no-response step (SPEC wording; "Call" clashes with "Call back"; "Text" needs phone numbers the demo does not store).
+- Pushed to GitHub on 2026-11-11 (owner approved): 23 save points up to `90fbd4e` (wording, "I'm still here", five languages with draft notices). Vercel deployment `dpl_3Qo2yaci8Sswv64nJ2khprJcooxP` READY in Montreal (yul1). Checked on the live link at phone size: start page in English, Arabic right to left with the draft notice and the 911 line; no console errors (two harmless warnings: the staff font and style are preloaded but not used on the start page). 
+- Gemini review of the language switch (2026-11-11, `handoffs/archive/2026-11-11-gemini-review-language-switch.md`). Fixed: the desk QR link carries the visit's language (`&l=xx`) so a scanned slip opens in that language even before the visit loads; menus show "اردو (Urdu)" style labels; visit code and site wrapped in `<bdi>` inside right-to-left text. Not accepted: "visit's language first" (the patient's own menu would stop working) and the claimed hydration error (none; React handles it); accepted limit: a brief English flash on the start page for a phone set to another language. 119 tests pass. Pushed (`0a6d46d`) and checked on the live link at phone size: a link ending `#t=<made-up token>&l=ar` opened the patient screen in Arabic, right to left, with the 911 line; the phone remembered Arabic; the token left the address bar; the menu shows "اردو (Urdu)" style names.
 
 ## Phase 4: to do (list started 2026-11-11)
 
@@ -167,6 +185,3 @@ Started 2026-11-10 (evening).
   - Decided (owner, 2026-11-11): place in line stays off-site only. It counts only visits with status waiting (off-site) at the same site; patients waiting inside the hospital (declined, not eligible), called-back visits and untriaged visits from home never add places. So the demo's waiting-room realism comes from the off-site demo visits and the minutes per place, not from counting on-site patients.
   - Caution: demo visits count in every patient's place in line (`get_patient_visit` does not separate `is_demo`), which is what this needs; "Clear demo data" must remove them before real testing.
   - Check with a unit test (the 9-ahead, 15-minute case gives 120 to 190) and in Playwright after demo mode is built. Gemini 3.6 Flash, High, writes the synthetic visits and expected dashboard numbers (CLAUDE.md); include this expected wait range in its handoff.
-- Pushed to GitHub on 2026-11-11 (owner approved): 23 save points up to `90fbd4e` (wording, "I'm still here", five languages with draft notices). Vercel deployment `dpl_3Qo2yaci8Sswv64nJ2khprJcooxP` READY in Montreal (yul1). Checked on the live link at phone size: start page in English, Arabic right to left with the draft notice and the 911 line; no console errors (two harmless warnings: the staff font and style are preloaded but not used on the start page). Save points after `90fbd4e` are on this laptop only.
-- Gemini review of the language switch (2026-11-11, `handoffs/archive/2026-11-11-gemini-review-language-switch.md`). Fixed: the desk QR link carries the visit's language (`&l=xx`) so a scanned slip opens in that language even before the visit loads; menus show "اردو (Urdu)" style labels; visit code and site wrapped in `<bdi>` inside right-to-left text. Not accepted: "visit's language first" (the patient's own menu would stop working) and the claimed hydration error (none; React handles it); accepted limit: a brief English flash on the start page for a phone set to another language. 119 tests pass. Not pushed yet; not yet seen in a browser (dev server stopped for low memory).
-
