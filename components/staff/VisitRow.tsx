@@ -6,7 +6,7 @@ import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
-import { stillHereState } from "@/lib/stillHere";
+import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -24,8 +24,9 @@ const CHANGED = "The list just changed. Check this patient again.";
 function progress(visit: Visit, now: Date): string {
   if (visit.status === "waiting") {
     // "I'm still here" only shows the patient is still following the visit; never a health check.
-    return visit.last_still_here_at
-      ? `Waiting off-site · last "I'm still here" ${minutesBetween(visit.last_still_here_at, now)} min ago`
+    const lastTap = lastTapThisWait({ triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at });
+    return lastTap
+      ? `Waiting off-site · last "I'm still here" ${minutesBetween(lastTap, now)} min ago`
       : "Waiting off-site";
   }
   const sinceCall = visit.called_at ? minutesBetween(visit.called_at, now) : 0;

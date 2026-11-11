@@ -506,3 +506,23 @@ index 0000000..55d3625
 +grant execute on function public.get_patient_visit(text) to anon, authenticated;
 +grant execute on function public.record_still_here(text) to anon, authenticated;
 ```
+
+## Response
+
+From Gemini 3.1 Pro (pasted by the owner, 2026-11-11):
+
+1. Security: nothing found. `record_still_here` only changes the token's own visit while waiting; returning the patient's own `triaged_at` is safe.
+2. Rule edge cases (`lib/stillHere.ts`): (a) if a called patient is put back to waiting with Undo long after the last tap, the old tap time makes them "missed" at once; fix: reset `last_still_here_at` to now on Undo. (b) The prompt uses the phone's clock (`useNow()`); a fast clock shows it early, a slow one never, while staff still see "missed"; fix: work out the difference between the server's clock and the phone's and correct for it.
+3. Patient prompt (`StillHerePrompt.tsx`): after a tap, the prompt stays on screen until the next 15-second read, so patients tap again; fix: hide it locally as soon as the tap is saved.
+4. Staff flag (`VisitRow.tsx`): a reopened visit keeps the old `last_still_here_at`, so the row shows a stale "last 'I'm still here' 120 min ago"; fix: show it only if it is at or after `triaged_at`.
+5. Nothing in the diff breaks existing behaviour; the frontend works before the database change runs.
+
+## Claude's check (2026-11-11)
+
+1. Agreed.
+2. (a) Not possible as described: Undo only reverses arrived or removed, and a called visit is restored to called or on the way (`statusBeforeClose` in `lib/visitActions.ts`), never to waiting. A reopened visit gets a new `triaged_at`, which restarts the clock. The only real case is Undo of a removal of a waiting patient: the prompt shows at once and staff see "missed" if the last tap was long ago, which is accurate (no tap for that long). Not changed; resetting `last_still_here_at` would record a tap the patient never made. (b) Partly right: a wrong phone clock shifts when that phone's prompt appears, but the staff flag uses the staff laptop's clock and the database's times, so staff are still told. Phones set their clocks from the network. Accepted as a known limit (logged in PROGRESS.md), not fixed.
+3. Not correct: after the tap, `patientStep` in `data/patientVisit.ts` re-reads the visit before the button leaves "Sending…", so the prompt changes to "Thank you." straight away (seen in the owner's browser test). Not changed.
+4. Correct. Fixed: `lastTapThisWait` in `lib/stillHere.ts` (with a test) gives the last tap only if it came after the latest triage; the staff row uses it.
+5. Agreed.
+
+93 unit tests, type check and lint pass. Review closed; file archived.

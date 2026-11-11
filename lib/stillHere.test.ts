@@ -1,11 +1,22 @@
 // Checks when the "I'm still here" prompt is due and when a tap counts as missed.
 
 import { describe, expect, it } from "vitest";
-import { stillHereState } from "./stillHere";
+import { lastTapThisWait, stillHereState } from "./stillHere";
 
 const triaged = "2026-11-10T12:00:00Z";
 const at = (time: string) => new Date(`2026-11-10T${time}:00Z`);
 const waiting = { status: "waiting" as const, triagedAt: triaged, lastStillHereAt: null };
+
+describe("lastTapThisWait", () => {
+  it("gives the last tap only if it came after the latest triage", () => {
+    expect(lastTapThisWait({ triagedAt: triaged, lastStillHereAt: "2026-11-10T12:35:00Z" })).toBe(
+      "2026-11-10T12:35:00Z",
+    );
+    expect(lastTapThisWait({ triagedAt: triaged, lastStillHereAt: "2026-11-10T11:00:00Z" })).toBeNull();
+    expect(lastTapThisWait({ triagedAt: triaged, lastStillHereAt: null })).toBeNull();
+    expect(lastTapThisWait({ triagedAt: null, lastStillHereAt: "2026-11-10T12:35:00Z" })).toBeNull();
+  });
+});
 
 describe("stillHereState", () => {
   it("is not due for the first 30 minutes after triage", () => {

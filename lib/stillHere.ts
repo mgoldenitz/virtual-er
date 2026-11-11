@@ -25,6 +25,12 @@ function clockStart({ triagedAt, lastStillHereAt }: StillHereInput): number | nu
   return Math.max(triaged, tapped);
 }
 
+/** The last tap in this wait, or null if there was none since the latest triage (a reopened visit starts fresh). */
+export function lastTapThisWait({ triagedAt, lastStillHereAt }: Omit<StillHereInput, "status">): string | null {
+  if (!triagedAt || !lastStillHereAt) return null;
+  return new Date(lastStillHereAt).getTime() >= new Date(triagedAt).getTime() ? lastStillHereAt : null;
+}
+
 export function stillHereState(visit: StillHereInput, now: Date): StillHereState {
   if (visit.status !== "waiting") return "not_due";
   const start = clockStart(visit);
