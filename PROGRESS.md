@@ -93,33 +93,33 @@ Decided:
 
 - Desk slip (2026-11-10, owner's request): the QR code and written link always use https://virtual-er-izpf.vercel.app (`lib/slipOrigin.ts`, with tests), whatever address the staff screen is open on; on localhost they keep the local address for testing. Live and in Montreal. Not yet seen on a real slip (needs the owner signed in).
 
-## Where to pick up (updated 2026-11-10, late evening, before the owner restarts the chat)
+## Where to pick up (updated 2026-11-10, night: Phase 2 closed, the owner restarts Claude Code)
 
 Links (share only these two):
 - **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here.
-- **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. A push to `main` makes only a login-protected preview there (checked 2026-11-10). Never merge `phase1-backup` and `main` into each other.
+- **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. It now builds only its production branch, so pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
 State:
-- GitHub `mgoldenitz/virtual-er`: `main` and `phase1-backup` both match this laptop. No unsaved changes (the untracked `.codex/` folder is the owner's; leave it).
-- Phase 2's goal is met: laptop (staff) and phone (patient) update each other within about 2 seconds on the live link.
-- Done in Phase 2's last stretch: /security-review (nothing found), Gemini's security and architecture review (security headers added), the per-IP firewall rule, the desk slip always using the live link, the daily keep-alive job, and the Phase 1 backup link. Details in the two numbered items below.
-- 80 unit tests, type check and lint pass.
+- **Phase 2 is closed** (closing save point `803fb2b`, 2026-11-10). Its goal is met: laptop (staff) and phone (patient) update each other within about 2 seconds on the live link.
+- Every Phase 2 handoff is done or skipped: Gemini's security and architecture review (done), GPT-6 Astra (skipped by the owner; Gemini reviewed the same file instead, nothing to change).
+- Closing checks passed: 80 unit tests, type check, lint, `supabase/checks/permissions.sql` (exact match), security advisor (only expected warnings, plus leaked password protection, see below).
+- **The Supabase MCP is now read-only** (`.mcp.json`, `read_only=true`, SPEC rule). It can read tables and logs but cannot change the database. Phase 3 database changes therefore go as migration files in `supabase/migrations/`; Claude shows the SQL, and the owner runs it in the Supabase dashboard's SQL Editor (or a later agreed route). Never switch read-only off without the owner asking.
+- The last save points (`c6f7d41` to the one with this note) are on this laptop only, **not pushed to GitHub yet**. They change notes and `.mcp.json`, not the app. Ask the owner before pushing (a push to `main` redeploys the live link).
+- The untracked `.codex/` folder is the owner's; leave it.
 - The `visits` table is empty; every test visit was deleted.
 
-Waiting on the owner:
-1. **Model handoff not done yet:** GPT-6 Astra (High), Phase 2 security review. File: `handoffs/2026-11-10-astra-security-review-phase2.md` (no keys, project id, emails or patient data). It was written before the keep-alive job; Claude offered to add the job (route, secret check, the one read) to it first, and the owner has not answered yet. The owner pastes the answer or says "skip". Check each point against the code before changing anything, and save the answer as `handoffs/2026-11-10-astra-security-review-phase2-response.md`.
-2. Confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` is listed with `0 12 * * *`; the MCP cannot list cron jobs. After 12:00 UTC on 2026-11-11, its first run can be seen there.
-3. Done by the owner (2026-11-10): `virtual-er-phase1` > Settings > Git > Ignored Build Step set to "Only build production", so pushes to `main` no longer make previews there.
+Waiting on the owner (none of these block Phase 3):
+1. After 12:00 UTC on 2026-11-11: confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` is listed with `0 12 * * *` and shows its first run. The MCP cannot list cron jobs.
+2. Optional: turn on leaked password protection (Supabase dashboard > Authentication, password settings). It refuses passwords found in known leaks. Only the owner's staff sign-in uses a password. It may need a paid plan (not checked).
+
+Start of Phase 3 (next steps, in order):
+1. Save point, then `npm update`, then `npm audit` (the minimatch warnings, see Phase 1 notes). Run tests, type check and lint after.
+2. Model handoff: GPT-6.1 Terra (Medium) writes the patient-facing wording and the survey question. Later in the phase: DeepSeek V4.1-Flash (Low) drafts translations; a fluent human reviewer approves them, safety messages first (remind the owner to find one); Kimi K3.1 Pro (Thinking Max) reviews equity and accessibility (Gemini 3.1 Pro, High, if Kimi is not working); Gemini 3.1 Pro (High) reviews workflow and screen consistency.
+3. Phase 3 database work already decided: `confirm_on_my_way` fills `seen_at` itself when empty; the allowed-step checks move into the database; the pause switch (see "Carry into later steps").
 
 Phase 2 items (both done 2026-11-10):
-1. **Keep-alive job: built and live (2026-11-10).** `vercel.json` runs `/api/keep-alive` daily at 12:00 UTC (Hobby: any time in that hour). The route (`app/api/keep-alive/route.ts`) accepts only Vercel's call carrying `CRON_SECRET` (`lib/cronAuth.ts`, with tests) and reads the change signal's time with the publishable key (`data/keepAliveRead.ts`); no visit data. `CRON_SECRET` is in `.env.local` and in Vercel (Production). Checked live: refused without the secret (401), "ok" with it (200). Still to confirm: the job shows under Vercel Settings > Cron Jobs, and its first daily run. Original plan: a daily Vercel Cron job that makes one tiny database read, so the free Supabase project never pauses (Supabase pauses Free projects after 7 days of low activity). Terms checked 2026-11-10: Supabase's Terms of Service, Acceptable Use Policy and pausing docs do not forbid it; the pausing docs suggest "making API calls to your project" to prevent pausing. Only general rules apply (do not degrade or disrupt the service; no denial of service). Caveat: the last third of the Terms was read as a summary, not word for word. The read must touch no visit data.
-2. **Phase 1 backup link: live (2026-11-10). Backup link: https://virtual-er-phase1.vercel.app** (opens without a login). Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup` (set by the owner). The branch is `f51eaac` plus one save point `9b789d0` (THP link fix, approved by the owner); its production deploy is `9b789d0`. Checked: start, patient, staff and dashboard pages load; `/login` and `/api/keep-alive` give 404 (Phase 1 has neither); footer, 911 line and the www.thp.ca link are there. It keeps all data in each browser and uses no Supabase. Never merge `phase1-backup` into `main`, or the reverse. The empty `virtual-er` project is deleted. Original plan: branch `phase1-backup` from commit `f51eaac` (end of Phase 1, all data in the browser, no Supabase), and a separate Vercel project whose production branch is `phase1-backup`, so it gets its own short public address. Not a preview link (those need a Vercel login).
-
-Before the Phase 2 closing save point:
-- List any Phase 2 handoff still not done (only Astra, unless done or skipped by then).
-- Run the checks once more: `npm test`, type check, lint, and `supabase/checks/permissions.sql` plus the Supabase security advisor.
-- Switch the Supabase MCP to read-only in `.mcp.json` (SPEC; approved by the owner on 2026-11-10 for the Phase 2 closing save point). Do any database change that is still needed before that.
-- At the start of Phase 3: `npm update`, then `npm audit` (the minimatch warnings, see Phase 1 notes).
+1. **Keep-alive job: built and live.** `vercel.json` runs `/api/keep-alive` daily at 12:00 UTC (Hobby: any time in that hour). The route (`app/api/keep-alive/route.ts`) accepts only Vercel's call carrying `CRON_SECRET` (`lib/cronAuth.ts`, with tests) and reads the change signal's time with the publishable key (`data/keepAliveRead.ts`); no visit data. `CRON_SECRET` is in `.env.local` and in Vercel (Production). Checked live: refused without the secret (401), "ok" with it (200). Supabase pauses Free projects after 7 days of low activity; its Terms, Acceptable Use Policy and pausing docs do not forbid this (the pausing docs suggest "making API calls to your project"). Caveat: the last third of the Terms was read as a summary, not word for word.
+2. **Phase 1 backup link: live.** The branch is `f51eaac` (end of Phase 1, all data in the browser, no Supabase) plus one save point `9b789d0` (THP link fix, approved by the owner). Checked: start, patient, staff and dashboard pages load; `/login` and `/api/keep-alive` give 404; footer, 911 line and the www.thp.ca link are there. The empty `virtual-er` project is deleted.
 
 Not checked yet:
 - The start route's "paused" and "busy" answers on purpose (they need database changes or 20 test visits, so they need the owner's approval).
