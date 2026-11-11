@@ -13,7 +13,17 @@
 | **DeepSeek V4.1-Flash** | Low-cost utility | Translation drafts, bulk test scenarios, summaries, simple extraction | **Low** |
 | **GPT-5.6 Cyber / GPT-6 Cyber** | Security specialist only | Optional authorized security review; not general research or app building | Only if specifically needed |
 
-GPT-6.1 Sol, Gemini 4 Argon and GPT-6.1 Terra are not available; Gemini 3.1 Pro, High, does their work (Gemini 3.6 Flash, High, when there are no 3.1 Pro credits).
+**Changed on 2026-11-10: Gemini only.** From Phase 3 on, every handoff and review goes to a Gemini model. Kimi, Grok, DeepSeek, GPT-6 Astra, GPT-6.1 Terra, GPT-6.1 Sol and Gemini 4 Argon are no longer used (the table above and Phases 1 and 2 below show the earlier plan).
+
+| Task | Model | Effort |
+|---|---|---|
+| Wording, translations, README, presentation | Gemini 3.1 Pro | High |
+| Code, security, equity and accessibility reviews | Gemini 3.1 Pro | High |
+| Synthetic visits and expected dashboard numbers | Gemini 3.6 Flash | High |
+| Challenging assumptions (escalation loop) | Gemini 3.1 Pro | Medium |
+| Any step when there are no 3.1 Pro credits | Gemini 3.6 Flash | High |
+
+Because one model family does every review: each review runs in a new chat, handoffs ask it to find problems rather than confirm, and Claude checks every answer against SPEC before changing anything.
 
 ## Why this stack
 
@@ -43,9 +53,9 @@ flowchart TD
     subgraph R2[" "]
         direction LR
         F["<b>5. Phase 2: database and deploy</b><br>Claude Code: Supabase, RLS, Vercel<br>Supabase MCP: SQL for approval<br>Playwright: realtime, deploy tests<br>Gemini 3.1 Pro, High: security review<br>GPT-6 Astra, High: final security review<br>Git save point"]
-        G["<b>6. Phase 3: safety and equity</b><br>Claude Code: safety, accessibility<br>Gemini 3.1 Pro, High: wording<br>DeepSeek V4.1-Flash, Low: translations<br>Fluent human approves translations<br>Kimi K3.1 Pro, Thinking Max: equity review<br>Gemini 3.1 Pro, High: UX review<br>Git save point"]
-        H["<b>7. Phase 4: dashboard and demo</b><br>Kimi K3.1 Pro, Thinking Max: metric definitions<br>Claude Code: dashboard<br>DeepSeek V4.1-Flash, Low: demo scenarios<br>Playwright: verify dashboard<br>Gemini 3.1 Pro, High: check definitions<br>Git save point"]
-        I["<b>8. Test and launch</b><br>Claude Code: fix defects<br>Playwright: end-to-end tests<br>Gemini 3.1 Pro, High: code review<br>GPT-6 Astra, High: final review<br>Gemini 3.1 Pro, High: README, deck<br>3 to 5 real testers<br>Final Git save point"]
+        G["<b>6. Phase 3: safety and equity</b><br>Claude Code: safety, accessibility<br>Gemini 3.1 Pro, High: wording<br>Gemini 3.1 Pro, High: translations<br>Fluent human approves translations<br>Gemini 3.1 Pro, High: equity review<br>Gemini 3.1 Pro, High: UX review<br>Git save point"]
+        H["<b>7. Phase 4: dashboard and demo</b><br>Gemini 3.1 Pro, High: metric definitions<br>Claude Code: dashboard<br>Gemini 3.6 Flash, High: demo scenarios<br>Playwright: verify dashboard<br>Gemini 3.1 Pro, High: check definitions<br>Git save point"]
+        I["<b>8. Test and launch</b><br>Claude Code: fix defects<br>Playwright: end-to-end tests<br>Gemini 3.1 Pro, High: code review<br>Gemini 3.1 Pro, High (new chat): final review<br>Gemini 3.1 Pro, High: README, deck<br>3 to 5 real testers<br>Final Git save point"]
         F --> G --> H --> I
     end
 
@@ -100,16 +110,16 @@ flowchart TD
 
 - **Claude Opus 5.5 / Claude Code:** Implement safety line, emergency check, no-response ladder, “I’m still here,” call-everyone-back, languages, text size, accessibility labels, footer, and 24-hour deletion.
 - **Gemini 3.1 Pro, High (instead of GPT-6.1 Terra):** Draft clear patient-facing UI copy and survey wording.
-- **DeepSeek V4.1-Flash, Low:** Produce first-draft translations and test scenarios.
+- **Gemini 3.1 Pro, High (instead of DeepSeek):** Produce first-draft translations and test scenarios.
 - **Fluent human reviewer:** Approve final translations, especially safety messages.
-- **Kimi K3.1 Pro, Thinking Max:** Review accessibility, plain language, equity, and the full patient journey.
+- **Gemini 3.1 Pro, High, new chat (instead of Kimi):** Review accessibility, plain language, equity, and the full patient journey.
 - **Gemini 3.1 Pro, High:** Review workflow consistency and UX gaps.
 
 ### 7. Build Phase 4: dashboard and demo mode
 
-- **Kimi K3.1 Pro, Thinking Max:** Validate dashboard definitions against the charter objectives.
+- **Gemini 3.1 Pro, High (instead of Kimi):** Validate dashboard definitions against the charter objectives.
 - **Claude Opus 5.5 / Claude Code:** Implement dashboard queries, summary cards, demo mode, and daily_stats logic.
-- **DeepSeek V4.1-Flash, Low:** Generate 15–20 synthetic visits and expected dashboard outcomes.
+- **Gemini 3.6 Flash, High (instead of DeepSeek):** Generate 15–20 synthetic visits and expected dashboard outcomes.
 - **Playwright MCP:** Verify demo mode and dashboard behavior.
 - **Gemini 3.1 Pro, High:** Check that each dashboard metric has a clear definition and supports a project objective.
 
@@ -118,7 +128,7 @@ flowchart TD
 - **Claude Opus 5.5 / Claude Code:** Fix defects and improve reliability.
 - **Playwright MCP:** Run full end-to-end tests, including called/no-response, unable-to-reach, reopening after return, survey eligibility, and call-everyone-back.
 - **Gemini 3.1 Pro, High:** Perform an independent code and architecture review.
-- **GPT-6 Astra, High:** Perform the final security, privacy, accessibility, and code-quality review.
+- **Gemini 3.1 Pro, High, new chat (instead of GPT-6 Astra):** Perform the final security, privacy, accessibility, and code-quality review.
 - **Gemini 3.1 Pro, High (instead of GPT-6.1 Terra):** Write the README, presentation narrative, and demo instructions.
 - **Real testers:** Have 3–5 people use the app and report confusion, errors, or accessibility problems.
 
@@ -150,10 +160,7 @@ Use this when the task is important, ambiguous, or Claude Code is stuck:
 Gemini 3.1 Pro, High
 Analyze the problem
         ↓
-Kimi K3.1 Pro, Thinking Max
-Independent second opinion (skip if Kimi is not working)
-        ↓
-Grok 4.7, Low/Medium
+Gemini 3.1 Pro, Medium, in a new chat
 Challenge assumptions and propose alternatives
         ↓
 You decide
@@ -167,7 +174,7 @@ Claude Opus 5.5 + Claude Code implements
 - Do not let two coding agents edit the repository at once.
 - Do not use AI-generated translations as final; have fluent speakers review safety-critical text.
 - Do not let an AI model make clinical decisions; the nurse selects CTAS and eligibility.
-- Do not use Max effort routinely. The one exception is Kimi K3.1 Pro, which always runs at Thinking Max. Use High for Gemini 3.1 Pro and the effort listed above for the other models.
+- Do not use Max effort routinely. Use High for Gemini 3.1 Pro and Gemini 3.6 Flash, except Medium for challenging assumptions.
 - Do not treat any AI security review as proof of compliance or safety; verify findings and use them as input to human review.
 - Keep prompts free of real patient data, API keys, tokens, passwords, or confidential hospital information.
 

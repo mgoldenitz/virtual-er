@@ -36,7 +36,7 @@ export const en = {
       "Starting here does not hold a place in line. Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.",
     siteQuestion: "Which emergency department are you going to?",
     languageLabel: "Language",
-    languageNote: "Two more languages come in Phase 3.",
+    languageNote: "French and one more language are coming soon.",
     startButton: "Start a visit",
     starting: "Starting…",
     // SPEC

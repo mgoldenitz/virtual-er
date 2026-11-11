@@ -150,4 +150,6 @@ Started 2026-11-10 (evening).
 - Still English only: the footer (it sits outside the visit, so it waits for the language switch) and the staff-side words on the slip.
 - Gemini reviewed the text file (`handoffs/archive/2026-11-10-gemini-review-patient-text-file.md`, answer and check at the bottom). Fixed: the slip's "Visit code" label comes from the text file; the two sentences with numbers are now plain text with {braces} filled by `fill()` in `lib/text/index.ts`, so `en.ts` holds no code. To do with the language switch: the patient screen shows English (including the 911 line) until the visit loads, because the language comes from the visit; the phone should remember the chosen language.
 - Handoffs: finished ones are in `handoffs/archive/`; one file per review, with the answer added at the bottom (CLAUDE.md rule, 2026-11-10).
-- Next: the two languages (owner to choose), then the DeepSeek V4.1-Flash (Low) translation handoff.
+- Gemini only from 2026-11-10 (owner): every handoff and review goes to Gemini 3.1 Pro, High (3.6 Flash, High, for the synthetic visits and when there are no Pro credits; 3.1 Pro, Medium, to challenge assumptions). Each review in a new chat. CLAUDE.md and `ai_model_workflow_virtual_er.md` updated.
+- Languages (owner, 2026-11-10): English, French and one more (SPEC updated). The third is being chosen.
+- Next: the translation handoff for Gemini 3.1 Pro, High, once the third language is chosen.

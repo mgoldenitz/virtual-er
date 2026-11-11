@@ -3,7 +3,7 @@
 
 import type { Site } from "./visit";
 
-/** Languages a visit can be started in. Two more are added in Phase 3. */
+/** Languages a visit can be started in. French and one more are added in Phase 3. */
 export const START_LANGUAGES = ["en"];
 
 export type StartVisitRequest = { site: Site; language: string };
