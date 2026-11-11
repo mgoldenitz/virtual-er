@@ -20,7 +20,7 @@ export const en = {
     careIntro: "This demo cannot choose a service for you. Check the rules and hours on each site before you go.",
     health811Before: "Health811: Call",
     health811After: "to speak with a nurse for free.",
-    virtualCare: "Regional virtual urgent care",
+    virtualCare: "Virtual urgent care",
     // SPEC (the next five)
     urgentCare: "Urgent Care Centre at Queensway Health Centre in Etobicoke.",
     pharmacist:
