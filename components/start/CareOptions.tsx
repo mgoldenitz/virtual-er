@@ -26,7 +26,7 @@ export function CareOptions({ language }: { language?: string }) {
         {s.careHeading}
       </h2>
       <p>{s.careIntro}</p>
-      <ul className="list-disc space-y-2 pl-6 text-base">
+      <ul className="list-disc space-y-2 ps-6 text-base">
         <li>
           {s.health811Before}{" "}
           <a href="tel:811" className={linkStyle}>

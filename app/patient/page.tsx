@@ -5,19 +5,23 @@
 
 import { useEffect, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
+import { useChosenLanguage } from "@/data/savedLanguage";
 import { takeTokenFromLink } from "@/data/savedToken";
 import { EmergencyLine } from "@/components/EmergencyLine";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PatientShell } from "@/components/PatientShell";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
 import { fill, textFor } from "@/lib/text";
+import { languageInfo, patientLanguage } from "@/lib/text/languages";
 
 export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [notSaved, setNotSaved] = useState(false);
   const [brokenLink, setBrokenLink] = useState(false);
   const [sending, setSending] = useState(false);
+  const chosenLanguage = useChosenLanguage();
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
@@ -37,7 +41,9 @@ export default function PatientPage() {
   const loading = token === undefined || result === undefined;
   const unavailable = result === "unavailable";
   const view = result === "unavailable" ? null : result;
-  const t = textFor(view?.language);
+  // The phone's own choice first, so even "Loading…" and the 911 line are in that language.
+  const language = patientLanguage(chosenLanguage, view?.language);
+  const t = textFor(language);
   const p = t.patient;
 
   // The first time the called screen is actually on screen, record seen_at
@@ -75,9 +81,10 @@ export default function PatientPage() {
 
   return (
     <PatientShell>
-    <main className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
+    <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
       <h1 className="text-xl font-bold">{t.appName}</h1>
-      <EmergencyLine language={view?.language} />
+      <LanguageSwitch language={language} />
+      <EmergencyLine language={language} />
 
       {loading ? (
         <p>{p.loading}</p>
@@ -104,14 +111,14 @@ export default function PatientPage() {
             {t.visitCode}: <strong className="font-mono tracking-widest">{view.code}</strong> ·{" "}
             {fill(t.siteName, { site: view.site })}
           </p>
-          {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} />}
-          <PatientStatus view={view} onOnMyWay={onOnMyWay} sending={sending} />
+          {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
+          <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} />
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {p.notSaved}
             </p>
           )}
-          <StatusAnnouncer key={token} status={view.status} language={view.language} />
+          <StatusAnnouncer key={token} status={view.status} language={language} />
         </>
       )}
     </main>

@@ -29,8 +29,6 @@ export const zh: PatientText = {
     startIntro:
       "在这里开始并不会保留您的排队位置。您的排队位置从护士在分诊处（triage）看到您时开始算起。最紧急的患者总是优先就诊。",
     siteQuestion: "您要去哪个急诊室？",
-    languageLabel: "语言",
-    languageNote: "法语、乌尔都语、阿拉伯语和普通话即将推出。",
     startButton: "开始就诊",
     starting: "正在开始…",
     paused: "目前院外候诊已暂停。请来急诊室并在那里等候。",

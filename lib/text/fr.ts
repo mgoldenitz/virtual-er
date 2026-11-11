@@ -29,8 +29,6 @@ export const fr: PatientText = {
     startIntro:
       "Commencer ici ne vous réserve pas de place dans la file d'attente. Votre place dans la file commence lorsqu'une infirmière vous voit au triage. Les patients les plus urgents sont toujours vus en premier.",
     siteQuestion: "À quel service des urgences allez-vous ?",
-    languageLabel: "Langue",
-    languageNote: "Le français, l'ourdou, l'arabe et le mandarin seront bientôt disponibles.",
     startButton: "Commencer une visite",
     starting: "Démarrage en cours…",
     paused: "L'attente hors site est suspendue pour le moment. Veuillez vous présenter aux urgences et y attendre.",

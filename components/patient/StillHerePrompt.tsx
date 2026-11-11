@@ -15,12 +15,12 @@ import { useNow } from "@/components/useNow";
 /** How long the thank-you stays after a tap. */
 const THANKS_MS = 5 * 60_000;
 
-export function StillHerePrompt({ view, token }: { view: PatientView; token: string }) {
+export function StillHerePrompt({ view, token, language }: { view: PatientView; token: string; language: string }) {
   const now = useNow();
   const [sending, setSending] = useState(false);
   const [notSaved, setNotSaved] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const t = textFor(view.language);
+  const t = textFor(language);
   const state = now ? stillHereState(view, now) : "not_due";
   const showing = state !== "not_due";
 

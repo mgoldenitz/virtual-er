@@ -8,7 +8,11 @@ import { useState, type FormEvent } from "react";
 import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
 import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
+import { LANGUAGES } from "@/lib/text/languages";
 import { Button } from "@/components/Button";
+
+/** English names for the staff menu, next to each language's own name. */
+const STAFF_NAMES: Record<string, string> = { fr: "French", ur: "Urdu", ar: "Arabic", zh: "Mandarin" };
 
 const CHECKLIST = [
   { id: "phone", label: "Has a phone with them" },
@@ -181,9 +185,12 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
           onChange={(e) => setLanguage(e.target.value)}
           className="mt-2 block min-h-11 rounded-lg border-2 border-control px-3"
         >
-          <option value="en">English</option>
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.code === "en" ? l.name : `${l.name} (${STAFF_NAMES[l.code]}, draft until checked)`}
+            </option>
+          ))}
         </select>
-        <span className="mt-1 block text-sm text-slate-700">French, Urdu, Arabic and Mandarin are coming soon.</span>
       </label>
 
       {!homeProblem && (

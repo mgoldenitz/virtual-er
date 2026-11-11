@@ -1,10 +1,11 @@
 // Checks what a phone sends when it asks to start a visit from home: only a site and a
 // language, and only values the app knows. Anything else is refused before the database is asked.
 
+import { LANGUAGE_CODES } from "./text/languages";
 import type { Site } from "./visit";
 
-/** Languages a visit can be started in. French, Urdu, Arabic and Mandarin are added in Phase 3. */
-export const START_LANGUAGES = ["en"];
+/** Languages a visit can be started in: every language the app offers. */
+export const START_LANGUAGES = LANGUAGE_CODES;
 
 export type StartVisitRequest = { site: Site; language: string };
 

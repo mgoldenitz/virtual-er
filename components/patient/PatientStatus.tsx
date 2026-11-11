@@ -8,7 +8,7 @@ import type { PatientView } from "@/lib/patientView";
 import { fill, textFor, type PatientText } from "@/lib/text";
 import { Button } from "@/components/Button";
 
-type Props = { view: PatientView; onOnMyWay: () => void; sending: boolean };
+type Props = { view: PatientView; language: string; onOnMyWay: () => void; sending: boolean };
 
 function Waiting({ view, t }: { view: PatientView; t: PatientText }) {
   const p = t.patient;
@@ -113,12 +113,12 @@ function Expired({ t }: { t: PatientText }) {
   );
 }
 
-export function PatientStatus({ view, onOnMyWay, sending }: Props) {
-  const t = textFor(view.language);
+export function PatientStatus({ view, language, onOnMyWay, sending }: Props) {
+  const t = textFor(language);
   if (view.expired) return <Expired t={t} />;
   if (view.status === "waiting") return <Waiting view={view} t={t} />;
   if (view.status === "called" || view.status === "on_the_way") {
-    return <Called view={view} onOnMyWay={onOnMyWay} sending={sending} t={t} />;
+    return <Called view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} t={t} />;
   }
   return <OtherStatus view={view} t={t} />;
 }

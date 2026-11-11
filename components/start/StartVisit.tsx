@@ -1,7 +1,7 @@
 "use client";
 
-// The start page's "Start a visit": choose a demo site and a language. The server starts the
-// visit and this phone remembers it, so the patient never types a code. If this phone already
+// The start page's "Start a visit": choose a demo site; the visit takes the language chosen on
+// this phone (the menu at the top of the page). The server starts the visit and this phone remembers it, so the patient never types a code. If this phone already
 // has a visit, it shows that one first (open, ended or expired), and never offers a new one
 // while the saved visit cannot be read.
 
@@ -21,12 +21,11 @@ const openLinkStyle =
   "inline-block min-h-11 rounded-xl bg-brand px-4 py-2 font-semibold text-white hover:bg-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
 const boxStyle = "clean-card space-y-3";
 
-export function StartVisit() {
+export function StartVisit({ language }: { language: string }) {
   const router = useRouter();
   const savedToken = useSyncExternalStore(noSubscribe, loadSavedToken, () => null);
   const saved = usePatientView(savedToken);
   const [site, setSite] = useState<Site>("A");
-  const [language, setLanguage] = useState("en");
   const [problem, setProblem] = useState<Exclude<StartResult, "saved"> | null>(null);
   const [starting, setStarting] = useState(false);
   const [wantsNew, setWantsNew] = useState(false);
@@ -142,17 +141,6 @@ export function StartVisit() {
           ))}
         </div>
       </fieldset>
-      <label className="block">
-        <span className="font-semibold">{s.languageLabel}</span>
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="mt-2 block min-h-11 rounded-lg border-2 border-control px-3"
-        >
-          <option value="en">English</option>
-        </select>
-        <span className="mt-1 block text-sm text-slate-700">{s.languageNote}</span>
-      </label>
       <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
         {starting ? s.starting : s.startButton}
       </Button>
