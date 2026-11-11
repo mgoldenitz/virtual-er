@@ -183,7 +183,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
         >
           <option value="en">English</option>
         </select>
-        <span className="mt-1 block text-sm text-slate-700">Two more languages come in Phase 3.</span>
+        <span className="mt-1 block text-sm text-slate-700">French and one more language are coming soon.</span>
       </label>
 
       {!homeProblem && (
