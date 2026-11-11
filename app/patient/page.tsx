@@ -10,6 +10,7 @@ import { EmergencyLine } from "@/components/EmergencyLine";
 import { PatientShell } from "@/components/PatientShell";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
+import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
 import { fill, textFor } from "@/lib/text";
 
 export default function PatientPage() {
@@ -103,6 +104,7 @@ export default function PatientPage() {
             {t.visitCode}: <strong className="font-mono tracking-widest">{view.code}</strong> ·{" "}
             {fill(t.siteName, { site: view.site })}
           </p>
+          {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} />}
           <PatientStatus view={view} onOnMyWay={onOnMyWay} sending={sending} />
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">

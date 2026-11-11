@@ -129,7 +129,10 @@ export function usePatientView(token: string | null): Shown | undefined {
 }
 
 /** Saved = the step was recorded; refused = not allowed now; not_saved = could not reach the database. */
-async function patientStep(step: "record_seen" | "confirm_on_my_way", token: string): Promise<ChangeResult> {
+async function patientStep(
+  step: "record_seen" | "confirm_on_my_way" | "record_still_here",
+  token: string,
+): Promise<ChangeResult> {
   try {
     const { data, error } = await supabaseBrowser().rpc(step, { p_token: token });
     if (error || typeof data !== "boolean") return "not_saved";
@@ -148,4 +151,9 @@ export function recordSeen(token: string): Promise<ChangeResult> {
 /** The patient taps "I'm on my way". Only while called. */
 export function confirmOnMyWayByToken(token: string): Promise<ChangeResult> {
   return patientStep("confirm_on_my_way", token);
+}
+
+/** The patient taps "I'm still here". Only while waiting off-site. */
+export function recordStillHere(token: string): Promise<ChangeResult> {
+  return patientStep("record_still_here", token);
 }

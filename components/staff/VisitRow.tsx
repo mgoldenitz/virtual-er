@@ -5,6 +5,8 @@
 import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
 import { minutesBetween } from "@/lib/queue";
+import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
+import { stillHereState } from "@/lib/stillHere";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -20,7 +22,12 @@ const NOT_SAVED = "Not saved: the database could not be reached. Try again.";
 const CHANGED = "The list just changed. Check this patient again.";
 
 function progress(visit: Visit, now: Date): string {
-  if (visit.status === "waiting") return "Waiting off-site";
+  if (visit.status === "waiting") {
+    // "I'm still here" only shows the patient is still following the visit; never a health check.
+    return visit.last_still_here_at
+      ? `Waiting off-site · last "I'm still here" ${minutesBetween(visit.last_still_here_at, now)} min ago`
+      : "Waiting off-site";
+  }
   const sinceCall = visit.called_at ? minutesBetween(visit.called_at, now) : 0;
   const steps = [`Called ${sinceCall} min ago`];
   // seen_at means the called screen was displayed on the phone, not that the patient read it.
@@ -56,6 +63,12 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       <p className="mt-1 font-semibold" data-testid="progress">
         {progress(visit, now)}
       </p>
+      {stillHereState({ status: visit.status, triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at }, now) ===
+        "missed" && (
+        <p className="mt-2 rounded-lg border-2 border-red-800 bg-red-50 p-2 font-semibold text-red-900" data-testid="still-here-flag">
+          Missed &ldquo;I&apos;m still here&rdquo;: no tap within {STILL_HERE_ANSWER_WITHIN_MINUTES} min of the prompt. Not a health check.
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         {visit.status === "waiting" && (
           <Button aria-disabled={saving} onClick={() => act(() => callBackVisit(visit.id))}>

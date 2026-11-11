@@ -16,6 +16,13 @@ const waiting: PatientVisitRow = {
 };
 
 describe("patient view from a database row", () => {
+  it("passes the triage time through, and is empty before the database change has run", () => {
+    expect(patientViewFromRow({ ...waiting, triaged_at: "2026-11-10T12:00:00Z" }).triagedAt).toBe(
+      "2026-11-10T12:00:00Z",
+    );
+    expect(patientViewFromRow(waiting).triagedAt).toBeNull();
+  });
+
   it("uses the 15-minute default gap until there is call-back history", () => {
     const view = patientViewFromRow(waiting);
     expect(view.placeInLine).toBe(2);

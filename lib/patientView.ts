@@ -14,6 +14,8 @@ export type PatientView = {
   waitHigh: number | null;
   calledAt: string | null;
   lastStillHereAt: string | null;
+  /** When this visit was triaged; starts the "I'm still here" clock (lib/stillHere.ts). */
+  triagedAt: string | null;
   seen: boolean;
   closed: boolean;
   /** Started from home, never triaged, and past the 6 hours staff keep expecting it. */
