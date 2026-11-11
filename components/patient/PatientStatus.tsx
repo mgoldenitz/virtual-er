@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { PatientView } from "@/lib/patientView";
 import { fill, textFor, type PatientText } from "@/lib/text";
 import { Button } from "@/components/Button";
+import { CallReminder } from "./CallReminder";
 
 type Props = { view: PatientView; language: string; onOnMyWay: () => void; sending: boolean };
 
@@ -42,6 +43,7 @@ function Called({ view, onOnMyWay, sending, t }: Props & { t: PatientText }) {
         {p.calledHeading}
       </h2>
       <p className="text-lg">{p.calledText}</p>
+      {!confirmed && <CallReminder view={view} t={t} />}
       {confirmed ? (
         <p className="text-lg font-semibold" data-testid="confirmed">
           {p.confirmed}

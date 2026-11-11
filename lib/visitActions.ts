@@ -2,7 +2,9 @@
 // and returns the updated visit, or null when the step is not allowed right now
 // (for example a second click after the list already changed).
 
+import { ANSWERED_PAUSE_MINUTES } from "./demoTimes";
 import { isExpected } from "./expectedArrivals";
+import { canRecordPhoneCall, staffFollowUp } from "./followUp";
 import { type Site, type Visit, type VisitStatus } from "./visit";
 
 export type DeskCheckIn = {
@@ -57,7 +59,17 @@ function blankVisit(input: NewVisit, source: "home" | "desk", nowIso: string): V
  * - not_eligible: not offered; waits on-site as usual.
  */
 function applyTriage(visit: Visit, ctas: 4 | 5, language: string, outcome: DeskOutcome, nowIso: string): Visit {
-  const triaged = { ...visit, ctas_level: ctas, language, triaged_at: nowIso };
+  // A visit back for reassessment starts a fresh wait: no call-back or phone calls carry over.
+  const fresh = {
+    called_at: null,
+    seen_at: null,
+    confirmed_at: null,
+    review_flagged_at: null,
+    phone_attempts: 0,
+    last_phone_result: null,
+    followup_paused_until: null,
+  };
+  const triaged = { ...visit, ...fresh, ctas_level: ctas, language, triaged_at: nowIso };
   if (outcome === "not_eligible") return { ...triaged, status: "not_eligible", closed_at: nowIso };
   const offered = { ...triaged, offered_at: nowIso };
   if (outcome === "declined") return { ...offered, status: "declined", closed_at: nowIso };
@@ -79,15 +91,23 @@ export function startFromHome(input: NewVisit, now: Date): Visit {
   return blankVisit(input, "home", now.toISOString());
 }
 
-/** A nurse checks in, after triage, a visit the patient started from home. Only before triage. */
+/** True if a nurse can triage this existing visit now (from home, or back for reassessment). */
+export function canTriageAgain(visit: Visit, now: Date): boolean {
+  return isExpected(visit, now) || visit.status === "needs_reassessment";
+}
+
+/**
+ * A nurse checks in, after triage, a visit that already exists: one the patient started from
+ * home (only while still expected: not triaged yet, under 6 hours old), or a reopened visit
+ * back for reassessment (its place in line starts again at this triage, SPEC rule 7).
+ */
 export function checkInHomeVisit(
   visit: Visit,
   triage: { ctas_level: 4 | 5; language: string },
   outcome: DeskOutcome,
   now: Date,
 ): Visit | null {
-  // Only while still expected: not triaged yet, and under 6 hours old.
-  if (!isExpected(visit, now)) return null;
+  if (!canTriageAgain(visit, now)) return null;
   return applyTriage(visit, triage.ctas_level, triage.language, outcome, now.toISOString());
 }
 
@@ -113,6 +133,33 @@ export function markSeen(visit: Visit, now: Date): Visit | null {
 export function confirmOnMyWay(visit: Visit, now: Date): Visit | null {
   if (visit.status !== "called") return null;
   return { ...visit, status: "on_the_way", confirmed_at: now.toISOString() };
+}
+
+/**
+ * Staff record one simulated phone call (the demo stores no phone numbers). Only while called,
+ * from the "Phone this patient" step on. "Answered" pauses the staff flags for a set time.
+ */
+export function recordPhoneCall(visit: Visit, result: "answered" | "no_answer", now: Date): Visit | null {
+  if (!canRecordPhoneCall(visit, now)) return null;
+  const changed = { ...visit, phone_attempts: visit.phone_attempts + 1, last_phone_result: result };
+  if (result === "no_answer") return changed;
+  const until = new Date(now.getTime() + ANSWERED_PAUSE_MINUTES * 60_000).toISOString();
+  return { ...changed, followup_paused_until: until };
+}
+
+/**
+ * A nurse confirms "Review: unable to reach". Only while that flag shows. The visit leaves the
+ * active line; this is not recorded as left without being seen (SPEC).
+ */
+export function confirmUnableToReach(visit: Visit, now: Date): Visit | null {
+  if (staffFollowUp(visit, now).kind !== "review") return null;
+  return { ...visit, status: "unable_to_reach", closed_at: now.toISOString() };
+}
+
+/** The patient came back after "unable to reach": reopen, and send the visit back to triage. */
+export function reopenUnableToReach(visit: Visit): Visit | null {
+  if (visit.status !== "unable_to_reach") return null;
+  return { ...visit, status: "needs_reassessment", closed_at: null };
 }
 
 /** Staff mark the patient as back at the hospital. Ends virtual waiting. */

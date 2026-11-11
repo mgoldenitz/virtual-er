@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { closedLabel, recentlyClosed } from "./recentlyClosed";
-import { checkInAtDesk, markArrived, markRemoved } from "./visitActions";
+import { callBack, checkInAtDesk, confirmUnableToReach, markArrived, markRemoved } from "./visitActions";
 
 const t0 = new Date("2026-11-09T20:00:00Z");
 const at = (min: number) => new Date(t0.getTime() + min * 60_000);
@@ -24,5 +24,11 @@ describe("recently closed list", () => {
     expect(closedLabel(markArrived(desk("a"), at(1))!)).toBe("marked arrived");
     expect(closedLabel(markRemoved(desk("a"), "left", at(1))!)).toBe("removed: left");
     expect(closedLabel(markRemoved(desk("a"), "no_show", at(1))!)).toBe("removed: no-show");
+  });
+
+  it("lists a visit confirmed unable to reach, so staff can reopen it", () => {
+    const lost = confirmUnableToReach(callBack(desk("g"), at(1))!, at(31))!;
+    expect(recentlyClosed([lost], "A").map((v) => v.id)).toEqual(["g"]);
+    expect(closedLabel(lost)).toBe("confirmed unable to reach");
   });
 });

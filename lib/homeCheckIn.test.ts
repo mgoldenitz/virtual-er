@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { homeCheckInProblem } from "./homeCheckIn";
-import { checkInHomeVisit, startFromHome } from "./visitActions";
+import { callBack, checkInHomeVisit, confirmUnableToReach, reopenUnableToReach, startFromHome } from "./visitActions";
 
 const t0 = new Date("2026-11-09T20:00:00Z");
 const at = (min: number) => new Date(t0.getTime() + min * 60_000);
@@ -24,5 +24,12 @@ describe("home check-in problems", () => {
 
   it("says when it is gone", () => {
     expect(homeCheckInProblem(home, null, at(10))).toContain("no longer on this screen");
+  });
+
+  it("has none for a reopened visit back for reassessment, however old", () => {
+    const waiting = checkInHomeVisit(home, { ctas_level: 4, language: "en" }, "waiting", at(5))!;
+    const lost = confirmUnableToReach(callBack(waiting, at(10))!, at(40))!;
+    const reopened = reopenUnableToReach(lost)!;
+    expect(homeCheckInProblem(lost, reopened, at(60 * 8))).toBeNull();
   });
 });

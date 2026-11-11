@@ -124,7 +124,11 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
       </h2>
       {homeVisit && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-100 p-3">
-          <p>Started from home. The patient already has this visit on their phone.</p>
+          <p>
+            {homeVisit.source === "home" && homeVisit.triaged_at === null
+              ? "Started from home. The patient already has this visit on their phone."
+              : "Back for reassessment. The patient already has this visit on their phone. Their place in line starts again at this triage."}
+          </p>
           <Button variant="secondary" onClick={cancelHome}>
             Cancel: check in a new patient instead
           </Button>

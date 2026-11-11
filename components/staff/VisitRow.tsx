@@ -1,6 +1,7 @@
 "use client";
 
 // One patient in the staff's off-site list: minutes waited, call-back progress and actions.
+// The no-response flags and phone-call buttons are in FollowUpPanel.
 
 import { useState } from "react";
 import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
@@ -9,6 +10,7 @@ import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
 import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
+import { FollowUpPanel } from "./FollowUpPanel";
 
 type Props = {
   visit: Visit;
@@ -70,6 +72,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
           Missed &ldquo;I&apos;m still here&rdquo;: no tap within {STILL_HERE_ANSWER_WITHIN_MINUTES} min of the prompt. Not a health check.
         </p>
       )}
+      <FollowUpPanel visit={visit} now={now} saving={saving} act={act} />
       <div className="mt-3 flex flex-wrap gap-2">
         {visit.status === "waiting" && (
           <Button aria-disabled={saving} onClick={() => act(() => callBackVisit(visit.id))}>

@@ -2,7 +2,8 @@
 
 // The staff "Expected arrivals" list: visits started from home that have not reached triage.
 // They are not in the waiting line. Staff pick one from the list, or type the code the patient
-// shows (short-code lookup is staff-only), to check it in after triage.
+// shows (short-code lookup is staff-only), to check it in after triage. The code box also finds
+// a reopened visit that needs reassessment.
 
 import { useState, type FormEvent } from "react";
 import { findVisitByCode } from "@/data/staffActions";
@@ -34,7 +35,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
     if (visit.site !== site) {
       return setMessage(`Visit ${visit.code} was started for Demo Site ${visit.site}. Switch site to check it in.`);
     }
-    if (!isExpected(visit, now)) {
+    if (!isExpected(visit, now) && visit.status !== "needs_reassessment") {
       return setMessage(
         visit.status === "pre_arrival"
           ? `Visit ${visit.code} was started more than 6 hours ago. Check the patient in as a new visit.`

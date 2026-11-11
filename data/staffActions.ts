@@ -10,8 +10,11 @@ import {
   callBack,
   checkInAtDesk,
   checkInHomeVisit,
+  confirmUnableToReach,
   markArrived,
   markRemoved,
+  recordPhoneCall,
+  reopenUnableToReach,
   undoClose,
   type Closure,
   type DeskOutcome,
@@ -79,7 +82,7 @@ export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): 
   return null;
 }
 
-/** Check in, after triage, a visit the patient started from home. */
+/** Check in, after triage, a visit that already exists (started from home, or back for reassessment). */
 export const checkInVisitFromHome = (id: string, form: CheckInForm, outcome: DeskOutcome) =>
   changeVisit(id, (v) => (v.site === form.site ? checkInHomeVisit(v, form, outcome, new Date()) : null));
 
@@ -107,6 +110,13 @@ export const callBackVisit = (id: string) => changeVisit(id, (v) => callBack(v, 
 export const markVisitArrived = (id: string) => changeVisit(id, (v) => markArrived(v, new Date()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
   changeVisit(id, (v) => markRemoved(v, reason, new Date()));
+/** Record one simulated phone call ("Phoned, answered" or "Phoned, no answer"). */
+export const recordPhoneCallFor = (id: string, result: "answered" | "no_answer") =>
+  changeVisit(id, (v) => recordPhoneCall(v, result, new Date()));
+/** A nurse confirms "Review: unable to reach"; the visit leaves the active line. */
+export const confirmUnableToReachFor = (id: string) => changeVisit(id, (v) => confirmUnableToReach(v, new Date()));
+/** Reopen an "unable to reach" visit; it goes back to triage (needs reassessment). */
+export const reopenVisit = (id: string) => changeVisit(id, (v) => reopenUnableToReach(v));
 /** Undo one closure; `closure` is the closure the Undo button belongs to. */
 export const undoCloseVisit = (id: string, closure: Closure) => changeVisit(id, (v) => undoClose(v, closure));
 
