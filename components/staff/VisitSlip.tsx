@@ -36,7 +36,7 @@ export function VisitSlip({ code, token, onClose }: Props) {
         />
         <div className="min-w-0 flex-1 space-y-2">
           <p>
-            Visit code: <strong className="font-mono text-2xl tracking-widest">{code}</strong>
+            {textFor("en").visitCode}: <strong className="font-mono text-2xl tracking-widest">{code}</strong>
           </p>
           <p className="text-sm">{textFor("en").slip.typeLink}</p>
           <p className="font-mono text-sm break-all" data-testid="slip-link">

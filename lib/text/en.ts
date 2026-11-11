@@ -1,6 +1,7 @@
 // Every sentence a patient sees, in English. Other languages copy this shape (lib/text/index.ts).
 // Wording approved by the owner on 2026-11-10 (handoffs/archive/2026-11-10-gemini-patient-wording-phase3-response.md).
 // Sentences marked "SPEC" are fixed by SPEC.md: change them only if the owner changes SPEC.
+// Words in {braces} are filled in by the app (for example {low}); translators keep them as they are.
 
 export const en = {
   // SPEC rule 3: on every patient screen, in every state and every language.
@@ -9,7 +10,7 @@ export const en = {
   footer: "Concept prototype. Not affiliated with or endorsed by Trillium Health Partners. Demo data only.",
   appName: "Virtual Waiting Room",
   visitCode: "Visit code",
-  siteName: (site: string) => `Demo Site ${site}`,
+  siteName: "Demo Site {site}",
   newTab: "(opens in a new tab)",
 
   start: {
@@ -82,7 +83,7 @@ export const en = {
     placeCanChange: "Your place can change if more urgent patients arrive. The most urgent patients are always seen first.",
     // SPEC
     waitLabel: "Estimated time until you're called back:",
-    waitRange: (low: number, high: number) => `${low} to ${high} minutes`,
+    waitRange: "{low} to {high} minutes",
     simulated: "This estimate is simulated for the demo.",
 
     calledHeading: "Please head back now",

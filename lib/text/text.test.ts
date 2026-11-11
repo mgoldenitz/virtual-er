@@ -2,13 +2,20 @@
 // are word for word in the English text.
 
 import { describe, expect, it } from "vitest";
-import { textFor } from "./index";
+import { fill, textFor } from "./index";
 
 describe("textFor", () => {
   it("gives English for English, an unknown language, or none", () => {
     expect(textFor("en").emergencyLine).toBe(textFor(undefined).emergencyLine);
     expect(textFor("zz")).toBe(textFor("en"));
     expect(textFor(null)).toBe(textFor("en"));
+  });
+});
+
+describe("fill", () => {
+  it("puts each value into its braces and leaves unknown braces alone", () => {
+    expect(fill("Demo Site {site}", { site: "B" })).toBe("Demo Site B");
+    expect(fill("{low} to {high}", { low: 5 })).toBe("5 to {high}");
   });
 });
 
@@ -45,7 +52,7 @@ describe("SPEC's fixed sentences", () => {
       "Your place can change if more urgent patients arrive. The most urgent patients are always seen first.",
     );
     expect(t.patient.waitLabel).toBe("Estimated time until you're called back:");
-    expect(t.patient.waitRange(40, 60)).toBe("40 to 60 minutes");
+    expect(fill(t.patient.waitRange, { low: 40, high: 60 })).toBe("40 to 60 minutes");
     expect(t.returnNow.text).toBe("Please return now. Staff will review your visit if you do not respond.");
     expect(t.survey.question).toBe("How would you rate your waiting experience?");
   });

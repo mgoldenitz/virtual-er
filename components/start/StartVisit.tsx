@@ -11,7 +11,7 @@ import { useState, useSyncExternalStore } from "react";
 import { startVisitFromHome, usePatientView, type StartResult } from "@/data/patientVisit";
 import { loadSavedToken } from "@/data/savedToken";
 import { startPageState } from "@/lib/startPage";
-import { textFor } from "@/lib/text";
+import { fill, textFor } from "@/lib/text";
 import type { Site } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -65,7 +65,7 @@ export function StartVisit() {
         </h2>
         <p>
           {t.visitCode} <strong className="font-mono tracking-widest">{saved.code}</strong> ·{" "}
-          {t.siteName(saved.site)}
+          {fill(t.siteName, { site: saved.site })}
         </p>
         <Link href="/patient" className={openLinkStyle}>
           {s.openVisit}
@@ -83,7 +83,7 @@ export function StartVisit() {
         </h2>
         <p>
           {t.visitCode} <strong className="font-mono tracking-widest">{saved.code}</strong> ·{" "}
-          {t.siteName(saved.site)}
+          {fill(t.siteName, { site: saved.site })}
         </p>
         <p>{savedNote[state].text}</p>
         <Link href="/patient" className={openLinkStyle}>
@@ -137,7 +137,7 @@ export function StartVisit() {
                 checked={site === option}
                 onChange={() => setSite(option)}
               />
-              {t.siteName(option)}
+              {fill(t.siteName, { site: option })}
             </label>
           ))}
         </div>

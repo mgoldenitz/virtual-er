@@ -8,6 +8,11 @@ export type { PatientText };
 /** Text for each language the app has. Two more languages are added in Phase 3. */
 const TEXT: Record<string, PatientText> = { en };
 
+/** Puts values into a sentence's {braces}, for example fill("{low} to {high} minutes", { low: 40, high: 60 }). */
+export function fill(sentence: string, values: Record<string, string | number>): string {
+  return sentence.replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole));
+}
+
 export function textFor(language: string | null | undefined): PatientText {
   return (language && TEXT[language]) || en;
 }

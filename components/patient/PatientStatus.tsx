@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import type { PatientView } from "@/lib/patientView";
-import { textFor, type PatientText } from "@/lib/text";
+import { fill, textFor, type PatientText } from "@/lib/text";
 import { Button } from "@/components/Button";
 
 type Props = { view: PatientView; onOnMyWay: () => void; sending: boolean };
@@ -23,7 +23,7 @@ function Waiting({ view, t }: { view: PatientView; t: PatientText }) {
       <p className="text-base">{p.placeCanChange}</p>
       <p className="text-lg">
         {p.waitLabel}{" "}
-        <strong>{view.waitLow !== null && view.waitHigh !== null && p.waitRange(view.waitLow, view.waitHigh)}</strong>
+        <strong>{view.waitLow !== null && view.waitHigh !== null && fill(p.waitRange, { low: view.waitLow, high: view.waitHigh })}</strong>
       </p>
       <p className="text-sm text-slate-700">{p.simulated}</p>
     </section>

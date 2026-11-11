@@ -1046,3 +1046,21 @@ index 1baa302..7dd327e 100644
   * In the app the database function start_home_visit does this; this copy is used by the tests.
   */
 ```
+
+## Response
+
+From Gemini (pasted by the owner, 2026-11-10):
+
+1. `components/staff/VisitSlip.tsx`, line 39: the label "Visit code:" is still written in the JSX. Fix: use `{textFor("en").visitCode}:`.
+2. `app/patient/page.tsx`, the `view` and `t` lines and `<EmergencyLine>`: while loading, or when the link is broken or the visit unavailable, `view` is empty, so `textFor` gets nothing and shows English. A patient sees an English 911 line and loading text until the visit loads. Fix: keep the chosen language in browser storage or in the link's hash next to the token, so it is known on the first render.
+3. `lib/text/en.ts`, `siteName` and `waitRange`: code inside the translation file does not suit translation tools, and non-developer translators cannot safely edit it. Fix: plain sentences with placeholders (`"{{low}} to {{high}} minutes"`) and a fill-in helper in `lib/text/index.ts`.
+4. Nothing found. Storing a problem code or true/false instead of a finished English sentence means the message is looked up at render time and follows a language change. (Gemini also said tapping "I'm on my way" now clears the old error at once.)
+
+## Claude's check (2026-11-10)
+
+1. Correct. Fixed: the slip's label comes from the text file.
+2. Correct, and expected: the phone cannot know the visit's language before the visit loads. Fixed in the language-switch step (the phone remembers the chosen language), not now. Logged in PROGRESS.md.
+3. Fair: the fluent reviewer should not have to read code. Fixed: `siteName` is "Demo Site {site}" and `waitRange` is "{low} to {high} minutes" (single braces), filled by `fill()` in `lib/text/index.ts`, with a test. The text file is now plain data.
+4. Agreed, no change. One small correction: tapping "I'm on my way" does not clear the old error at once; it is replaced when the new answer comes back, as before.
+
+86 unit tests, type check and lint pass after the fixes. Review closed; file archived.

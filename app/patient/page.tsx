@@ -10,7 +10,7 @@ import { EmergencyLine } from "@/components/EmergencyLine";
 import { PatientShell } from "@/components/PatientShell";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
-import { textFor } from "@/lib/text";
+import { fill, textFor } from "@/lib/text";
 
 export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
@@ -101,7 +101,7 @@ export default function PatientPage() {
         <>
           <p className="text-base">
             {t.visitCode}: <strong className="font-mono tracking-widest">{view.code}</strong> ·{" "}
-            {t.siteName(view.site)}
+            {fill(t.siteName, { site: view.site })}
           </p>
           <PatientStatus view={view} onOnMyWay={onOnMyWay} sending={sending} />
           {notSaved && (
