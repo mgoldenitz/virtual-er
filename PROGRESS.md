@@ -139,3 +139,10 @@ Working notes for a new session:
 - The Vercel MCP cannot set a project's production branch, cannot list cron jobs, and its create-project tool may reuse a project already linked to the same repository; leave those steps to the owner in the dashboard. Environment variable changes on Vercel need a redeploy; push after the owner adds one, so no separate redeploy is needed.
 - Secrets live only in `.env.local` (git ignores it) and in Vercel's settings: the Supabase URL, publishable key, secret key, and `CRON_SECRET`. Never print them; test with them by reading the file inside a command.
 - Long shell commands with quotes inside a heredoc fail in this setup; write a script file in the scratchpad folder and run that.
+
+## Phase 3: safety and equity (in progress)
+
+Started 2026-11-10 (evening).
+- Step 1 done: `npm update` then `npm audit`: the same 7 moderate minimatch warnings (code checker only; still not fixed upstream). 80 tests, type check and lint pass. Save point `bf69bf6`.
+- The owner does not use GPT-6.1 Terra: its steps (wording, README, presentation) go to Gemini 3.1 Pro, High, or Gemini 3.6 Flash, High, when there are no 3.1 Pro credits (CLAUDE.md and `ai_model_workflow_virtual_er.md` updated).
+- Step 2, waiting on the owner: the wording handoff `handoffs/2026-11-10-gemini-patient-wording-phase3.md` (all current patient text with IDs, fixed SPEC sentences, new Phase 3 messages N1 to N12, survey). Save the answer as `...-response.md` next to it.

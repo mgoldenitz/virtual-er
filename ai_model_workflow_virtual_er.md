@@ -13,7 +13,7 @@
 | **DeepSeek V4.1-Flash** | Low-cost utility | Translation drafts, bulk test scenarios, summaries, simple extraction | **Low** |
 | **GPT-5.6 Cyber / GPT-6 Cyber** | Security specialist only | Optional authorized security review; not general research or app building | Only if specifically needed |
 
-GPT-6.1 Sol and Gemini 4 Argon are not available; Gemini 3.1 Pro, High, does their work.
+GPT-6.1 Sol, Gemini 4 Argon and GPT-6.1 Terra are not available; Gemini 3.1 Pro, High, does their work (Gemini 3.6 Flash, High, when there are no 3.1 Pro credits).
 
 ## Why this stack
 
@@ -43,9 +43,9 @@ flowchart TD
     subgraph R2[" "]
         direction LR
         F["<b>5. Phase 2: database and deploy</b><br>Claude Code: Supabase, RLS, Vercel<br>Supabase MCP: SQL for approval<br>Playwright: realtime, deploy tests<br>Gemini 3.1 Pro, High: security review<br>GPT-6 Astra, High: final security review<br>Git save point"]
-        G["<b>6. Phase 3: safety and equity</b><br>Claude Code: safety, accessibility<br>GPT-6.1 Terra, Medium: wording<br>DeepSeek V4.1-Flash, Low: translations<br>Fluent human approves translations<br>Kimi K3.1 Pro, Thinking Max: equity review<br>Gemini 3.1 Pro, High: UX review<br>Git save point"]
+        G["<b>6. Phase 3: safety and equity</b><br>Claude Code: safety, accessibility<br>Gemini 3.1 Pro, High: wording<br>DeepSeek V4.1-Flash, Low: translations<br>Fluent human approves translations<br>Kimi K3.1 Pro, Thinking Max: equity review<br>Gemini 3.1 Pro, High: UX review<br>Git save point"]
         H["<b>7. Phase 4: dashboard and demo</b><br>Kimi K3.1 Pro, Thinking Max: metric definitions<br>Claude Code: dashboard<br>DeepSeek V4.1-Flash, Low: demo scenarios<br>Playwright: verify dashboard<br>Gemini 3.1 Pro, High: check definitions<br>Git save point"]
-        I["<b>8. Test and launch</b><br>Claude Code: fix defects<br>Playwright: end-to-end tests<br>Gemini 3.1 Pro, High: code review<br>GPT-6 Astra, High: final review<br>GPT-6.1 Terra, Medium: README, deck<br>3 to 5 real testers<br>Final Git save point"]
+        I["<b>8. Test and launch</b><br>Claude Code: fix defects<br>Playwright: end-to-end tests<br>Gemini 3.1 Pro, High: code review<br>GPT-6 Astra, High: final review<br>Gemini 3.1 Pro, High: README, deck<br>3 to 5 real testers<br>Final Git save point"]
         F --> G --> H --> I
     end
 
@@ -99,7 +99,7 @@ flowchart TD
 ### 6. Build Phase 3: safety and equity
 
 - **Claude Opus 5.5 / Claude Code:** Implement safety line, emergency check, no-response ladder, “I’m still here,” call-everyone-back, languages, text size, accessibility labels, footer, and 24-hour deletion.
-- **GPT-6.1 Terra, Medium:** Draft clear patient-facing UI copy and survey wording.
+- **Gemini 3.1 Pro, High (instead of GPT-6.1 Terra):** Draft clear patient-facing UI copy and survey wording.
 - **DeepSeek V4.1-Flash, Low:** Produce first-draft translations and test scenarios.
 - **Fluent human reviewer:** Approve final translations, especially safety messages.
 - **Kimi K3.1 Pro, Thinking Max:** Review accessibility, plain language, equity, and the full patient journey.
@@ -119,7 +119,7 @@ flowchart TD
 - **Playwright MCP:** Run full end-to-end tests, including called/no-response, unable-to-reach, reopening after return, survey eligibility, and call-everyone-back.
 - **Gemini 3.1 Pro, High:** Perform an independent code and architecture review.
 - **GPT-6 Astra, High:** Perform the final security, privacy, accessibility, and code-quality review.
-- **GPT-6.1 Terra, Medium:** Write the README, presentation narrative, and demo instructions.
+- **Gemini 3.1 Pro, High (instead of GPT-6.1 Terra):** Write the README, presentation narrative, and demo instructions.
 - **Real testers:** Have 3–5 people use the app and report confusion, errors, or accessibility problems.
 
 ## Operating rules
