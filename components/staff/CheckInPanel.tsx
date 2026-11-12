@@ -28,9 +28,11 @@ type Props = {
   homeProblem: string | null;
   /** Leave the home visit: after it is checked in, or when staff cancel. */
   onHomeDone: () => void;
+  /** Off-site waiting is paused at this site: check-in offers on-site waiting only. */
+  offsitePaused: boolean;
 };
 
-export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProblem, onHomeDone }: Props) {
+export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProblem, onHomeDone, offsitePaused }: Props) {
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [language, setLanguage] = useState("en");
@@ -92,6 +94,10 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
     if (homeProblem) return;
     if (ctas === null) {
       setMessage("Choose CTAS 4 or 5 first.");
+      return;
+    }
+    if (outcome === "waiting" && offsitePaused) {
+      setMessage("Off-site waiting is paused at this site. Record the patient as waiting on-site.");
       return;
     }
     if (outcome === "waiting" && !CHECKLIST.every((item) => ticked[item.id])) {
@@ -196,9 +202,15 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
 
       {!homeProblem && (
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" aria-disabled={saving}>
-            Start off-site waiting
-          </Button>
+          {offsitePaused ? (
+            <p className="w-full rounded-lg border-2 border-red-800 bg-red-50 p-3 font-semibold text-red-900">
+              Off-site waiting is paused at this site: the patient waits on-site.
+            </p>
+          ) : (
+            <Button type="submit" aria-disabled={saving}>
+              Start off-site waiting
+            </Button>
+          )}
           <Button variant="secondary" aria-disabled={saving} onClick={() => finish("declined")}>
             Offered, declined
           </Button>

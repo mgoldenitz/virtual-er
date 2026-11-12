@@ -4,6 +4,7 @@
 // waiting off-site, and call them back.
 
 import { useEffect, useRef, useState } from "react";
+import { useSitePauses } from "@/data/sitePauses";
 import { reloadVisits } from "@/data/staffActions";
 import { useVisits } from "@/data/useVisits";
 import { homeCheckInProblem } from "@/lib/homeCheckIn";
@@ -11,6 +12,7 @@ import { activeLine } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { CheckInPanel } from "@/components/staff/CheckInPanel";
 import { ExpectedArrivals } from "@/components/staff/ExpectedArrivals";
+import { PauseSwitch } from "@/components/staff/PauseSwitch";
 import { ProgressAnnouncer } from "@/components/staff/ProgressAnnouncer";
 import { RecallAllPanel } from "@/components/staff/RecallAllPanel";
 import { RecentlyClosed } from "@/components/staff/RecentlyClosed";
@@ -24,6 +26,7 @@ import { useNow } from "@/components/useNow";
 export default function StaffPage() {
   const { visits, outOfDate } = useVisits();
   const now = useNow();
+  const { pauses } = useSitePauses();
   const [site, setSite] = useState<Site>("A");
   const [slip, setSlip] = useState<Visit | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -53,6 +56,7 @@ export default function StaffPage() {
   };
 
   const line = visits ? activeLine(visits, site) : [];
+  const paused = pauses ? pauses[site] : null;
   // The chosen home visit may have been checked in on another screen, or expired, since staff opened it.
   const homeProblem =
     homeVisit && visits && now
@@ -108,6 +112,7 @@ export default function StaffPage() {
             onCreated={showSlip}
             homeVisit={homeVisit}
             homeProblem={homeProblem}
+            offsitePaused={paused === true}
             onHomeDone={() => setHomeVisit(null)}
           />
           {slip && <VisitSlip code={slip.code} token={slip.access_token} language={slip.language} onClose={() => setSlip(null)} />}
@@ -120,6 +125,7 @@ export default function StaffPage() {
           <p role="status" className="min-h-6 font-semibold">
             {announcement}
           </p>
+          <PauseSwitch key={`pause-${site}`} site={site} paused={paused} offSiteCount={line.length} onResult={setAnnouncement} />
           {visits && <RecallAllPanel key={`recall-${site}`} visits={visits} site={site} onResult={(message, closed) => (closed ? onLeftList(message) : setAnnouncement(message))} />}
           {visits === null || now === null ? (
             <p>{outOfDate ? "No list to show yet." : "Loading…"}</p>

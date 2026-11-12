@@ -3,8 +3,9 @@
 -- the public schema. Compare the result with the expected list below; anything extra is
 -- a hole to fix before going on. Update the expected list only on purpose.
 --
--- Expected after Phase 3's pause safety limit (20261111200000_pause_safety_limit.sql; its
--- trigger function visits_limit_pause is callable by nobody, so the list is unchanged):
+-- Expected after Phase 3's site pause read (20261112010000_site_pause_read.sql; it gives
+-- only service_role, the app's server, a read of two site_settings columns, and its trigger
+-- function site_settings_before_update is callable by nobody, so the list is unchanged):
 --   anon           table     change_signal       SELECT
 --   anon           function  confirm_on_my_way   EXECUTE
 --   anon           function  get_patient_visit   EXECUTE

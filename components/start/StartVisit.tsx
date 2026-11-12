@@ -3,13 +3,15 @@
 // The start page's "Start a visit": choose a demo site; the visit takes the language chosen on
 // this phone (the menu at the top of the page). The server starts the visit and this phone remembers it, so the patient never types a code. If this phone already
 // has a visit, it shows that one first (open, ended or expired), and never offers a new one
-// while the saved visit cannot be read.
+// while the saved visit cannot be read. While staff have paused off-site waiting at a site,
+// "Start a visit" for that site is replaced by the SPEC's paused message.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { startVisitFromHome, usePatientView, type StartResult } from "@/data/patientVisit";
 import { loadSavedToken } from "@/data/savedToken";
+import { useSitePauses } from "@/data/sitePauses";
 import { startPageState } from "@/lib/startPage";
 import { fill, textFor } from "@/lib/text";
 import type { Site } from "@/lib/visit";
@@ -29,6 +31,7 @@ export function StartVisit({ language }: { language: string }) {
   const [problem, setProblem] = useState<Exclude<StartResult, "saved"> | null>(null);
   const [starting, setStarting] = useState(false);
   const [wantsNew, setWantsNew] = useState(false);
+  const { pauses } = useSitePauses();
   const state = startPageState(saved);
   const t = textFor(language);
   const s = t.start;
@@ -108,6 +111,19 @@ export function StartVisit({ language }: { language: string }) {
     );
   }
 
+  // Both sites paused: no start box at all, only the message (the start route refuses anyway).
+  if (pauses?.A && pauses?.B) {
+    return (
+      <section aria-labelledby="start-heading" className={boxStyle} data-testid="start-paused">
+        <h2 id="start-heading" className="text-xl font-bold">
+          {t.pausedHeading}
+        </h2>
+        <p>{s.paused}</p>
+      </section>
+    );
+  }
+  const sitePaused = pauses?.[site] === true;
+
   const start = async () => {
     if (starting) return; // a second tap while the first is on its way must not start two visits
     setStarting(true);
@@ -147,9 +163,15 @@ export function StartVisit({ language }: { language: string }) {
           ))}
         </div>
       </fieldset>
-      <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
-        {starting ? s.starting : s.startButton}
-      </Button>
+      {sitePaused ? (
+        <p role="status" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900" data-testid="site-paused">
+          {s.paused}
+        </p>
+      ) : (
+        <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
+          {starting ? s.starting : s.startButton}
+        </Button>
+      )}
       {problem && (
         <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
           {problemText[problem]}
