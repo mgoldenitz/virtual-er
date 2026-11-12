@@ -627,3 +627,53 @@ index 0000000..bec651d
 +  before update on public.site_settings
 +  for each row execute function public.site_settings_before_update();
 ```
+
+## Response
+
+Gemini 3.1 Pro, High, new chat, 2026-11-12 (pasted by the owner).
+
+1. **Security**
+
+* Nothing found. The `/api/site-status` route accepts no parameters (immune to injection) and strictly selects only the `site` and `offsite_paused` columns. Bypassing RLS with `service_role` is perfectly acceptable here because this specific state is effectively public information that determines what the public-facing start page displays.
+
+2. **Correctness**
+
+* Nothing found. The optimistic concurrency check (`.eq("offsite_paused", !paused)`) in `setSitePaused` strictly prevents two staff screens from overriding each other. If one screen pauses a site, a concurrent attempt by another screen will safely return 0 rows and a `"refused"` result.
+
+3. **Safety and wording**
+
+* **File:** `components/staff/PauseSwitch.tsx`
+* **Line or area:** The `confirmResume` mode checkbox `<label>`.
+* **The problem:** The prompt explicitly states the pause feature is for "downtime or a contact problem" (and the pause confirmation wording reflects this, mentioning surges). However, the resume checkbox forces staff to tick: *"I have checked that patients can be reached again (phones and this app work)."*
+* **How it fails:** If a charge nurse pauses off-site waiting because the ED is overwhelmed with a patient surge, forcing them to confirm a fix to a non-existent phone/app outage is confusing and inaccurate.
+* **Suggested fix:** Broaden the confirmation text to accommodate both scenarios. (e.g., *"I confirm it is safe to resume off-site waiting (surge has passed or contact systems are working)."*)
+
+4. **Accessibility**
+
+* **File:** `components/start/StartVisit.tsx`
+* **Line or area:** The `if (pauses?.A && pauses?.B)` block rendering the all-sites-paused message.
+* **The problem:** While the single-site pause correctly injects a `<p role="status">` element, the fallback component that replaces the entire form when both sites are paused lacks an assertive ARIA live region.
+* **How it fails:** If both sites are paused dynamically while a screen-reader user is idling on the form, the form will silently vanish and be replaced by a `<section>`. The user will lose their focus context without any auditory explanation.
+* **Suggested fix:** Add `aria-live="polite"` or `role="status"` to the wrapper `<section data-testid="start-paused">`, or directly to the `<p>{s.paused}</p>` inside it.
+
+5. **Breaks to existing behaviour**
+
+* Nothing found. The `site_settings_before_update` trigger correctly persists the historical `old.paused_at` timestamp if other columns are updated, meaning it safely ignores unrelated writes.
+
+### The four known choices
+
+1. **Desk check-in has no database check for the pause:** Acceptable for a demo. The UI visually disables the "Start off-site waiting" path using the `offsitePaused` prop. You can add a hard database state-machine check for the desk path in Phase 4.
+2. **Check-in still offers "Offered, declined" and "Not eligible" while paused:** Real problem. If off-site waiting is disabled, recording patients as "declined" or "not eligible" will heavily skew your clinical dashboard's adoption percentages by falsely implying those patients failed standard criteria or refused. **Fix:** Hide those two buttons completely when `offsitePaused` is true, or replace them with a single "Not offered (Paused)" status.
+3. **Start page acts as unpaused if the route fails:** Acceptable. If the UI wrongly allows a patient to submit the form during a read failure, the `start_home_visit` database function acts as the ultimate source of truth and will securely block the creation of the visit, displaying the "Paused" error message.
+4. **`/api/site-status` needs no sign-in and is not rate-limited:** Real problem. A route that hits the database on every unauthenticated request is a Denial of Service (DoS) vulnerability that could easily exhaust the Supabase connection pool. **Fix:** Apply a strict IP-based rate limiter (like Vercel WAF or Upstash Redis) to this route, just as you plan for the `/api/start-visit` endpoint.
+
+## Claude's check (2026-11-12)
+
+- 1, 2, 5: agree, nothing to change.
+- 3 (resume tick wording): **not accepted.** The premise is wrong: the pause confirmation says "Use this for downtime or a contact problem", matching SPEC; it does not mention surges (surges have "Recall all off-site patients"). The owner found the wording fine.
+- 4 (announcement): **accepted, fixed** (`c5030f7`), more widely than suggested: a live region added at the same moment as its words is often not read, which also applied to the single-site message. The start box now has one status region that stays in place (the same element whether one or both sites are paused) and speaks once when the chosen site becomes paused: "Demo Site A: Off-site waiting is paused right now. …". It is inside the start box only, so a patient with an open visit never hears it (their off-site visit keeps working). The visible message no longer has its own role="status", so it is not read twice. Not yet heard with a real screen reader.
+- Known choice 1, 3: agree, left as they are (database step checks are planned later in Phase 3).
+- Known choice 2: **accepted, smaller fix** (`c5030f7`): while paused, "Offered, declined" is hidden and "Not eligible" becomes "Waits on-site (off-site waiting paused)". It still records not_eligible, which the dashboard's "offered" percentage already leaves out of its denominator, so paused patients neither count as offered nor as declined. No new status needed.
+- Known choice 4: **partly accepted.** Each call is one small read of a two-row table over Supabase's HTTP interface, but the route is open to anyone. Fix: a Vercel firewall rate-limit rule, the same way as `/api/start-visit` (the Vercel MCP may not change firewall settings, so the owner adds it in the dashboard).
+
+Checks after the fixes: 147 tests, type check and lint pass; start page checked at phone size.
