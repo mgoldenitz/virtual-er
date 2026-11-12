@@ -2,6 +2,7 @@
 // confirming "unable to reach", and reopening.
 
 import { describe, expect, it } from "vitest";
+import { ANSWERED_PAUSE_MINUTES } from "./demoTimes";
 import { patientCallStep, staffFollowUp } from "./followUp";
 import {
   callBack,
@@ -141,5 +142,11 @@ describe("patientCallStep", () => {
 
   it("stops once the patient confirms", () => {
     expect(patientCallStep("on_the_way", t0.toISOString(), at(25))).toBe("first");
+  });
+});
+
+describe("pause setting", () => {
+  it("stays within the database's 30-minute safety limit (20261111200000_pause_safety_limit.sql)", () => {
+    expect(ANSWERED_PAUSE_MINUTES).toBeLessThanOrEqual(30);
   });
 });

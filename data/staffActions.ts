@@ -1,7 +1,8 @@
 // What staff screens can do to visits. Each action applies a rule from lib/visitActions to
 // the copy of the visit on screen, then saves only the changed fields to the database, and
 // only if nobody else changed the visit in the meantime (its version number still matches).
-// The database sets every time itself, so the device clock never decides line order.
+// The database sets every time itself, so the device clock never decides line order; the
+// rules judge "how long ago" by the server's clock (serverNow), not the laptop's.
 
 import { changedFields } from "@/lib/changedFields";
 import { makeAccessToken, makeUniqueDisplayCode, normalizeDisplayCode } from "@/lib/codes";
@@ -19,6 +20,7 @@ import {
   type Closure,
   type DeskOutcome,
 } from "@/lib/visitActions";
+import { serverNow } from "./serverClock";
 import { supabaseBrowser } from "./supabaseBrowser";
 import { cachedVisit, loadVisits, putVisit, readVisitList, type StoredVisit } from "./visitCache";
 
@@ -68,7 +70,7 @@ export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): 
       const visit = checkInAtDesk(
         { id: crypto.randomUUID(), code: makeUniqueDisplayCode(taken), access_token: makeAccessToken(), ...form },
         outcome,
-        new Date(),
+        serverNow(),
       );
       const { data, error } = await supabaseBrowser().from("visits").insert(visit).select();
       if (error?.code === ALREADY_USED) continue; // an older visit not on this screen has the code
@@ -84,7 +86,7 @@ export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): 
 
 /** Check in, after triage, a visit that already exists (started from home, or back for reassessment). */
 export const checkInVisitFromHome = (id: string, form: CheckInForm, outcome: DeskOutcome) =>
-  changeVisit(id, (v) => (v.site === form.site ? checkInHomeVisit(v, form, outcome, new Date()) : null));
+  changeVisit(id, (v) => (v.site === form.site ? checkInHomeVisit(v, form, outcome, serverNow()) : null));
 
 /**
  * Staff-only lookup of a visit by the short code the patient reads out or shows. It asks the
@@ -106,15 +108,15 @@ export async function findVisitByCode(typed: string): Promise<Visit | null | "fa
   }
 }
 
-export const callBackVisit = (id: string) => changeVisit(id, (v) => callBack(v, new Date()));
-export const markVisitArrived = (id: string) => changeVisit(id, (v) => markArrived(v, new Date()));
+export const callBackVisit = (id: string) => changeVisit(id, (v) => callBack(v, serverNow()));
+export const markVisitArrived = (id: string) => changeVisit(id, (v) => markArrived(v, serverNow()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
-  changeVisit(id, (v) => markRemoved(v, reason, new Date()));
+  changeVisit(id, (v) => markRemoved(v, reason, serverNow()));
 /** Record one simulated phone call ("Phoned, answered" or "Phoned, no answer"). */
 export const recordPhoneCallFor = (id: string, result: "answered" | "no_answer") =>
-  changeVisit(id, (v) => recordPhoneCall(v, result, new Date()));
+  changeVisit(id, (v) => recordPhoneCall(v, result, serverNow()));
 /** A nurse confirms "Review: unable to reach"; the visit leaves the active line. */
-export const confirmUnableToReachFor = (id: string) => changeVisit(id, (v) => confirmUnableToReach(v, new Date()));
+export const confirmUnableToReachFor = (id: string) => changeVisit(id, (v) => confirmUnableToReach(v, serverNow()));
 /** Reopen an "unable to reach" visit; it goes back to triage (needs reassessment). */
 export const reopenVisit = (id: string) => changeVisit(id, (v) => reopenUnableToReach(v));
 /** Undo one closure; `closure` is the closure the Undo button belongs to. */
