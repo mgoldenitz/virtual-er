@@ -3,11 +3,11 @@
 // The staff "Expected arrivals" list: visits started from home that have not reached triage.
 // They are not in the waiting line. Staff pick one from the list, or type the code the patient
 // shows (short-code lookup is staff-only), to check it in after triage. The code box also finds
-// a reopened visit that needs reassessment.
+// a reopened visit that needs reassessment; those are also listed under "Back for reassessment".
 
 import { useState, type FormEvent } from "react";
 import { findVisitByCode } from "@/data/staffActions";
-import { expectedArrivals, isExpected } from "@/lib/expectedArrivals";
+import { backForReassessment, expectedArrivals, isExpected } from "@/lib/expectedArrivals";
 import { minutesBetween } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -18,6 +18,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
   const [typed, setTyped] = useState("");
   const [message, setMessage] = useState("");
   const expected = expectedArrivals(visits, site, now);
+  const reassess = backForReassessment(visits, site);
 
   const [looking, setLooking] = useState(false);
 
@@ -73,6 +74,28 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
       <p role="status" className="min-h-6 font-semibold">
         {message}
       </p>
+      {reassess.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-bold">Back for reassessment ({reassess.length})</h3>
+          <p className="text-sm text-slate-700">Reopened after &ldquo;unable to reach&rdquo;. Triage again before they rejoin the line.</p>
+          <ul className="space-y-2">
+            {reassess.map((visit) => (
+              <li
+                key={visit.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-amber-800 bg-amber-50 p-3"
+                data-testid={`reassess-${visit.code}`}
+              >
+                <p>
+                  <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span> · needs reassessment
+                </p>
+                <Button variant="secondary" onClick={() => onChoose(visit)}>
+                  Triage again<span className="sr-only"> visit {visit.code}</span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {expected.length > 0 && (
         <ul className="space-y-2">
           {expected.map((visit) => (

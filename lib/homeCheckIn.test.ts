@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { backForReassessment } from "./expectedArrivals";
 import { homeCheckInProblem } from "./homeCheckIn";
 import { callBack, checkInHomeVisit, confirmUnableToReach, reopenUnableToReach, startFromHome } from "./visitActions";
 
@@ -31,5 +32,14 @@ describe("home check-in problems", () => {
     const lost = confirmUnableToReach(callBack(waiting, at(10))!, at(40))!;
     const reopened = reopenUnableToReach(lost)!;
     expect(homeCheckInProblem(lost, reopened, at(60 * 8))).toBeNull();
+  });
+
+  it("lists a reopened visit under Back for reassessment until it is triaged again", () => {
+    const waiting = checkInHomeVisit(home, { ctas_level: 4, language: "en" }, "waiting", at(5))!;
+    const reopened = reopenUnableToReach(confirmUnableToReach(callBack(waiting, at(10))!, at(40))!)!;
+    expect(backForReassessment([reopened, waiting], "A").map((v) => v.id)).toEqual(["h"]);
+    expect(backForReassessment([reopened], "B")).toEqual([]);
+    const again = checkInHomeVisit(reopened, { ctas_level: 4, language: "en" }, "waiting", at(60))!;
+    expect(backForReassessment([again], "A")).toEqual([]);
   });
 });

@@ -18,3 +18,14 @@ export function expectedArrivals(visits: Visit[], site: Site, now: Date): Visit[
     .filter((v) => v.site === site && isExpected(v, now))
     .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
 }
+
+/**
+ * Reopened visits at one site that wait for a nurse to triage them again ("unable to reach",
+ * then the patient came back). They are not in the waiting line and never expire, so they stay
+ * listed until triaged. Oldest first triage first.
+ */
+export function backForReassessment(visits: Visit[], site: Site): Visit[] {
+  return visits
+    .filter((v) => v.site === site && v.status === "needs_reassessment")
+    .sort((a, b) => ((a.triaged_at ?? "") < (b.triaged_at ?? "") ? -1 : (a.triaged_at ?? "") > (b.triaged_at ?? "") ? 1 : 0));
+}
