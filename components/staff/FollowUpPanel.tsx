@@ -5,7 +5,7 @@
 // confirmation of "unable to reach". The rule that picks the flag is in lib/followUp.ts.
 
 import { confirmUnableToReachFor, recordPhoneCallFor } from "@/data/staffActions";
-import { CALL_REVIEW_MINUTES } from "@/lib/demoTimes";
+import { CALL_PHONE_AGAIN_MINUTES, CALL_REVIEW_MINUTES, CALL_SECOND_ALERT_MINUTES } from "@/lib/demoTimes";
 import { canRecordPhoneCall, staffFollowUp, type StaffFollowUp } from "@/lib/followUp";
 import { minutesBetween } from "@/lib/queue";
 import type { ChangeResult, Visit } from "@/lib/visit";
@@ -28,9 +28,9 @@ const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "num
 function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: string; tone: string } | null {
   switch (followUp.kind) {
     case "phone":
-      return { text: "Phone this patient. No “I'm on my way” yet.", tone: AMBER };
+      return { text: `No reply ${CALL_SECOND_ALERT_MINUTES} min after call-back. Phone the patient now.`, tone: AMBER };
     case "phone_again":
-      return { text: "Phone a second time. Still no “I'm on my way”.", tone: AMBER };
+      return { text: `Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. Phone the patient again.`, tone: AMBER };
     case "paused":
       return { text: `Phoned, answered. Follow-up paused until ${clock(followUp.until)}.`, tone: AMBER };
     case "review":
@@ -39,7 +39,10 @@ function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: stri
         tone: RED,
       };
     case "contacted_not_arrived":
-      return { text: "Contacted, not yet arrived. A call was answered, but the patient has not confirmed or arrived.", tone: AMBER };
+      return {
+        text: "Answered the phone, not here yet: they haven’t tapped ‘I’m on my way’ or arrived.",
+        tone: AMBER,
+      };
     case "on_way_not_arrived": {
       const since = visit.confirmed_at ? minutesBetween(visit.confirmed_at, now) : 0;
       return { text: `On the way, not arrived. Confirmed ${since} min ago.`, tone: AMBER };
