@@ -29,8 +29,11 @@ function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: stri
   switch (followUp.kind) {
     case "phone":
       return { text: `No reply ${CALL_SECOND_ALERT_MINUTES} min after call-back. Phone the patient now.`, tone: AMBER };
-    case "phone_again":
-      return { text: `Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. Phone the patient again.`, tone: AMBER };
+    case "phone_again": {
+      // "again" only if someone already phoned; staff may have missed the first flag.
+      const ask = visit.phone_attempts === 0 ? "Phone the patient now." : "Phone the patient again.";
+      return { text: `Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. ${ask}`, tone: AMBER };
+    }
     case "paused":
       return { text: `Phoned, answered. Follow-up paused until ${clock(followUp.until)}.`, tone: AMBER };
     case "review":
@@ -56,54 +59,67 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
   const followUp = staffFollowUp(visit, now);
   const flag = flagFor(followUp, visit, now);
   const canPhone = canRecordPhoneCall(visit, now);
-  if (!flag && !canPhone) return null;
-
+  // Screen readers hear each new flag once (politely). The minute counts are left out so the
+  // words do not change, and so are not read again, every minute.
+  const spoken = flag ? `Visit ${visit.code}: ${flag.text.replace(/ Confirmed \d+ min ago\./, "")}` : "";
+  const announcer = (
+    <p role="status" className="sr-only">
+      {spoken}
+    </p>
+  );
+  // The announcer stays in the same place whether or not the rest shows, so it is never
+  // re-created at the moment a flag appears (a new region is often not read).
   return (
-    <div className="mt-2 space-y-2" data-testid="follow-up">
-      {flag && (
-        <p className={`rounded-lg border-2 p-2 font-semibold ${flag.tone}`} data-testid={`flag-${followUp.kind}`}>
-          {flag.text}
-        </p>
-      )}
-      {canPhone && (
-        <div className="space-y-2">
-          <p className="text-sm text-slate-700">
-            Simulated calls (the demo stores no phone numbers). Recorded so far: {visit.phone_attempts}
-            {visit.last_phone_result && ` (last: ${visit.last_phone_result === "answered" ? "answered" : "no answer"})`}.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => recordPhoneCallFor(visit.id, "answered"))}>
-              Phoned, answered<span className="sr-only"> for visit {visit.code}</span>
-            </Button>
-            <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => recordPhoneCallFor(visit.id, "no_answer"))}>
-              Phoned, no answer<span className="sr-only"> for visit {visit.code}</span>
-            </Button>
-          </div>
+    <>
+      {announcer}
+      {(flag || canPhone) && (
+        <div className="mt-2 space-y-2" data-testid="follow-up">
+          {flag && (
+            <p className={`rounded-lg border-2 p-2 font-semibold ${flag.tone}`} data-testid={`flag-${followUp.kind}`}>
+              {flag.text}
+            </p>
+          )}
+          {canPhone && (
+            <div className="space-y-2">
+              <p className="text-sm text-slate-700">
+                Simulated calls (the demo stores no phone numbers). Recorded so far: {visit.phone_attempts}
+                {visit.last_phone_result && ` (last: ${visit.last_phone_result === "answered" ? "answered" : "no answer"})`}.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => recordPhoneCallFor(visit.id, "answered"))}>
+                  Phoned, answered<span className="sr-only"> for visit {visit.code}</span>
+                </Button>
+                <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => recordPhoneCallFor(visit.id, "no_answer"))}>
+                  Phoned, no answer<span className="sr-only"> for visit {visit.code}</span>
+                </Button>
+              </div>
+            </div>
+          )}
+          {followUp.kind === "review" && (
+            <details>
+              <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
+                Confirm unable to reach
+              </summary>
+              <p className="mt-1 text-sm">
+                The visit leaves the off-site line. It is not recorded as left without being seen. Follow hospital policy outside the app.
+              </p>
+              <Button
+                variant="danger"
+                className="mt-2"
+                aria-disabled={saving}
+                onClick={() =>
+                  act(
+                    () => confirmUnableToReachFor(visit.id),
+                    `Visit ${visit.code} confirmed unable to reach. Reopen is under Recently closed.`,
+                  )
+                }
+              >
+                Yes, unable to reach<span className="sr-only"> for visit {visit.code}</span>
+              </Button>
+            </details>
+          )}
         </div>
       )}
-      {followUp.kind === "review" && (
-        <details>
-          <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
-            Confirm unable to reach
-          </summary>
-          <p className="mt-1 text-sm">
-            The visit leaves the off-site line. It is not recorded as left without being seen. Follow hospital policy outside the app.
-          </p>
-          <Button
-            variant="danger"
-            className="mt-2"
-            aria-disabled={saving}
-            onClick={() =>
-              act(
-                () => confirmUnableToReachFor(visit.id),
-                `Visit ${visit.code} confirmed unable to reach. Reopen is under Recently closed.`,
-              )
-            }
-          >
-            Yes, unable to reach<span className="sr-only"> for visit {visit.code}</span>
-          </Button>
-        </details>
-      )}
-    </div>
+    </>
   );
 }
