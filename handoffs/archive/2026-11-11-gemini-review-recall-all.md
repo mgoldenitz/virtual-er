@@ -294,3 +294,26 @@ index 0000000..c8201c0
 +  return `${recalled} ${people(result.changed)} had already changed on another screen; check the list.`;
 +}
 ```
+
+## Response
+
+Gemini 3.1 Pro, High, new chat, 2026-11-12 (pasted by the owner).
+
+1. **Correctness**: Nothing found. Using `.in("id", ids)` strictly locks the update to the confirmed snapshot, and `.eq("status", "waiting")` acts as a natural state-machine guard. If another screen changes a visit to another status in the meantime, it safely falls out of the update filter, making the optimistic version check unnecessary here.
+2. **Single bulk update (RLS & Triggers)**: Nothing found. PostgREST evaluates Row-Level Security safely on a per-row basis. Better yet, because `visits_changed` is a statement-level trigger (`for each statement`), updating 50 rows in one query will touch the `change_signal` table exactly once. This is highly efficient and elegantly avoids the severe row-lock concurrency bottleneck we flagged during the Phase 2 review.
+3. **Safety and wording**: Nothing found. The confirmation is explicit, and the warning that "recalled patients stay recalled" is completely accurate, as the individual "Undo" feature applies only to closed visits (like those marked arrived or removed).
+4. **Accessibility**:
+* **File**: `components/Button.tsx` and `components/staff/RecallAllPanel.tsx`
+* **Line or area**: The `Button` component definition, and the `cancel`/`confirm` functions.
+* **The problem**: First, standard React function components cannot accept a `ref` prop directly. Passing `ref={openButton}` to `<Button>` triggers a console warning, resolves the ref to `null`, and breaks the focus-return inside `cancel`. Second, when a recall succeeds, `setAsked(null)` instantly destroys the active "Yes" button. Since `targets.length` likely drops to 0 (everyone was recalled), the original open button unmounts too, leaving nowhere for focus to naturally return.
+* **How it fails**: Clicking "Cancel" fails to return focus to the open button. Clicking "Yes" abruptly drops focus to the document `<body>`, causing a severe loss of context for keyboard and screen-reader users.
+* **Suggested fix**: Wrap the `Button` export in `React.forwardRef<HTMLButtonElement, Props>`. For the confirmation panel, pass a ref up to `page.tsx` and explicitly call `.focus()` on the `role="status"` announcement paragraph (after giving it `tabIndex={-1}`) upon a successful bulk recall.
+5. **Existing behaviour**: Nothing found. The new panel is safely isolated, and updating the React key to `key={"closed-" + site}` in `page.tsx` cleanly resolves any duplicate key collisions.
+
+## Claude's check (2026-11-12)
+
+- 1, 2, 3, 5: agree, nothing to change.
+- 4, ref on `Button`: **not accepted, the claim is out of date.** The project uses React 19.3; since React 19 a function component receives `ref` as an ordinary prop, and `Button` spreads it onto the real `<button>`. `forwardRef` is no longer needed (React lists it as the old way). No warning appeared in the owner's test.
+- 4, focus after a successful recall: **accepted, fixed** (`2909f1e`). The page now moves focus to the off-site list heading (the same pattern as when a patient leaves the list), with the result message in the status line just below it. After a failed save the confirmation stays open and focus stays on "Yes".
+
+Checks after the fix: 144 tests, type check and lint pass. Review closed.
