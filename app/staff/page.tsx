@@ -120,7 +120,7 @@ export default function StaffPage() {
           <p role="status" className="min-h-6 font-semibold">
             {announcement}
           </p>
-          {visits && <RecallAllPanel key={`recall-${site}`} visits={visits} site={site} onResult={setAnnouncement} />}
+          {visits && <RecallAllPanel key={`recall-${site}`} visits={visits} site={site} onResult={(message, closed) => (closed ? onLeftList(message) : setAnnouncement(message))} />}
           {visits === null || now === null ? (
             <p>{outOfDate ? "No list to show yet." : "Loading…"}</p>
           ) : line.length === 0 ? (

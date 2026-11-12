@@ -13,8 +13,12 @@ import { Button } from "@/components/Button";
 type Props = {
   visits: Visit[];
   site: Site;
-  /** Called with words for staff and screen readers after a recall, or after a failed one. */
-  onResult: (message: string) => void;
+  /**
+   * Called with words for staff and screen readers after a recall, or after a failed one.
+   * `closed` is true when the confirmation closed (the page then moves focus, because the
+   * focused button just disappeared); after a failed save the box stays open with focus in it.
+   */
+  onResult: (message: string, closed: boolean) => void;
 };
 
 export function RecallAllPanel({ visits, site, onResult }: Props) {
@@ -41,8 +45,8 @@ export function RecallAllPanel({ visits, site, onResult }: Props) {
     setSaving(true);
     const result = await recallAll(asked.map((v) => v.id));
     setSaving(false);
-    onResult(recallAllMessage(result, site));
     if (!result.notSaved) setAsked(null);
+    onResult(recallAllMessage(result, site), !result.notSaved);
   };
 
   if (!asked) {
