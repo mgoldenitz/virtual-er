@@ -1035,3 +1035,5 @@ Known points:
 - 10: owner decided on 2026-11-11 to keep "Phoned, answered / no answer" for now; renaming "Call back" is the owner's call.
 
 Checks after the fixes: 137 tests, type check and lint pass.
+
+Database safety limit run by the owner on 2026-11-11; `permissions.sql` matched the expected list and no table is without row-level security. Review closed.
