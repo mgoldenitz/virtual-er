@@ -120,7 +120,7 @@ export default function StaffPage() {
           <p role="status" className="min-h-6 font-semibold">
             {announcement}
           </p>
-          {visits && <RecallAllPanel key={site} visits={visits} site={site} onResult={setAnnouncement} />}
+          {visits && <RecallAllPanel key={`recall-${site}`} visits={visits} site={site} onResult={setAnnouncement} />}
           {visits === null || now === null ? (
             <p>{outOfDate ? "No list to show yet." : "Loading…"}</p>
           ) : line.length === 0 ? (
@@ -138,7 +138,7 @@ export default function StaffPage() {
               ))}
             </ol>
           )}
-          {visits && <RecentlyClosed key={site} visits={visits} site={site} onUndoResult={onUndoResult} onReopened={chooseHomeVisit} />}
+          {visits && <RecentlyClosed key={`closed-${site}`} visits={visits} site={site} onUndoResult={onUndoResult} onReopened={chooseHomeVisit} />}
           {visits && <ProgressAnnouncer visits={visits} site={site} />}
         </section>
       </div>
