@@ -43,7 +43,7 @@ function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: stri
       };
     case "contacted_not_arrived":
       return {
-        text: "Answered the phone, not here yet: they haven’t tapped ‘I’m on my way’ or arrived.",
+        text: "Answered the phone, but hasn’t arrived or tapped ‘I’m on my way’ yet.",
         tone: AMBER,
       };
     case "on_way_not_arrived": {
