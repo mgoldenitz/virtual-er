@@ -978,3 +978,60 @@ index 7dd327e..a35b2fa 100644
  export function markArrived(visit: Visit, now: Date): Visit | null {
    if (!["waiting", "called", "on_the_way"].includes(visit.status)) return null;
 ```
+
+## Response
+
+Gemini 3.1 Pro, High, new chat, 2026-11-11 (pasted by the owner).
+
+1. **`lib/followUp.ts` (staffFollowUp function):** If staff completely miss the 10-minute flag and record 0 calls, at 20 minutes the logic jumps straight to `{ kind: "phone_again" }`. Staff will see "Phone a second time" even though they never phoned a first time. **Fix:** Check `visit.phone_attempts === 0` to return the first `"phone"` flag instead, or generalize the 20-minute wording to urge a call regardless of history.
+2. **`lib/followUp.ts` (`canRecordPhoneCall`) & `components/staff/FollowUpPanel.tsx`:** The `canRecordPhoneCall` function only checks if 10 minutes have passed; it does not check if the flag is currently paused. The phone buttons remain fully visible and clickable during a pause, allowing staff to repeatedly click "Phoned, answered" and endlessly push the pause deadline further into the future. **Fix:** Update `canRecordPhoneCall` to return `false` if `visit.followup_paused_until` is in the future.
+3. **`lib/visitActions.ts` (Undo interactions):** If staff mark a "called" visit as "arrived", and then click Undo 35 minutes later, the visit reverts to `called`. Because the original `called_at` timestamp is restored, the 30-minute clock is instantly exceeded. The staff screen immediately flags "Review: unable to reach" and the patient screen instantly blares "Please return now". **Fix:** Acceptable for a demo, but realistically `undoClose` should shift `called_at` forward by the duration the visit was closed.
+
+**2. Paths bypassing rules**
+
+* Nothing found. `confirmUnableToReach` strictly requires `staffFollowUp(visit, now).kind === "review"`, which ensures an answered call (which returns `"contacted_not_arrived"`) can never be confirmed unable to reach. The visit only leaves the line upon manual staff confirmation.
+
+**3. Staff screen wording or accessibility**
+
+* Nothing found that isn't already covered in Claude's known points (#6 and #10). The disclosure `<details>` element and `aria-disabled` loading states are accessible and correctly implemented.
+
+**4. Patient screen reminder**
+
+* **`components/patient/CallReminder.tsx`:** The component uses `useNow()`, which relies on the patient device's local clock. If the patient's phone clock is set 10 minutes fast, the "Please return now" alert and the assertive screen-reader announcement will fire prematurely, confusing the patient. **Fix:** Calculate a server-time offset when the visit is fetched, and apply that offset inside `useNow()`.
+*(Note: `CallReminder` correctly unmounts when the patient taps "I'm on my way", and React's `useEffect` cleanup perfectly handles screen-reader announcement changes).*
+
+**5. Breaks to existing behaviour**
+
+* **`lib/visitActions.ts` (applyTriage function):** The `fresh` object created to wipe history for reopened visits clears `called_at` and phone history, but misses `last_still_here_at`. When a reopened patient rejoins the waiting line, their tap timestamp from their *previous* wait remains in the database. The staff screen will instantly (and falsely) flag them for missing the "I'm still here" prompt. **Fix:** Add `last_still_here_at: null` to the `fresh` object.
+
+### Points Claude already knows about
+
+1. **Laptop clock for pause end:** Real problem. A fast laptop clock creates a pause that instantly expires, or a slow one pauses forever. **Fix:** Have the Postgres database trigger set `followup_paused_until` using `now() + interval '10 minutes'`.
+2. **Answered-call pause missing on patient view:** Real problem. Shouting "Please return now" at a patient who just spoke to a nurse creates immediate confusion. **Fix:** Update `patientCallStep` to check `wasAnswered(visit)` and suppress the `return_now` escalation if true.
+3. **`wasAnswered` relies on triage clearing fields:** Acceptable. Triage safely clears the fields, and `last_phone_result` retains the latest state. **Fix:** Leave as is.
+4. **`review_flagged_at` never filled:** Acceptable, it's just a dead column. **Fix:** Drop the column from the database.
+5. **Phone flags clear by number of calls, not timing:** Acceptable for a demo. It prevents locking staff out if they click the button twice by mistake. **Fix:** Leave as is.
+6. **Flags not announced to staff SR users:** Real problem. Staff using screen readers will miss the critical 10/20/30-minute escalations as they appear. **Fix:** Add `aria-live="polite"` to the flag container in `FollowUpPanel`.
+7. **Triage again wipes first call-back stats:** Acceptable. A reopened visit is practically a brand-new wait, and keeping multi-hour interrupted wait times would skew dashboard averages. **Fix:** Leave as is.
+8. **30 minutes passed judged by laptop clock:** Real problem (same root as #1 and #4 above). Fast/slow laptops will cause premature or delayed removals. **Fix:** Apply a server-synced time offset to the client clock.
+9. **Database doesn't check allowed steps:** Acceptable for Phase 3, since the UI and `visitActions.ts` guards prevent accidental clicks. **Fix:** Add state-machine guards via Postgres triggers in Phase 4.
+10. **Wording: "Call back" vs phone buttons:** Real problem. Staff will absolutely mix up "Call back" with the simulated phone calls. **Fix:** Rename "Call back" to "Page to desk" or "Recall patient".
+
+## Claude's check (2026-11-11)
+
+New findings:
+- 1 (20-minute flag when nobody phoned): **accepted, fixed** (`0860b96`). With no call recorded, the 20-minute flag now ends "Phone the patient now." instead of "again"; the owner's wording is kept otherwise.
+- 2 (phone buttons stay during a pause): **not accepted.** Each press stands for a real call; a second answered call is a new contact and rightly restarts the pause. Hiding the buttons would stop staff recording a call they really made during the pause. The save helper already ignores a second press while one is saving.
+- 3 (Undo after a long time brings back old called_at): **not accepted.** The patient really was called that long ago and is not here, so the Review flag and "Please return now" are true, not a fault. Moving called_at would hide how long the patient has been called.
+- 4 (patient phone clock): **known, accepted limit**, same as for "I'm still here" (owner, 2026-11-11). A server-time offset would fix this and point 8 together; listed as a decision for the owner.
+- 5 (old "I'm still here" tap after reopening): **not accepted, the claim is wrong.** `lib/stillHere.ts` starts the clock at the later of triage and the last tap, so a tap from before the new triage is ignored; `lastTapThisWait` hides it on the staff row (fixed in the earlier review).
+
+Known points:
+- 1 and 8 (laptop clock): agree they are real. The fix needs a database change the owner runs; decision for the owner (see below).
+- 2 (patient "Please return now" after an answered call): a choice, not a fault: a nurse who spoke to the patient would also ask them to come back, and the message does not say nobody called. Needs a database change (the patient function would have to say a call was answered). Decision for the owner.
+- 3, 5, 7, 9: agree, left as they are.
+- 4: agree it is unused. Dropping it changes SPEC's data list; decide at the Phase 4 dashboard work, when it is clear nothing needs it.
+- 6: **accepted, fixed** (`0860b96`): each row has a polite status region that reads the new flag once, with the visit code, without the minute counts (so it is not read again every minute). The region stays in place so it is not re-created when a flag appears.
+- 10: owner decided on 2026-11-11 to keep "Phoned, answered / no answer" for now; renaming "Call back" is the owner's call.
+
+Checks after the fixes: 137 tests, type check and lint pass.
