@@ -1,6 +1,6 @@
 // One button style for the whole app: large touch target, visible keyboard focus.
 
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 type Variant = "primary" | "secondary" | "danger";
 
@@ -15,7 +15,7 @@ export function Button({
   className = "",
   type = "button",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+}: ComponentPropsWithRef<"button"> & { variant?: Variant }) {
   return (
     <button
       type={type}

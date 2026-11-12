@@ -12,6 +12,7 @@ import type { Site, Visit } from "@/lib/visit";
 import { CheckInPanel } from "@/components/staff/CheckInPanel";
 import { ExpectedArrivals } from "@/components/staff/ExpectedArrivals";
 import { ProgressAnnouncer } from "@/components/staff/ProgressAnnouncer";
+import { RecallAllPanel } from "@/components/staff/RecallAllPanel";
 import { RecentlyClosed } from "@/components/staff/RecentlyClosed";
 import { SignOutButton } from "@/components/staff/SignOutButton";
 import { VisitRow } from "@/components/staff/VisitRow";
@@ -119,6 +120,7 @@ export default function StaffPage() {
           <p role="status" className="min-h-6 font-semibold">
             {announcement}
           </p>
+          {visits && <RecallAllPanel key={site} visits={visits} site={site} onResult={setAnnouncement} />}
           {visits === null || now === null ? (
             <p>{outOfDate ? "No list to show yet." : "Loading…"}</p>
           ) : line.length === 0 ? (

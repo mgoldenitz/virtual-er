@@ -6,6 +6,7 @@
 
 import { changedFields } from "@/lib/changedFields";
 import { makeAccessToken, makeUniqueDisplayCode, normalizeDisplayCode } from "@/lib/codes";
+import type { RecallAllResult } from "@/lib/recallAll";
 import type { ChangeResult, Site, Visit } from "@/lib/visit";
 import {
   callBack,
@@ -112,6 +113,29 @@ export const callBackVisit = (id: string) => changeVisit(id, (v) => callBack(v, 
 export const markVisitArrived = (id: string) => changeVisit(id, (v) => markArrived(v, serverNow()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
   changeVisit(id, (v) => markRemoved(v, reason, serverNow()));
+/**
+ * "Recall all off-site patients": recall, in one database update, exactly the visits staff saw
+ * in the confirmation, and only those still waiting (one recalled or closed on another screen
+ * meanwhile is left alone and counted as changed). The database sets called_at itself.
+ */
+export async function recallAll(ids: string[]): Promise<RecallAllResult> {
+  if (ids.length === 0) return { recalled: 0, changed: 0, notSaved: false };
+  try {
+    const { data, error } = await supabaseBrowser()
+      .from("visits")
+      .update({ status: "called", called_at: serverNow().toISOString() })
+      .in("id", ids)
+      .eq("status", "waiting")
+      .select();
+    if (error || !Array.isArray(data)) return { recalled: 0, changed: 0, notSaved: true };
+    (data as StoredVisit[]).forEach(putVisit);
+    if (data.length < ids.length) void loadVisits();
+    return { recalled: data.length, changed: ids.length - data.length, notSaved: false };
+  } catch {
+    return { recalled: 0, changed: 0, notSaved: true };
+  }
+}
+
 /** Record one simulated phone call ("Phoned, answered" or "Phoned, no answer"). */
 export const recordPhoneCallFor = (id: string, result: "answered" | "no_answer") =>
   changeVisit(id, (v) => recordPhoneCall(v, result, serverNow()));
