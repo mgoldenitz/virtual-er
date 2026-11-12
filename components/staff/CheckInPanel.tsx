@@ -97,7 +97,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
       return;
     }
     if (outcome === "waiting" && offsitePaused) {
-      setMessage("Off-site waiting is paused at this site. Record the patient as waiting on-site.");
+      setMessage("Off-site waiting is paused at this site. Press “Waits on-site” instead.");
       return;
     }
     if (outcome === "waiting" && !CHECKLIST.every((item) => ticked[item.id])) {
@@ -114,7 +114,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
     setMessage(
       outcome === "waiting"
         ? `Visit ${code} is now waiting off-site.`
-        : `Visit ${code} recorded as ${outcome === "declined" ? "offered, declined" : "not eligible"}. The patient waits on-site as usual.`,
+        : `Visit ${code} recorded as ${outcome === "declined" ? "offered, declined" : offsitePaused ? "waiting on-site (off-site waiting paused)" : "not eligible"}. The patient waits on-site as usual.`,
     );
   }
 
@@ -211,11 +211,16 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
               Start off-site waiting
             </Button>
           )}
-          <Button variant="secondary" aria-disabled={saving} onClick={() => finish("declined")}>
-            Offered, declined
-          </Button>
+          {/* While paused nobody can be offered off-site waiting, so "Offered, declined" would count
+              a patient as offered by mistake. "Waits on-site" records not_eligible, which leaves the
+              patient out of the dashboard's "offered" percentage, as it should. */}
+          {!offsitePaused && (
+            <Button variant="secondary" aria-disabled={saving} onClick={() => finish("declined")}>
+              Offered, declined
+            </Button>
+          )}
           <Button variant="secondary" aria-disabled={saving} onClick={() => finish("not_eligible")}>
-            Not eligible
+            {offsitePaused ? "Waits on-site (off-site waiting paused)" : "Not eligible"}
           </Button>
         </div>
       )}

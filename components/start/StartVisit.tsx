@@ -32,6 +32,15 @@ export function StartVisit({ language }: { language: string }) {
   const [starting, setStarting] = useState(false);
   const [wantsNew, setWantsNew] = useState(false);
   const { pauses } = useSitePauses();
+  const sitePaused = pauses?.[site] === true;
+  // Screen readers hear the paused message once when the chosen site becomes paused (live, or
+  // by choosing a paused site). The region below stays in place, so the words are read.
+  const [announced, setAnnounced] = useState("");
+  const [wasPaused, setWasPaused] = useState<boolean | null>(null);
+  if (pauses && sitePaused !== wasPaused) {
+    setWasPaused(sitePaused);
+    setAnnounced(wasPaused === false && sitePaused ? `${fill(textFor(language).siteName, { site })}: ${textFor(language).start.paused}` : "");
+  }
   const state = startPageState(saved);
   const t = textFor(language);
   const s = t.start;
@@ -111,18 +120,27 @@ export function StartVisit({ language }: { language: string }) {
     );
   }
 
+  const announcer = (
+    <p role="status" className="sr-only">
+      {announced}
+    </p>
+  );
+
   // Both sites paused: no start box at all, only the message (the start route refuses anyway).
+  // The announcer comes first in both this and the start box, so it is the same element in both.
   if (pauses?.A && pauses?.B) {
     return (
-      <section aria-labelledby="start-heading" className={boxStyle} data-testid="start-paused">
-        <h2 id="start-heading" className="text-xl font-bold">
-          {t.pausedHeading}
-        </h2>
-        <p>{s.paused}</p>
-      </section>
+      <>
+        {announcer}
+        <section aria-labelledby="start-heading" className={boxStyle} data-testid="start-paused">
+          <h2 id="start-heading" className="text-xl font-bold">
+            {t.pausedHeading}
+          </h2>
+          <p>{s.paused}</p>
+        </section>
+      </>
     );
   }
-  const sitePaused = pauses?.[site] === true;
 
   const start = async () => {
     if (starting) return; // a second tap while the first is on its way must not start two visits
@@ -138,45 +156,48 @@ export function StartVisit({ language }: { language: string }) {
   };
 
   return (
-    <section aria-labelledby="start-heading" className="clean-card space-y-4">
-      <h2 id="start-heading" className="text-xl font-bold">
-        {s.startHeading}
-      </h2>
-      <p>{s.startIntro}</p>
-      <fieldset>
-        <legend className="font-semibold">{s.siteQuestion}</legend>
-        <div className="mt-2 flex flex-wrap gap-3">
-          {(["A", "B"] as const).map((option) => (
-            <label
-              key={option}
-              className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-control px-4"
-            >
-              <input
-                type="radio"
-                name="site"
-                className="size-5"
-                checked={site === option}
-                onChange={() => setSite(option)}
-              />
-              {fill(t.siteName, { site: option })}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      {sitePaused ? (
-        <p role="status" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900" data-testid="site-paused">
-          {s.paused}
-        </p>
-      ) : (
-        <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
-          {starting ? s.starting : s.startButton}
-        </Button>
-      )}
-      {problem && (
-        <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
-          {problemText[problem]}
-        </p>
-      )}
-    </section>
+    <>
+      {announcer}
+      <section aria-labelledby="start-heading" className="clean-card space-y-4">
+        <h2 id="start-heading" className="text-xl font-bold">
+          {s.startHeading}
+        </h2>
+        <p>{s.startIntro}</p>
+        <fieldset>
+          <legend className="font-semibold">{s.siteQuestion}</legend>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {(["A", "B"] as const).map((option) => (
+              <label
+                key={option}
+                className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-control px-4"
+              >
+                <input
+                  type="radio"
+                  name="site"
+                  className="size-5"
+                  checked={site === option}
+                  onChange={() => setSite(option)}
+                />
+                {fill(t.siteName, { site: option })}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {sitePaused ? (
+          <p className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900" data-testid="site-paused">
+            {s.paused}
+          </p>
+        ) : (
+          <Button onClick={start} aria-disabled={starting} className="w-full text-lg">
+            {starting ? s.starting : s.startButton}
+          </Button>
+        )}
+        {problem && (
+          <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
+            {problemText[problem]}
+          </p>
+        )}
+      </section>
+    </>
   );
 }
