@@ -1,4 +1,4 @@
-// Checks the no-response steps after "Call back": staff flags, patient messages, phone calls,
+// Checks the no-response steps after "Recall patient": staff flags, patient messages, phone calls,
 // confirming "unable to reach", and reopening.
 
 import { describe, expect, it } from "vitest";

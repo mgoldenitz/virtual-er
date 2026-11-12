@@ -1,4 +1,4 @@
-// The no-response steps after "Call back" (SPEC /staff): which flag staff see, and which
+// The no-response steps after "Recall patient" (SPEC /staff): which flag staff see, and which
 // message the patient's called screen shows. Minutes always count from called_at; an answered
 // phone call pauses the staff flags, then they continue from that same clock (no restart).
 // All times are demo settings in lib/demoTimes.ts, not clinical deadlines.

@@ -76,7 +76,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       <div className="mt-3 flex flex-wrap gap-2">
         {visit.status === "waiting" && (
           <Button aria-disabled={saving} onClick={() => act(() => callBackVisit(visit.id))}>
-            Call back
+            Recall patient<span className="sr-only"> {visit.code}</span>
           </Button>
         )}
         <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => markVisitArrived(visit.id), `Visit ${visit.code} marked arrived. Undo is under Recently closed.`)}>

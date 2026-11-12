@@ -111,7 +111,7 @@ export function checkInHomeVisit(
   return applyTriage(visit, triage.ctas_level, triage.language, outcome, now.toISOString());
 }
 
-/** Staff press "Call back". Only while waiting. */
+/** Staff press "Recall patient" (SPEC: "Call back"). Only while waiting. */
 export function callBack(visit: Visit, now: Date): Visit | null {
   if (visit.status !== "waiting") return null;
   return { ...visit, status: "called", called_at: now.toISOString() };

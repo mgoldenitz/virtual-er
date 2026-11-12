@@ -7,7 +7,7 @@ export const STILL_HERE_EVERY_MINUTES = 30;
 /** How long the patient has to tap before staff see a flag. */
 export const STILL_HERE_ANSWER_WITHIN_MINUTES = 10;
 
-// No-response steps after "Call back" (SPEC /staff). Minutes are counted from called_at.
+// No-response steps after "Recall patient" (SPEC /staff). Minutes are counted from called_at.
 
 /** Second alert on the patient's phone; staff see "Phone this patient". */
 export const CALL_SECOND_ALERT_MINUTES = 10;
