@@ -8,8 +8,8 @@ A Next.js (App Router, TypeScript) and Supabase (PostgreSQL) concept prototype o
 
 SPEC rules for this feature (all times are demo settings in `lib/demoTimes.ts`, not clinical deadlines):
 - 0 minutes after "Call back": the patient's called screen alerts.
-- 10 minutes without "I'm on my way": a second alert on the patient screen; the staff screen flags "Phone this patient." The demo stores no phone numbers, so staff record each simulated call with "Phoned, answered" or "Phoned, no answer". "Answered" saves last_phone_result, clears the phone flag and pauses escalation until followup_paused_until (default 10 minutes). After the pause the steps continue from the time since called_at; they do not restart. A visit with an answered call that still does not arrive is flagged "Contacted, not yet arrived", never "Review: unable to reach".
-- 20 minutes: staff flag "Phone a second time"; the patient screen shows "Please return now. Staff will review your visit if you do not respond."
+- 10 minutes without "I'm on my way": a second alert on the patient screen; the staff screen flags "No reply 10 min after call-back. Phone the patient now." The demo stores no phone numbers, so staff record each simulated call with "Phoned, answered" or "Phoned, no answer". "Answered" saves last_phone_result, clears the phone flag and pauses escalation until followup_paused_until (default 10 minutes). After the pause the steps continue from the time since called_at; they do not restart. A visit with an answered call that still does not arrive is flagged "Answered the phone, not here yet: they haven't tapped 'I'm on my way' or arrived.", never "Review: unable to reach".
+- 20 minutes: staff flag "Still no reply 20 min after call-back. Phone the patient again."; the patient screen shows "Please return now. Staff will review your visit if you do not respond."
 - 30 minutes with no answered call: "Review: unable to reach". The visit stays in the line until a nurse confirms; then status unable_to_reach, closed_at set, it leaves the active line. Not recorded as left without being seen.
 - Reopen an unable_to_reach visit: clears closed_at, status needs_reassessment (back to triage).
 - "On the way, not arrived": a set time (default 30 minutes) after confirmed_at. Never removed automatically.
@@ -22,7 +22,9 @@ What was built:
 - Patient: `components/patient/CallReminder.tsx` on the called screen (assertive screen-reader announcement once per step).
 - No database change.
 
-Checked so far: 136 unit tests, type check, lint. Not yet tested in a browser.
+- After the browser test: reopened visits are listed under "Back for reassessment" (in the Expected arrivals box) until triaged again, and the owner chose the flag wording above. Staff record calls with "Phoned, answered" and "Phoned, no answer" (kept on purpose: "Call back" already means sending the patient the come-back message).
+
+Checked: 137 unit tests, type check, lint. Tested in a browser by the owner with the times shortened to 1, 2 and 3 minutes: the no-answer path (patient alert at 1 minute and "Please return now" at 2, both announced; staff Review flag; Confirm unable to reach; Reopen) and the answered path (phone flag, paused, phone again after the pause, then "answered, not here yet", no Review flag) worked as planned.
 
 ## Points Claude already knows about (judge each: real problem or acceptable for a demo, and the simplest fix)
 
@@ -32,9 +34,10 @@ Checked so far: 136 unit tests, type check, lint. Not yet tested in a browser.
 4. `review_flagged_at` is never filled; the review flag is computed from called_at. Fill it or drop it?
 5. The phone flags clear by number of calls, not by when the calls happened: two calls at 11 and 12 minutes mean "Phone a second time" never shows.
 6. Flags that appear as time passes are not announced to staff screen-reader users (only shown as text and colour).
-7. Triage again after Reopen wipes the first call-back (the dashboard's "call-back to arrival" average loses it) and starts a new place in line. If staff cancel the check-in form after Reopen, the visit is in no list and can only be found by typing its code.
+7. Triage again after Reopen wipes the first call-back (the dashboard's "call-back to arrival" average loses it) and starts a new place in line. (Found in testing and fixed: a reopened visit was in no list once the check-in form closed; it is now listed under "Back for reassessment".)
 8. "30 minutes passed" (when "Confirm unable to reach" may be pressed) is judged by the staff laptop's clock against the database's called_at.
 9. The database does not check which steps are allowed; any staff screen could save any status (planned for later in Phase 3).
+10. Wording: could staff confuse "Call back" (sends the patient the come-back message) with the phone-call buttons "Phoned, answered" and "Phoned, no answer"? Suggest clearer words if so.
 
 ## Find problems (do not just confirm)
 
@@ -152,20 +155,33 @@ index 91517de..4c4ad2f 100644
              Cancel: check in a new patient instead
            </Button>
 diff --git a/components/staff/ExpectedArrivals.tsx b/components/staff/ExpectedArrivals.tsx
-index 486c6d5..66089e4 100644
+index 486c6d5..3f12f08 100644
 --- a/components/staff/ExpectedArrivals.tsx
 +++ b/components/staff/ExpectedArrivals.tsx
-@@ -2,7 +2,8 @@
+@@ -2,11 +2,12 @@
  
  // The staff "Expected arrivals" list: visits started from home that have not reached triage.
  // They are not in the waiting line. Staff pick one from the list, or type the code the patient
 -// shows (short-code lookup is staff-only), to check it in after triage.
 +// shows (short-code lookup is staff-only), to check it in after triage. The code box also finds
-+// a reopened visit that needs reassessment.
++// a reopened visit that needs reassessment; those are also listed under "Back for reassessment".
  
  import { useState, type FormEvent } from "react";
  import { findVisitByCode } from "@/data/staffActions";
-@@ -34,7 +35,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
+-import { expectedArrivals, isExpected } from "@/lib/expectedArrivals";
++import { backForReassessment, expectedArrivals, isExpected } from "@/lib/expectedArrivals";
+ import { minutesBetween } from "@/lib/queue";
+ import type { Site, Visit } from "@/lib/visit";
+ import { Button } from "@/components/Button";
+@@ -17,6 +18,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
+   const [typed, setTyped] = useState("");
+   const [message, setMessage] = useState("");
+   const expected = expectedArrivals(visits, site, now);
++  const reassess = backForReassessment(visits, site);
+ 
+   const [looking, setLooking] = useState(false);
+ 
+@@ -34,7 +36,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
      if (visit.site !== site) {
        return setMessage(`Visit ${visit.code} was started for Demo Site ${visit.site}. Switch site to check it in.`);
      }
@@ -174,12 +190,41 @@ index 486c6d5..66089e4 100644
        return setMessage(
          visit.status === "pre_arrival"
            ? `Visit ${visit.code} was started more than 6 hours ago. Check the patient in as a new visit.`
+@@ -72,6 +74,28 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
+       <p role="status" className="min-h-6 font-semibold">
+         {message}
+       </p>
++      {reassess.length > 0 && (
++        <div className="space-y-2">
++          <h3 className="font-bold">Back for reassessment ({reassess.length})</h3>
++          <p className="text-sm text-slate-700">Reopened after &ldquo;unable to reach&rdquo;. Triage again before they rejoin the line.</p>
++          <ul className="space-y-2">
++            {reassess.map((visit) => (
++              <li
++                key={visit.id}
++                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-amber-800 bg-amber-50 p-3"
++                data-testid={`reassess-${visit.code}`}
++              >
++                <p>
++                  <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span> · needs reassessment
++                </p>
++                <Button variant="secondary" onClick={() => onChoose(visit)}>
++                  Triage again<span className="sr-only"> visit {visit.code}</span>
++                </Button>
++              </li>
++            ))}
++          </ul>
++        </div>
++      )}
+       {expected.length > 0 && (
+         <ul className="space-y-2">
+           {expected.map((visit) => (
 diff --git a/components/staff/FollowUpPanel.tsx b/components/staff/FollowUpPanel.tsx
 new file mode 100644
-index 0000000..4c07295
+index 0000000..f53f1c6
 --- /dev/null
 +++ b/components/staff/FollowUpPanel.tsx
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,109 @@
 +"use client";
 +
 +// The no-response steps on one staff row after "Call back": the flag ("Phone this patient",
@@ -187,7 +232,7 @@ index 0000000..4c07295
 +// confirmation of "unable to reach". The rule that picks the flag is in lib/followUp.ts.
 +
 +import { confirmUnableToReachFor, recordPhoneCallFor } from "@/data/staffActions";
-+import { CALL_REVIEW_MINUTES } from "@/lib/demoTimes";
++import { CALL_PHONE_AGAIN_MINUTES, CALL_REVIEW_MINUTES, CALL_SECOND_ALERT_MINUTES } from "@/lib/demoTimes";
 +import { canRecordPhoneCall, staffFollowUp, type StaffFollowUp } from "@/lib/followUp";
 +import { minutesBetween } from "@/lib/queue";
 +import type { ChangeResult, Visit } from "@/lib/visit";
@@ -210,9 +255,9 @@ index 0000000..4c07295
 +function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: string; tone: string } | null {
 +  switch (followUp.kind) {
 +    case "phone":
-+      return { text: "Phone this patient. No “I'm on my way” yet.", tone: AMBER };
++      return { text: `No reply ${CALL_SECOND_ALERT_MINUTES} min after call-back. Phone the patient now.`, tone: AMBER };
 +    case "phone_again":
-+      return { text: "Phone a second time. Still no “I'm on my way”.", tone: AMBER };
++      return { text: `Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. Phone the patient again.`, tone: AMBER };
 +    case "paused":
 +      return { text: `Phoned, answered. Follow-up paused until ${clock(followUp.until)}.`, tone: AMBER };
 +    case "review":
@@ -221,7 +266,10 @@ index 0000000..4c07295
 +        tone: RED,
 +      };
 +    case "contacted_not_arrived":
-+      return { text: "Contacted, not yet arrived. A call was answered, but the patient has not confirmed or arrived.", tone: AMBER };
++      return {
++        text: "Answered the phone, not here yet: they haven’t tapped ‘I’m on my way’ or arrived.",
++        tone: AMBER,
++      };
 +    case "on_way_not_arrived": {
 +      const since = visit.confirmed_at ? minutesBetween(visit.confirmed_at, now) : 0;
 +      return { text: `On the way, not arrived. Confirmed ${since} min ago.`, tone: AMBER };
@@ -457,6 +505,25 @@ index 35de167..eeb6587 100644
 +
 +/** After "I'm on my way", staff see "On the way, not arrived" once this much time has passed. */
 +export const ON_WAY_NOT_ARRIVED_MINUTES = 30;
+diff --git a/lib/expectedArrivals.ts b/lib/expectedArrivals.ts
+index af4ad71..a70a665 100644
+--- a/lib/expectedArrivals.ts
++++ b/lib/expectedArrivals.ts
+@@ -18,3 +18,14 @@ export function expectedArrivals(visits: Visit[], site: Site, now: Date): Visit[
+     .filter((v) => v.site === site && isExpected(v, now))
+     .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+ }
++
++/**
++ * Reopened visits at one site that wait for a nurse to triage them again ("unable to reach",
++ * then the patient came back). They are not in the waiting line and never expire, so they stay
++ * listed until triaged. Oldest first triage first.
++ */
++export function backForReassessment(visits: Visit[], site: Site): Visit[] {
++  return visits
++    .filter((v) => v.site === site && v.status === "needs_reassessment")
++    .sort((a, b) => ((a.triaged_at ?? "") < (b.triaged_at ?? "") ? -1 : (a.triaged_at ?? "") > (b.triaged_at ?? "") ? 1 : 0));
++}
 diff --git a/lib/followUp.test.ts b/lib/followUp.test.ts
 new file mode 100644
 index 0000000..c05e4fd
@@ -704,18 +771,19 @@ index 0000000..abdf4d0
 +  return "first";
 +}
 diff --git a/lib/homeCheckIn.test.ts b/lib/homeCheckIn.test.ts
-index af280b8..9f18909 100644
+index af280b8..19e46e1 100644
 --- a/lib/homeCheckIn.test.ts
 +++ b/lib/homeCheckIn.test.ts
-@@ -1,6 +1,6 @@
+@@ -1,6 +1,7 @@
  import { describe, expect, it } from "vitest";
++import { backForReassessment } from "./expectedArrivals";
  import { homeCheckInProblem } from "./homeCheckIn";
 -import { checkInHomeVisit, startFromHome } from "./visitActions";
 +import { callBack, checkInHomeVisit, confirmUnableToReach, reopenUnableToReach, startFromHome } from "./visitActions";
  
  const t0 = new Date("2026-11-09T20:00:00Z");
  const at = (min: number) => new Date(t0.getTime() + min * 60_000);
-@@ -25,4 +25,11 @@ describe("home check-in problems", () => {
+@@ -25,4 +26,20 @@ describe("home check-in problems", () => {
    it("says when it is gone", () => {
      expect(homeCheckInProblem(home, null, at(10))).toContain("no longer on this screen");
    });
@@ -725,6 +793,15 @@ index af280b8..9f18909 100644
 +    const lost = confirmUnableToReach(callBack(waiting, at(10))!, at(40))!;
 +    const reopened = reopenUnableToReach(lost)!;
 +    expect(homeCheckInProblem(lost, reopened, at(60 * 8))).toBeNull();
++  });
++
++  it("lists a reopened visit under Back for reassessment until it is triaged again", () => {
++    const waiting = checkInHomeVisit(home, { ctas_level: 4, language: "en" }, "waiting", at(5))!;
++    const reopened = reopenUnableToReach(confirmUnableToReach(callBack(waiting, at(10))!, at(40))!)!;
++    expect(backForReassessment([reopened, waiting], "A").map((v) => v.id)).toEqual(["h"]);
++    expect(backForReassessment([reopened], "B")).toEqual([]);
++    const again = checkInHomeVisit(reopened, { ctas_level: 4, language: "en" }, "waiting", at(60))!;
++    expect(backForReassessment([again], "A")).toEqual([]);
 +  });
  });
 diff --git a/lib/homeCheckIn.ts b/lib/homeCheckIn.ts
