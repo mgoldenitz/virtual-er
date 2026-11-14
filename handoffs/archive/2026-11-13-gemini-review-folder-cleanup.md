@@ -401,3 +401,7 @@ index c8201c0..56cb09c 100644
 +  return `${recalled} ${patientCount(result.changed)} had already changed on another screen; check the list.`;
  }
 ```
+
+## Response
+
+Skipped by the owner on 2026-11-13. No review was done.
