@@ -4,7 +4,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { supabaseBrowser } from "@/data/supabaseBrowser";
+import { signOutStaff } from "@/data/staffSignIn";
 import { Button } from "@/components/Button";
 
 export function SignOutButton() {
@@ -13,8 +13,7 @@ export function SignOutButton() {
 
   async function signOut() {
     setProblem("");
-    const { error } = await supabaseBrowser().auth.signOut();
-    if (error) {
+    if (!(await signOutStaff())) {
       setProblem("Could not sign out. Check your connection and try again.");
       return;
     }

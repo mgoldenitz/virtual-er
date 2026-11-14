@@ -1,12 +1,12 @@
 "use client";
 
-// The email and password form on the staff login screen. After signing in it checks the
-// account is marked staff; an account that is not is signed straight out again.
+// The email and password form on the staff login screen. The sign-in itself, and the check
+// that the account is marked staff, are in data/staffSignIn.ts.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { supabaseBrowser } from "@/data/supabaseBrowser";
-import { isStaffAccount, pageAfterSignIn, type StaffClaims } from "@/lib/staffAccess";
+import { signInStaff } from "@/data/staffSignIn";
+import { pageAfterSignIn } from "@/lib/staffAccess";
 import { Button } from "@/components/Button";
 
 const WRONG = "Email or password not recognised. Check them and try again.";
@@ -29,27 +29,15 @@ export function LoginForm() {
     event.preventDefault();
     setBusy(true);
     setProblem("");
-    const supabase = supabaseBrowser();
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) {
-        setProblem(error.status && error.status < 500 ? WRONG : NO_CONNECTION);
-        return;
-      }
-      const { data } = await supabase.auth.getClaims();
-      if (!isStaffAccount((data?.claims ?? null) as StaffClaims)) {
-        await supabase.auth.signOut();
-        setProblem(NOT_STAFF);
-        return;
-      }
+    const result = await signInStaff(email, password);
+    if (result === "signed_in") {
       setPassword("");
       router.replace(pageAfterSignIn(next));
       router.refresh();
-    } catch {
-      setProblem(NO_CONNECTION);
-    } finally {
-      setBusy(false);
+    } else {
+      setProblem(result === "wrong" ? WRONG : result === "not_staff" ? NOT_STAFF : NO_CONNECTION);
     }
+    setBusy(false);
   }
 
   return (
