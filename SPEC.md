@@ -87,6 +87,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 - The app never contacts anyone other than the patient. No emergency contacts are stored.
 - Mark arrived, mark removed (left, no-show). Actions that end virtual waiting (arrived, removed, unable_to_reach confirmed, declined, not_eligible) set closed_at in the same update. Closed means virtual waiting ended, not that care is finished.
 - "Call everyone back" button for a surge or a system problem, with a confirmation step.
+  - (owner, 2026-11-12: the button is "Recall all off-site patients"; see components/staff/RecallAllPanel.tsx.)
 
 ### /dashboard (staff login required)
 
