@@ -1,13 +1,11 @@
 // The server route a phone calls to start a visit from home (SPEC rule 5). The phone sends
-// only a site and a language; this route makes the code and token, and the database function
-// start_home_visit sets source = home and status = pre_arrival itself, refuses while off-site
-// waiting is paused, and allows 10 starts per site per minute.
+// only a site and a language; data/startHomeVisit.ts makes the code and token, and the database
+// function start_home_visit sets source = home and status = pre_arrival itself, refuses while
+// off-site waiting is paused, and allows 10 starts per site per minute.
 
-import { supabaseServer } from "@/data/supabaseServer";
-import { makeAccessToken, makeDisplayCode } from "@/lib/codes";
+import { startHomeVisit } from "@/data/startHomeVisit";
 import { parseStartVisitRequest } from "@/lib/startVisitRequest";
 
-const TRIES = 3; // a new code and token each time the database says "taken"
 const MAX_BODY_CHARACTERS = 200;
 
 function answer(body: { result: string; token?: string }, status: number): Response {
@@ -27,33 +25,9 @@ export async function POST(request: Request): Promise<Response> {
   const wanted = parseStartVisitRequest(body);
   if (!wanted) return answer({ result: "bad_request" }, 400);
 
-  try {
-    const supabase = supabaseServer();
-    for (let attempt = 0; attempt < TRIES; attempt++) {
-      const token = makeAccessToken();
-      const { data, error } = await supabase.rpc("start_home_visit", {
-        p_site: wanted.site,
-        p_language: wanted.language,
-        p_code: makeDisplayCode(),
-        p_token: token,
-      });
-      if (error) {
-        // Written to the server log only (Vercel's runtime logs). Holds no token or key.
-        console.error("start-visit: database refused", { code: error.code, message: error.message });
-        break;
-      }
-      if (data === "saved") return answer({ result: "saved", token }, 200);
-      if (data === "paused") return answer({ result: "paused" }, 409);
-      if (data === "busy") return answer({ result: "busy" }, 429);
-      if (data !== "taken") {
-        console.error("start-visit: unexpected answer from start_home_visit", { answer: String(data).slice(0, 40) });
-        break;
-      }
-    }
-  } catch (problem) {
-    // A missing setting or an unreachable database: the phone gets the same plain answer,
-    // and the reason goes to the server log only.
-    console.error("start-visit: could not reach the database", problem instanceof Error ? problem.message : "unknown");
-  }
+  const started = await startHomeVisit(wanted.site, wanted.language);
+  if (started.result === "saved") return answer({ result: "saved", token: started.token }, 200);
+  if (started.result === "paused") return answer({ result: "paused" }, 409);
+  if (started.result === "busy") return answer({ result: "busy" }, 429);
   return answer({ result: "error" }, 500);
 }
