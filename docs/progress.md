@@ -12,7 +12,7 @@ To do in Phase 3 (from Grok's pass):
 
 One dated line per session, newest first.
 
-- 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim, pushed, not merged into main.
+- 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim merged into main and pushed.
 
 ## Where to pick up (updated 2026-11-13: Phase 3 in progress)
 
