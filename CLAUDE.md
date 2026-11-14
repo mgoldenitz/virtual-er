@@ -2,6 +2,8 @@
 
 Read SPEC.md before any work. Its hard rules always apply and win over anything else. Notes from earlier research are in notes/. I am new to coding: explain each new file in one plain sentence, and never ask me to paste keys, tokens or passwords into chat; tell me which file or settings page they go in.
 
+Where a key goes: the line above wins in this project (a file or a settings page is fine); my global "plain PowerShell window" line is for keys I type into commands.
+
 ## Save points
 
 - Make a Git save point (a commit with a short plain-English message) before starting a change and again once it works.
