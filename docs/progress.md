@@ -2,7 +2,7 @@
 
 A short record so a new session can continue where the last one stopped.
 
-Phases 1 and 2 are finished. Their full notes are in `PROGRESS-archive.md`.
+Phases 1 and 2 are finished. Their full notes are in `docs/progress-archive.md`.
 
 To do in Phase 3 (from Grok's pass):
 - Shorten the patient screen's "not yet triaged" text (three paragraphs now) in the wording pass, keeping the SPEC sentence about the line starting at triage.

@@ -1,6 +1,6 @@
 # Progress log archive
 
-Finished phases, moved here word for word from `PROGRESS.md` on 2026-11-13.
+Finished phases, moved here word for word from `docs/progress.md` on 2026-11-13.
 
 ## Phase 1: clickable prototype with in-browser data (finished 2026-11-09, waiting for owner testing)
 

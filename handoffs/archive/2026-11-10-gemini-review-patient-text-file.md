@@ -1059,7 +1059,7 @@ From Gemini (pasted by the owner, 2026-11-10):
 ## Claude's check (2026-11-10)
 
 1. Correct. Fixed: the slip's label comes from the text file.
-2. Correct, and expected: the phone cannot know the visit's language before the visit loads. Fixed in the language-switch step (the phone remembers the chosen language), not now. Logged in PROGRESS.md.
+2. Correct, and expected: the phone cannot know the visit's language before the visit loads. Fixed in the language-switch step (the phone remembers the chosen language), not now. Logged in docs/progress.md.
 3. Fair: the fluent reviewer should not have to read code. Fixed: `siteName` is "Demo Site {site}" and `waitRange` is "{low} to {high} minutes" (single braces), filled by `fill()` in `lib/text/index.ts`, with a test. The text file is now plain data.
 4. Agreed, no change. One small correction: tapping "I'm on my way" does not clear the old error at once; it is replaced when the new answer comes back, as before.
 

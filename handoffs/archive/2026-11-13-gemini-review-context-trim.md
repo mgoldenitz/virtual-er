@@ -12,7 +12,7 @@ Find problems. Do not confirm. The change is on branch `context-trim` (9 commits
 
 1. Does any pointer line below change what a rule means, or make two rules disagree in a new way?
 2. Can any change make Claude Code skip a safety rule from SPEC.md, the handoff reminders, or the save-point rules?
-3. Is anything lost that a new session needs? Text moved word for word (a script checked that 0 lines were lost): finished Phase 1 and 2 notes from PROGRESS.md to PROGRESS-archive.md; the old model plan (Kimi, Grok, GPT-6 Astra, GPT-6.1 Terra, DeepSeek, and the stage-by-stage steps) from ai_model_workflow_virtual_er.md to handoffs/archive/2026-11-13-old-model-plan.md. The Phase 3 to 5 Gemini steps stay in CLAUDE.md lines 38 to 40.
+3. Is anything lost that a new session needs? Text moved word for word (a script checked that 0 lines were lost): finished Phase 1 and 2 notes from docs/progress.md to docs/progress-archive.md; the old model plan (Kimi, Grok, GPT-6 Astra, GPT-6.1 Terra, DeepSeek, and the stage-by-stage steps) from ai_model_workflow_virtual_er.md to handoffs/archive/2026-11-13-old-model-plan.md. The Phase 3 to 5 Gemini steps stay in CLAUDE.md lines 38 to 40.
 4. The project settings switch off 15 plugins. Is any of them one the SPEC or CLAUDE.md needs (Playwright, Supabase, Vercel, context7, /security-review and /code-review must stay)?
 
 Answer as a numbered list: file, line, problem, suggested fix. Write "Nothing found" for a point with no problem.
