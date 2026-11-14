@@ -1,3 +1,5 @@
+"use client";
+
 // The offline notice on the patient screen. It shows only while the phone has no internet connection,
 // and it uses words plus a thick border, not colour alone (SPEC rule 9).
 
