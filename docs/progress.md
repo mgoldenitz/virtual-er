@@ -14,41 +14,28 @@ One dated line per session, newest first.
 
 - 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim, pushed, not merged into main.
 
-## Where to pick up (updated 2026-11-11: Phase 3 in progress, the owner clears the chat before the no-response steps)
+## Where to pick up (updated 2026-11-13: Phase 3 in progress)
 
 Links (share only these two):
-- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. Last push: `0a6d46d` plus this note's save point.
+- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. Last app change pushed: `1ce53a2` (2026-11-13).
 - **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. Pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
-State on 2026-11-11:
+State on 2026-11-13:
 - **Phase 2 is closed** (`803fb2b`). **Phase 3 is in progress**; details in the Phase 3 section below.
-- Phase 3 done so far: package update; patient wording (Gemini) with the owner's corrections; all patient text in `lib/text/` (one file per language); five languages (English, French, Urdu, Arabic, Mandarin) with draft notices and a language switch (phone remembers the choice, desk QR link carries the language, Urdu and Arabic right to left); "I'm still here" (database change run, tested, reviewed). Every one of these is pushed and live.
-- 119 unit tests, type check and lint pass. axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
-- The `visits` table is empty (test visits deleted by the owner on 2026-11-11).
-- No review is open: `handoffs/` holds only `archive/`.
+- Phase 3 done so far: package update; patient wording; all patient text in `lib/text/`; five languages with draft notices and a language switch; "I'm still here"; the no-response steps after "Recall patient"; "Recall all off-site patients"; "Pause off-site waiting" per site; folder-by-folder cleanup; `npm run dev` with the Norton fix. All are pushed and live.
+- 148 unit tests, type check, lint and build pass. axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
+- Test visits EZRRSQ and two from the recall-all test may still be in the `visits` table; the owner can delete them.
+- Open review: `handoffs/2026-11-12-gemini-review-pause-switch.md`, waiting for the owner's Vercel firewall rule for GET `/api/site-status`.
+- Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
 - The untracked `.codex/` folder is the owner's; leave it.
 
-**Next: the no-response steps after a call-back** (SPEC, /staff section). What is already in place, and the plan:
-- Fields already in the `visits` table: `called_at`, `seen_at`, `confirmed_at`, `phone_attempts`, `last_phone_result` (answered or no_answer), `followup_paused_until`, `review_flagged_at`. The patient's phone already reads `calledAt` (`get_patient_visit`), so the patient-side steps may need no database change. Check whether the staff-side steps do (for example a database check on which steps are allowed).
-- Steps (all times are settings in `lib/demoTimes.ts`, placeholders a clinical lead would set; shorten them for testing):
-  - 0 minutes: the called screen alerts (already built; sound and vibration not built yet).
-  - 10 minutes without "I'm on my way": second alert on the patient screen (text ready: `secondAlert`, announcement `announce.secondAlert`); staff flag "Phone this patient" (SPEC wording, kept on purpose: "Call" clashes with "Call back", "Text" needs phone numbers the demo does not store). Staff record each simulated call: "Phoned, answered" or "Phoned, no answer". "Answered" saves `last_phone_result`, clears the phone flag and pauses the steps until `followup_paused_until` (setting, default 10 minutes); afterwards the steps continue from the time since `called_at`, they do not restart. An answered visit that still does not arrive is flagged "Contacted, not yet arrived", never "Review: unable to reach".
-  - 20 minutes: staff flag "Phone a second time"; the patient screen shows `returnNow.lead` + `returnNow.text` ("Please return now. Staff will review your visit if you do not respond.", SPEC sentence).
-  - 30 minutes with no answered call: "Review: unable to reach"; the visit stays in the line until a nurse confirms. On confirmation: status unable_to_reach, closed_at set, leaves the active line. Not recorded as left without being seen.
-  - Reopen an unable_to_reach visit: clears closed_at, status needs_reassessment (back to triage).
-  - Also "Confirmed but not arrived": a set time after `confirmed_at` (setting, default 30 minutes) flag "On the way, not arrived"; never remove automatically.
-- Put the rule in `lib/` as small functions with tests (like `lib/stillHere.ts`), staff flags in `components/staff/VisitRow.tsx` (split the file before it passes 300 lines), patient messages in the called screen (`components/patient/PatientStatus.tsx`).
-- After it works and passes its tests: save point, then a Gemini 3.1 Pro (High) review handoff in a new chat (CLAUDE.md).
-
-Rest of Phase 3 after that (SPEC Phase 3 list):
-- "Call everyone back" with a confirmation step.
-- "Pause off-site waiting" per site with confirmation (and a second confirmation to turn it off); the start route already refuses while paused. Needs a patient-safe way to read the pause so the start page can hide "Start a visit" (text ready: `pausedHeading`, `start.paused`).
-- Offline banner (owner asked; text `offline`), text size control (text `textSize`), sound and vibration on the called screen (text `sound`; must say it only works while the page is open and the phone unlocked).
+**Next: the rest of Phase 3** (SPEC Phase 3 list):
+- Offline banner (owner asked; text `offline`), text size control (text `textSize`), sound and vibration on the called screen (text `sound`; must say it only works while the page is open and the phone unlocked). Small, no database change: the first task for the builder and reviewer workers.
 - 24-hour deletion with the `daily_stats` table (SPEC hard rule 4).
 - Database decisions already made: `confirm_on_my_way` fills `seen_at` itself when empty; move the allowed-step checks into the database.
 - Closing Phase 3: WCAG 2.2 AA check (axe-core at phone and laptop size, 200% text), /security-review over all Phase 3 changes, Gemini 3.1 Pro (High, new chats) reviews equity and accessibility, then workflow and screen consistency; the fluent reviewers approve each language (set `approved: true` in `lib/text/languages.ts`); list any open handoff before the closing save point.
 
-Waiting on the owner (none block the no-response steps):
+Waiting on the owner (none block the next steps):
 1. Fluent reviewers for French, Urdu, Arabic and Mandarin, safety messages first (notes for them at the top of `handoffs/archive/2026-11-10-gemini-translations-phase3.md`).
 2. Confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` ran (daily at 12:00 UTC). The MCP cannot list cron jobs.
 3. Optional: leaked password protection (Supabase dashboard > Authentication).
