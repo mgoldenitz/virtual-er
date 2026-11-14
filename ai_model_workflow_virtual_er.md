@@ -34,6 +34,8 @@ Review the result
 Git commit
 ```
 
+Order: CLAUDE.md wins. The save point comes once the change works ("Save points"), and the Gemini review comes after it ("After each small change works and passes its tests").
+
 ### Escalation loop
 
 Use this when the task is important, ambiguous, or Claude Code is stuck:
