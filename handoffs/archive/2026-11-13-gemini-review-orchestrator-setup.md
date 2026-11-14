@@ -211,3 +211,7 @@ One line each: date, decision, who decided, where it is written.
 - Open: Vercel firewall rate-limit rule for GET /api/site-status (owner).
 
 ````
+
+## Response
+
+Skipped by the owner on 2026-11-13.
