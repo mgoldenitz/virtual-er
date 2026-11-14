@@ -18,6 +18,7 @@ While you work:
 
 When you finish:
 - Run the brief's "Done when:" check exactly as written. Also run `npm test` if you changed code.
+- Don't report done until it passes.
 
 Report in this order:
 1. Files changed, one line each with what changed.
