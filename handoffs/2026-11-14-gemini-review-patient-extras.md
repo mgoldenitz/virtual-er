@@ -1,9 +1,11 @@
-# Gemini review: offline banner on the patient screen
+# Gemini review: patient screen extras (offline banner, text size, sound and vibration)
+
+Status: not ready to send. One combined review for item A (owner, 2026-11-14). Parts b and c are added below as they are built.
 
 Model: Gemini Hydrogen 4, High, in a new chat. (No Hydrogen 4 credits: Gemini 3.6 Flash, High.)
 Give it everything below the line "Paste from here". Bring back its whole answer.
 
-Save point: `5b1a7be` on branch `phase3-patient-extras` (not pushed).
+Save points on branch `phase3-patient-extras` (not pushed): offline banner `5b1a7be`, `e6114d7`.
 
 ---
 
@@ -51,6 +53,8 @@ export function useOnline(): boolean {
 `components/patient/OfflineBanner.tsx` (new):
 
 ```tsx
+"use client";
+
 // The offline notice on the patient screen. It shows only while the phone has no internet connection,
 // and it uses words plus a thick border, not colour alone (SPEC rule 9).
 
@@ -86,7 +90,7 @@ The same page already has other live regions: a status announcer for changes in 
 
 ## Checks already done
 
-- Type check, lint and 148 unit tests pass.
+- Type check, lint and 151 unit tests pass.
 - Playwright at 390 x 844: the banner shows when the browser is set offline and goes when set online; no sideways scroll; in Arabic the page is right to left and the banner text is Arabic.
 
 ## Questions
