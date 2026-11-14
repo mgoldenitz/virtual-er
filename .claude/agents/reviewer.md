@@ -2,6 +2,7 @@
 name: reviewer
 description: Reads a diff against a brief and lists every way the diff fails the brief, CLAUDE.md or the SPEC hard rules. Read-only; never edits.
 model: haiku
+effort: medium
 tools: Read, Grep, Glob, Bash
 ---
 

@@ -2,6 +2,7 @@
 name: builder
 description: Writes code to one brief from the orchestrator, runs the brief's "Done when:" check, and reports exactly what it ran. Use for one small, bounded code change.
 model: haiku
+effort: medium
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
