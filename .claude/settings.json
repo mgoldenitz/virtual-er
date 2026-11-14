@@ -1,0 +1,19 @@
+{
+  "enabledPlugins": {
+    "huggingface-skills@claude-plugins-official": false,
+    "hf-cli@huggingface-skills": false,
+    "manim-skill@manim-skill": false,
+    "imagegen-skills@imagegen-skills": false,
+    "yylo-skills@yylo-skills": false,
+    "autoresearch@autoresearch": false,
+    "academy-guide@anthropic-agent-skills": false,
+    "planning-with-files@planning-with-files": false,
+    "code-craftsmanship@wondelai-skills": false,
+    "mattpocock-skills@claude-plugins-official": false,
+    "example-skills@anthropic-agent-skills": false,
+    "document-skills@anthropic-agent-skills": false,
+    "humanizer@humanizer": false,
+    "feature-dev@claude-plugins-official": false,
+    "code-simplifier@anthropic-plugin-directory": false
+  }
+}
