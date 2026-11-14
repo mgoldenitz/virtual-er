@@ -14,6 +14,7 @@ What this is: a concept prototype of a virtual ER waiting room. Low-acuity patie
 
 - Start: read CLAUDE.md and the three docs: docs/progress.md, docs/decisions.md, docs/known-issues.md.
 - End: update progress.md, add new decisions and gotchas, and propose skill edits with the evidence from this session (/reflect). I approve them before you apply them.
+- If you made the same mistake twice in this session, propose a line for CLAUDE.md or docs/known-issues.md in /reflect so it does not happen a third time.
 
 ## Folder map
 
@@ -37,6 +38,14 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 - Make a Git save point (a commit with a short plain-English message) before starting a change and again once it works.
 - If a change breaks the app, go back to the last save point that worked instead of stacking fixes.
+
+## Checks before done
+
+- Before you report any task done, run `npm test`, `npm run lint` and `npm run build`, and paste the last lines of each. A worker's "Done when:" check comes on top of these, not instead.
+- If a test fails, fix the code, not the test. Never skip, delete or weaken a test to make it pass.
+- For a bug: first write a test in lib/ that shows the bug, run it and see it fail, make a save point, then fix the code without changing that test.
+- For a change that touches more than one folder, or the database: start in plan mode and get my OK on a plan that names the files, the order of the work, and the tests that prove it.
+- GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
 
 ## Keep the app organized so a beginner can read it
 
