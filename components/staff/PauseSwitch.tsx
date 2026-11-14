@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { setSitePaused } from "@/data/sitePauses";
+import { patientCount } from "@/lib/patientCount";
 import type { ChangeResult, Site } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -21,8 +22,6 @@ type Props = {
 };
 
 type Mode = "idle" | "confirmPause" | "confirmResume";
-
-const people = (n: number) => `${n} ${n === 1 ? "patient" : "patients"}`;
 
 export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
   const [mode, setMode] = useState<Mode>("idle");
@@ -85,7 +84,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
           <p>
             No new off-site sign-ups: the start page sends patients to the emergency department, and check-in offers
             on-site waiting only. Check every outstanding recall, and offer on-site waiting to the{" "}
-            {people(offSiteCount)} still off-site.
+            {patientCount(offSiteCount)} still off-site.
           </p>
           {mode === "idle" && (
             <Button variant="secondary" onClick={() => setMode("confirmResume")}>
@@ -107,7 +106,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
             Pause off-site waiting at Demo Site {site}?
           </h4>
           <p>
-            Use this for downtime or a contact problem. New patients will wait on-site. The {people(offSiteCount)}{" "}
+            Use this for downtime or a contact problem. New patients will wait on-site. The {patientCount(offSiteCount)}{" "}
             already off-site keep their visits, and you will be asked to check each one.
           </p>
           <div className="flex flex-wrap gap-2">

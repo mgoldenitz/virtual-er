@@ -2,6 +2,7 @@
 // 2026-11-11): for a surge or a system problem, staff recall at once every patient still
 // waiting off-site at one site. Only those shown in the confirmation are recalled.
 
+import { patientCount } from "./patientCount";
 import { activeLine } from "./queue";
 import type { Site, Visit } from "./visit";
 
@@ -18,8 +19,7 @@ export function recallAllMessage(result: RecallAllResult, site: Site): string {
   if (result.notSaved) {
     return "Not saved: the database could not be reached. No one was recalled. Try again.";
   }
-  const people = (n: number) => `${n} ${n === 1 ? "patient" : "patients"}`;
-  const recalled = `Recalled ${people(result.recalled)} at Demo Site ${site}.`;
+  const recalled = `Recalled ${patientCount(result.recalled)} at Demo Site ${site}.`;
   if (result.changed === 0) return recalled;
-  return `${recalled} ${people(result.changed)} had already changed on another screen; check the list.`;
+  return `${recalled} ${patientCount(result.changed)} had already changed on another screen; check the list.`;
 }

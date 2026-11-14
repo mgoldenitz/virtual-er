@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { recallAll } from "@/data/staffActions";
+import { patientCount } from "@/lib/patientCount";
 import { recallAllMessage, recallAllTargets } from "@/lib/recallAll";
 import type { Site, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -62,7 +63,7 @@ export function RecallAllPanel({ visits, site, onResult }: Props) {
   return (
     <div className="space-y-3 rounded-xl border-4 border-red-800 bg-white p-4" data-testid="recall-all-confirm">
       <h3 ref={question} tabIndex={-1} className="text-lg font-bold text-red-900">
-        Recall all {n} {n === 1 ? "patient" : "patients"} waiting off-site at Demo Site {site}?
+        Recall all {patientCount(n)} waiting off-site at Demo Site {site}?
       </h3>
       <p>
         Each patient&apos;s phone will show &ldquo;Please head back now&rdquo;. Use this for a surge or a system problem.
