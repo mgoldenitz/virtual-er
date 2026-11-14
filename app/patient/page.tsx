@@ -14,6 +14,7 @@ import { OfflineBanner } from "@/components/patient/OfflineBanner";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
+import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { fill, textFor } from "@/lib/text";
 import { languageInfo, patientLanguage } from "@/lib/text/languages";
 
@@ -87,6 +88,7 @@ export default function PatientPage() {
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
       <h1 className="text-xl font-bold">{t.appName}</h1>
       <LanguageSwitch language={language} />
+      <TextSizeSwitch language={language} />
       <EmergencyLine language={language} />
       <OfflineBanner language={language} />
 
