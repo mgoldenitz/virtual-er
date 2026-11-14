@@ -30,6 +30,7 @@ From 2026-11-10 every handoff goes to a Gemini model; I do not use Kimi, Grok, D
 
 - After each small change works and passes its tests: Gemini 3.1 Pro, High, reviews the result.
 - When you are stuck (two fixes have failed) or a task is important or unclear: the escalation loop. Gemini 3.1 Pro, High, analyzes the problem; then, in a new chat, Gemini 3.1 Pro, Medium, challenges the assumptions and suggests simpler options; then I decide.
+  If the app is broken, the save-point rule above ("go back to the last save point that worked") comes first.
 - Phase 1, after the Playwright phone and laptop tests: Gemini 3.1 Pro, High, reviews the flow for confusing labels and missing states, then suggests simpler screens.
 - Phase 2, after the realtime and deployment tests: Gemini 3.1 Pro, High, reviews security and architecture.
 - Phase 3: Gemini 3.1 Pro, High, writes the patient-facing wording and survey question, then drafts the translations; a fluent human reviewer approves them, safety messages first (remind me to find one); in new chats, Gemini 3.1 Pro, High, reviews equity and accessibility, then workflow and screen consistency.
