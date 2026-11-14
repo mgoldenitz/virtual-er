@@ -1,6 +1,6 @@
 # Gemini review: offline banner on the patient screen
 
-Model: Gemini 3.1 Pro, High, in a new chat. (No 3.1 Pro credits: Gemini 3.6 Flash, High.)
+Model: Gemini Hydrogen 4, High, in a new chat. (No Hydrogen 4 credits: Gemini 3.6 Flash, High.)
 Give it everything below the line "Paste from here". Bring back its whole answer.
 
 Save point: `5b1a7be` on branch `phase3-patient-extras` (not pushed).
