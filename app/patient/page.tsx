@@ -10,6 +10,7 @@ import { takeTokenFromLink } from "@/data/savedToken";
 import { EmergencyLine } from "@/components/EmergencyLine";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PatientShell } from "@/components/PatientShell";
+import { OfflineBanner } from "@/components/patient/OfflineBanner";
 import { PatientStatus } from "@/components/patient/PatientStatus";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
@@ -87,6 +88,7 @@ export default function PatientPage() {
       <h1 className="text-xl font-bold">{t.appName}</h1>
       <LanguageSwitch language={language} />
       <EmergencyLine language={language} />
+      <OfflineBanner language={language} />
 
       {loading ? (
         <p>{p.loading}</p>
