@@ -1,5 +1,34 @@
 # Virtual Waiting Room: rules for Claude Code
 
+What this is: a concept prototype of a virtual ER waiting room. Low-acuity patients (CTAS 4 or 5) wait off-site after triage, follow their place in line on their phone, and come back when staff recall them. Synthetic data only, no hospital systems. SPEC.md has the full spec and the hard rules.
+
+## Orchestrator and workers
+
+- You (the main session) are the orchestrator. You plan, write briefs and check results. You don't do bulk work yourself when a worker can do it.
+- Workers are subagents on Haiku: `builder` (.claude/agents/builder.md) writes code to a brief; `reviewer` (.claude/agents/reviewer.md) reads a diff against a brief. Every brief states the goal, the files to read, and a "Done when:" check that can be run or seen.
+- Before accepting any worker's output, run its check yourself. If it fails, send it back with the failure. Never pass on a worker's report unchecked.
+- Only one worker edits the repo at a time (guardrail in ai_model_workflow_virtual_er.md). Workers never commit or push; you make the save points.
+- The reviewer worker does not replace the Gemini reviews in "Remind me when another model or agent is due".
+
+## Every session
+
+- Start: read CLAUDE.md and the three docs: docs/progress.md, docs/decisions.md, docs/known-issues.md.
+- End: update progress.md, add new decisions and gotchas, and propose skill edits with the evidence from this session (/reflect). I approve them before you apply them.
+
+## Folder map
+
+- app/: screens (Next.js App Router, one folder with a page.tsx per screen) and api/ routes.
+- components/: shared pieces (buttons, footer, 911 line, layout parts).
+- data/: saving and loading (Supabase calls, browser storage, demo data).
+- lib/: rules that decide things, as small functions with tests; lib/text/ holds all patient text, one file per language.
+- supabase/migrations/: database changes I run in the SQL Editor; supabase/checks/: permission checks.
+- scripts/: dev.mjs (starts the dev server with the Norton fix).
+- docs/: progress log, decisions, known issues.
+- handoffs/: open model reviews; handoffs/archive/: finished ones.
+- notes/, research_notes/, reports/: earlier research (read only when a task needs it).
+- screenshots/: test screenshots.
+- .claude/: project settings, the two worker agents, the reflect skill.
+
 Read SPEC.md before any work. Its hard rules always apply and win over anything else. Notes from earlier research are in notes/. I am new to coding: explain each new file in one plain sentence, and never ask me to paste keys, tokens or passwords into chat; tell me which file or settings page they go in.
 
 Where a key goes: the line above wins in this project (a file or a settings page is fine); my global "plain PowerShell window" line is for keys I type into commands.
