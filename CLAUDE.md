@@ -23,11 +23,11 @@ What this is: a concept prototype of a virtual ER waiting room. Low-acuity patie
 - lib/: rules that decide things, as small functions with tests; lib/text/ holds all patient text, one file per language.
 - supabase/migrations/: database changes I run in the SQL Editor; supabase/checks/: permission checks.
 - scripts/: dev.mjs (starts the dev server with the Norton fix).
-- docs/: progress log, decisions, known issues.
+- docs/: progress.md (where we are: done, next, a dated log line per session), decisions.md (what is settled, with the date and why), known-issues.md (gotchas and their fixes).
 - handoffs/: open model reviews; handoffs/archive/: finished ones.
 - notes/, research_notes/, reports/: earlier research (read only when a task needs it).
 - screenshots/: test screenshots.
-- .claude/: project settings, the two worker agents, the reflect skill.
+- .claude/: project settings; agents/ (worker agents, each with model: haiku and one job); skills/ (one folder per repeatable task, each with a SKILL.md).
 
 Read SPEC.md before any work. Its hard rules always apply and win over anything else. Notes from earlier research are in notes/. I am new to coding: explain each new file in one plain sentence, and never ask me to paste keys, tokens or passwords into chat; tell me which file or settings page they go in.
 
