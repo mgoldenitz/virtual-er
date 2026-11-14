@@ -53,3 +53,20 @@ const child = spawn(command, {
 });
 child.on("exit", (code) => process.exit(code ?? 0));
 ```
+
+## Response
+
+Gemini 3.1 Pro, High (2026-11-13), pasted by the owner. Summary:
+
+1. Security: nothing found. `--use-system-ca` keeps full certificate checking, matches what the browser already trusts, and applies only to `npm run dev`.
+2. Can break elsewhere: (a) joining the arguments into one line with `shell: true` breaks arguments with spaces, and a bare `next` needs `node_modules/.bin` on PATH; fix: resolve `next/dist/bin/next` and start it with `process.execPath`, no shell. (b) Node before 22.15 refuses `--use-system-ca`; fix: add it only if `process.allowedNodeEnvironmentFlags` has it and NODE_OPTIONS does not already. (c) Stop signals are not passed on, so an editor's stop button on macOS or Linux can leave the server running, and `code ?? 0` reports a signal stop as success; fix: forward SIGINT and SIGTERM and do not report 0.
+3. Simpler: either set NODE_OPTIONS once in the laptop's Windows user settings and go back to `next dev`, or put the whole script inline in package.json with `node -e`.
+
+## Claude's check (2026-11-13)
+
+- 1: agree.
+- 2a, 2b: accepted, fixed as suggested.
+- 2c: accepted with a change. The script now waits for Next.js to exit and ends with its exit code (1 after a signal). It passes SIGINT and SIGTERM on, except on Windows: there Ctrl+C already reaches Next.js directly, and Node's `child.kill` on Windows is a forced kill that would cut Next.js's own shutdown short. Re-raising the signal on itself was not used (it would hit the script's own handler again).
+- 3: not accepted. A Windows user setting is machine setup the owner would have to remember, and it applies to every Node program on the laptop, not just this app. The inline `node -e` line is unreadable for a beginner, against CLAUDE.md. The small commented file stays.
+
+Checked on the owner's laptop: `npm run dev` starts, `/api/site-status` reads the database, and Ctrl+C in the terminal stops everything (port 3000 free afterwards). Lint passes. Not checked: macOS, Linux, or Node older than 22.15.
