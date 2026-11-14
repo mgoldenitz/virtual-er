@@ -1,7 +1,12 @@
 {
   "permissions": {
-    "deny": ["Read(.env.local)"],
-    "ask": ["Bash(git push*)", "PowerShell(git push*)"]
+    "deny": [
+      "Read(.env.local)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "PowerShell(git push*)"
+    ]
   },
   "hooks": {
     "PostToolUse": [
@@ -13,6 +18,19 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-line-limit.mjs\"",
             "timeout": 10,
             "statusMessage": "Checking the 300-line limit"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-secrets.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Checking for keys in the change"
           }
         ]
       }
