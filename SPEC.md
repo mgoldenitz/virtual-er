@@ -22,6 +22,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 ## Tools for the agent
 
 - Use context7 for current Next.js, Tailwind and Supabase documentation before writing code that depends on a library version.
+  - Next.js: read the local docs in node_modules/next/dist/docs/ first (AGENTS.md), because they match the installed version; use context7 for Tailwind and Supabase (owner, 2026-11-13).
 - Supabase MCP: use it to create tables, row-level security policies and to read logs, but show me the SQL and wait for my approval before running anything that changes or deletes data. It must be scoped to this project (project_ref). After Phase 2 it runs read_only.
 - Vercel MCP: use it to read build logs and check deployments. Ask before changing any project setting.
 - Playwright MCP: after each phase, open the app at phone size (390 x 844) and at laptop size, run the test checklist, and show me screenshots of anything that fails.
