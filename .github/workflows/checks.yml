@@ -1,0 +1,32 @@
+# Runs the tests, lint and a production build on GitHub for every push and pull request,
+# so a broken rule shows a red X before anyone relies on the Vercel link.
+# It needs no keys: the tests do not call Supabase, and the build gets placeholder values.
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholders, not real values. The real ones live in .env.local and on Vercel.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
