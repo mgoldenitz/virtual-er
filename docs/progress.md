@@ -8,6 +8,11 @@ To do in Phase 3 (from Grok's pass):
 - Shorten the patient screen's "not yet triaged" text (three paragraphs now) in the wording pass, keeping the SPEC sentence about the line starting at triage.
 - Put the "Review: unable to reach" confirmation inside each card's "Remove from list" section.
 
+## Session log
+
+One dated line per session, newest first.
+
+- 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim, pushed, not merged into main.
 
 ## Where to pick up (updated 2026-11-11: Phase 3 in progress, the owner clears the chat before the no-response steps)
 
