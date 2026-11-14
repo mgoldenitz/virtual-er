@@ -1,4 +1,23 @@
 {
+  "permissions": {
+    "deny": ["Read(.env.local)"],
+    "ask": ["Bash(git push*)", "PowerShell(git push*)"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-line-limit.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Checking the 300-line limit"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "huggingface-skills@claude-plugins-official": false,
     "hf-cli@huggingface-skills": false,
