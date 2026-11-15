@@ -1347,3 +1347,97 @@ index d5a2c2b..8bb6630 100644
      "typescript": "^5",
      "vitest": "^5.1.0"
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-15. Pasted by the owner.
+
+### 1. Sound box state and focus (`SoundSwitch.tsx` and `alertSound.ts`)
+
+1. `beeping.current` gets stuck `true` across Turn off sound + Turn on sound, suppressing the recall beep. File: `components/patient/SoundSwitch.tsx` (`turnOff`, `tick`). When `status === "called"` and `tick()` starts `playAlert()`, `beeping.current` stays `true` until `playAlert()` settles (up to 1,000 ms). If the patient taps Turn off sound and then Turn on sound before that, `turnOff()` does not clear `beeping.current`; the re-run `tick()` exits early, so no beep for 30 seconds. See it: status called, slow `playAlert()`, tap on, off, on within 500 ms: `playAlert()` is called once. Fix: reset `beeping.current = false` in `turnOff()` and in the effect cleanup.
+2. `turnOn()`'s test beep ignores `beeping.current`, causing concurrent beeps and a false "failed" state if `status` becomes "called". While waiting, `turnOn()` awaits `playAlert()` without setting `beeping.current`. If the visit becomes called while the test beep waits, `tick()` starts a second `playAlert()`. A status change does not raise `attempt.current`, so a stale `false` sets "failed". Fix: set `beeping.current` around the test beep, and check `status !== "called"` (or let one effect own playback) before "failed".
+3. Unmounting during a slow `playAlert()` still plays the beep and vibrates after "I'm on my way". The cleanup clears the timer and listener but does not raise `attempt.current`, call `stopVibration()` or cancel the in-flight `playAlert()`. Fix: in the unmount cleanup raise `attempt.current` and call `stopVibration()`, and pass an AbortSignal or generation check into `playAlert()` so it returns before the oscillator starts.
+4. A repeat-tick failure steals focus from active buttons. `else if (wasOn.current) turnOnButton.current?.focus()` runs on every change out of "on", so a background 30 s tick failure moves focus from "I'm on my way" or "I'm still here" to Turn on sound. Fix: move focus only after a tap or an immediate turnOn failure, or when `document.activeElement` is inside SoundSwitch.
+
+### 2. `formatDuration` and `formatWaitRange` edge cases (`lib/waitText.ts`)
+
+1. `formatWaitRange` skips input clean-up when `high < 60`: `formatWaitRange(NaN, 45, "en")` gives "NaN to 45 minutes", `(-5, 30)` gives "-5 to 30 minutes", `(20.7, 45.9)` gives "20.7 to 45.9 minutes". Fix: a `wholeMinutes` helper for both ends first.
+2. `low > high` gives reversed ranges: `(90, 45)` gives "90 to 45 minutes", `(120, 80)` gives "2 hours to 1 hour 20 minutes". Fix: `cleanHigh = Math.max(cleanLow, wholeMinutes(high))`.
+3. `Intl.PluralRules` is made again on every call (up to 4 per render). Fix: cache by locale in a Map.
+
+### 3. Plural and grammar forms in each language
+
+1. Arabic: `waitRange` under 60 minutes uses singular "دقيقة" after 3 to 10. `formatWaitRange(5, 10, "ar")` gives "من 5 إلى 10 دقيقة" (ungrammatical; 3 to 10 take "دقائق"), and `(1, 2, "ar")` gives "من 1 إلى 2 دقيقة". Fix: route ranges under 60 through `formatDuration`, or pick the minute form in Arabic.
+2. Arabic: `arDuration` leaves out digits for 1 and 2 (against the rule "numbers stay as digits (0-9) in every language"), and "ساعتين"/"دقيقتين" are genitive forms that fit only after "من" and "إلى"; alone they must be "ساعتان"/"دقيقتان". Fix: ask the reviewer; keep digits or add a standalone form.
+3. Urdu: `urDuration.join` leaves out "اور": "1 گھنٹہ 35 منٹ" reads like a table cell; "1 گھنٹہ اور 35 منٹ" is more natural. Fix: join "{h} اور {m}", for fluent review.
+4. Urdu: equal whole-hour ends (60 and 60) give "1 گھنٹے سے 1 گھنٹہ". Fix: one duration when low equals high.
+5. French: `join` leaves out "et" ("1 heure et 35 minutes" is more natural), and `formatWaitRange(0, 1, "fr")` gives "0 à 1 minutes". Fix: join "{h} et {m}" for fluent review; no plural after 1.
+6. Mandarin: spaces around digits and between hours and minutes ("45 分钟 到 1 小时 20 分钟") break standard Simplified Chinese typography ("45分钟到1小时20分钟") and wrap more at 390 px. Fix: remove the spaces.
+7. English: `formatWaitRange(0, 1, "en")` gives "0 to 1 minutes". Fix: use `formatDuration` when high is 1, or collapse low equal to high.
+
+### 4. Hidden full words for screen readers
+
+1. `.sr-only` (position absolute) splits one sentence into three swipe stops in VoiceOver and NVDA ("Confirmed", "1 hour 35 minutes", "ago."). Files: `Duration.tsx`, `VisitRow.tsx`, `ExpectedArrivals.tsx`, `FollowUpPanel.tsx`. Fix: give the parent an explicit spoken string, or test swipe stops in VoiceOver and NVDA.
+2. `FollowUpPanel.tsx` still says "10 min", "20 min" and "30 min" in the `phone`, `phone_again` and `review` flags, so screen readers read "min". Fix: `<Duration>` in `body`, "minutes" spelled out in `spoken`.
+3. In `SoundSwitch.tsx`, the offWhileCalled line in `role="status"` and the focus move to Turn on sound happen together; the focused button is read first and can cut off the polite status. Fix: `aria-describedby` from the button to the status line when there is a note.
+
+### 5. Tests that claim more than they prove
+
+1. `SoundSwitch.click.test.tsx`: `press()` calls `focus()`, which hides focus loss when `unlockSound()` fails (no focus move then, because `wasOn` is false); the test-beep focus test never shows focus first on "Sound is on"; the double-tap test never checks `playAlert` once; the late-failed-beep test never checks `playAlert` twice, which hides finding 1.1 (keep `oldBeep` pending across off and on and expect 2 calls: it gets 1). Fix: check focus at each step, check `playAlert` counts, test a failed repeat tick.
+2. `NewLinkPanel.click.test.tsx`: tests `saving={true}` only by a re-render, not a fast double click on Yes before the parent re-renders. Fix: a double-click test without `show(true)`, and a local guard if `onConfirm` runs twice.
+3. `alertSound.test.ts`: the fake oscillator has no spies, so a `playAlert()` that only returned `true` would pass. Fix: spy on `start`, `stop` and `vibrate`; check they run when running and not when `resume()` times out.
+4. `lib/waitText.test.ts`: one range each in French and Mandarin; no Arabic under 60, no 61, 62 or 660; no NaN or low above high. Fix: a matrix of 0, 1, 2, 5, 59, 60, 61, 119, 120, 660, NaN and low above high in all five languages.
+5. `FollowUpPanel.test.ts` calls `flagFor()` and never renders the panel, so swapping `{flag.body ?? flag.text}` back to `{flag.text}` still passes; `PatientStatus.test.tsx` checks only en and ar. Fix: render the panel; add fr, ur and zh.
+
+(The owner's paste is shortened here to one paragraph per point; every point, file and fix is kept.)
+
+### Claude's check (2026-11-15)
+
+I read each point against the code at `8e40f48`. Facts used below: `lib/queue.ts` `waitRange()` gives `low` as a multiple of 5 and at least 5, and `high` as a multiple of 5 and at least `low + 5` (so at least 10). `formatWaitRange` has one caller, `PatientStatus.tsx`, with those numbers.
+
+Accepted:
+- 1.1, stuck beep guard: correct. An old repeat beep that is still waiting blocks the first beep after Turn off and Turn on, and if it then fails, the patient sees "Sound is on" and hears nothing for 30 s. Fix: the guard holds the attempt number of the beep that waits (not true or false), so a beep of an older attempt does not block a new one. Test: keep the old beep waiting across off and on, expect `playAlert` 2 times.
+- 1.2, test beep and status change: correct, but the window is at most 1 s. The same attempt-number guard covers the test beep, so the tick does not start a second beep on top of it.
+- 1.3, beep after unmount: correct, at most 1 s after "I'm on my way". Fix: the unmount cleanup raises the attempt and calls `stopVibration()`; `playAlert()` takes a "still wanted" check and does not start the oscillator when it says no.
+- 1.4, focus taken by a failed repeat beep: correct. Fix: move focus to Turn on sound only when focus is inside the sound box or on the page body (the "Sound is on" words went away).
+- 3.1, Arabic under 60 minutes: correct for a high end of 10 ("10 دقيقة"; 3 to 10 take "دقائق"). 10 is the only high end from 3 to 10 that `lib/queue.ts` can give. Fix: the high end of the short line uses the minute word forms too, in every language ("20 to 45 minutes" stays the same in English). Fluent reviewer to confirm.
+- 4.2, "min" in three staff flags: correct; point b4 of the last review covered all staff times. Fix: those flags get a `body` with `<Duration>`; the screen keeps "10 min" (no SPEC wording change); `spoken` keeps no minutes.
+- 5.1 (the playAlert counts), 5.3 (spies in alertSound tests), 5.5 (render the FollowUpPanel): correct; tests added with the fixes.
+- 5.4, partly: add Arabic 5 to 10 and 10 to 15, and one whole-hour range for French and Mandarin.
+
+Not possible with the numbers the app makes (no change): 2.1 (NaN, negatives, decimals), 2.2 (low above high), 3.4 (low equal to high), 3.5 and 3.7 ("0 to 1 minutes"). `formatDuration` already turns a broken number into 0.
+
+Rejected or left to the fluent reviewer:
+- 3.2, no digit for 1 and 2 hours: the owner chose this on 2026-11-15 (docs/decisions.md). The forms are used only after "من" and "إلى", where the genitive is right. The note goes to the Arabic reviewer.
+- 3.3 (Urdu "اور"), 3.5 (French "et"), 3.6 (Mandarin spaces): wording choices, not bugs. They go to the fluent reviewers.
+- 2.3, caching `Intl.PluralRules`: at most 4 per render every few seconds; not worth the extra code.
+- 5.2, NewLinkPanel double click: React 19 handles each click on its own, so after the first Yes the question closes and the second click finds no Yes button. No change.
+
+Left for a screen reader test by the owner (not checked): 4.1 (swipe stops on the hidden words) and 4.3 (the status line read after the focus move).
+
+## Response 2
+
+A second Gemini answer to the same handoff, pasted by the owner on 2026-11-15 (in two parts). Shortened to one line per point; every point, file and fix is kept.
+
+1. Sound box: (a) `beeping` stays true across Turn off and Turn on; fix: clear it in `turnOff` and clear it in the `.then` only for the same attempt. (b) `turnOn` reads an old `status` after `await unlockSound()`; if the visit becomes called during the wait, the test beep and the tick both beep; fix: keep `status` in a ref. (c) Unmount during a slow `unlockSound()` or `playAlert()` does not raise `attempt`; fix: an unmount effect that raises it. (d) A second failed Turn on from `failed` keeps the same text, so the status box says nothing new; fix: `setState("off")` at the start of a retry. (e) Focus moves in the same render as the status line; fix: `aria-describedby` from Turn on sound to the status line.
+2. `formatWaitRange`: (a) no clean-up when `high < 60` (NaN, -10, 20.8); (b) low above high gives a reversed range; (c) "fr-CA", "AR" give English units in French words; fix: lower case and cut at "-". Values 0, 59, 60, 61, 119, 120 split correctly.
+3. Words: (a) Arabic "one" and "two" match 101 and 102, so 101 hours shows "ساعة"; (b) Arabic short line "من 5 إلى 10 دقيقة" is wrong (3 to 10 take "دقائق"); (c) "ساعتين"/"دقيقتين" are right only after a preposition; document it; (d) Urdu `hourLow` "1 گھنٹے" is right only before "سے"; document it; (e) French "0 à 1 minutes"; (f) Mandarin spaces around "到" and between units; (g) English "0 to 1 minutes".
+4. Screen readers: (a) `aria-hidden` plus `sr-only` spans split one sentence into 3 swipe stops; (b) the status box and the focus move collide, and a repeat failure is silent; (c) the RTL range has no `<bdi>` or `dir` of its own.
+5. Tests: (a) `press()` calls `focus()` first, which hides the case where a phone tap leaves focus on the page, and would hide a change from `aria-disabled` to `disabled`; (b) the late-failed-beep test does not count `playAlert` (2 expected); (c) the "never in a live region" test checks only the off state; (d) NewLinkPanel focus is on the page body for one tick before `setTimeout(0)` runs; (e) `waitText.test.ts` misses NaN, low above high, Arabic 3 to 10 and 101 to 102 hours; (f) `FollowUpPanel.test.ts` tests `flagFor()`, not the rendered panel.
+
+### Claude's check of response 2 (2026-11-15)
+
+Same as response 1 (verdict above stands): 1(a) = 1.1; 1(c) = 1.3; 1(e) and 4(b) first half = 4.3; 2(a), 2(b), 3(e), 3(g) = not possible with the app's numbers; 3(b) = 3.1; 3(c) = 3.2; 3(f) = 3.6; 4(a) = 4.1; 5(b) = 5.1; 5(e) = 5.4; 5(f) = 5.5.
+
+New points, accepted:
+- 1(b), old `status` after the wait: correct (a window of one `unlockSound()` wait). The attempt-number guard of 1.1 and 1.2 covers it if `turnOn` sets the guard before it calls `playAlert()`: `playAlert()` starts in the same task as `setState("on")`, before React runs the tick. I add a test for it (waiting, slow unlock, show called, finish unlock: `playAlert` 1 time). A status ref is not needed.
+- 1(d) and 4(b) second half, silent retry: correct. A second failure writes the same words, so the status box does not change and screen readers say nothing. Fix: a retry from `failed` clears the line first.
+- 5(a), partly: add one test that presses Turn on sound without `focus()` first (focus on the page body, as after a phone tap) and checks where focus goes after a failed test beep. Keep `focus()` in the other tests: a keyboard user's Enter does focus the button. The `disabled` point does not apply: the panel uses `aria-disabled` and its own `if (saving) return`, and the test checks that `onConfirm` is not called.
+- 5(c): correct. Add a click test: after Turn on sound, the status box is empty.
+
+New points, rejected (checked in this session):
+- 2(c), "fr-CA": `textFor()` in `lib/text/index.ts` also needs an exact code, so "fr-CA" gives English words and English units, never a mix. The app passes only its own 5 codes.
+- 3(a), Arabic 101 hours: wrong. `new Intl.PluralRules("ar")` gives 101 "other", 102 "other", 103 "few"; "one" and "two" are only 1 and 2. Also no wait is 101 hours.
+- 3(d): `lib/text/durationWords.ts` already says `hourLow` is "just before سے".
+- 4(c), RTL: the patient page `<main>` has `dir` from `languageInfo()` (`app/patient/page.tsx` line 100), so the range is inside an RTL block in the app.
+- 5(d), NewLinkPanel focus tick: a design choice shared by `PauseSwitch` and `RecallAllPanel` (the button comes back only after the render). No change now; noted for the owner's screen reader check.
