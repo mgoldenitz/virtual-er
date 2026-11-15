@@ -11,6 +11,7 @@ import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 import { FollowUpPanel } from "./FollowUpPanel";
+import { NewLinkPanel } from "./NewLinkPanel";
 
 type Props = {
   visit: Visit;
@@ -107,17 +108,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
           </Button>
         </div>
       </details>
-      <details className="mt-3">
-        <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
-          Lost or stolen phone
-        </summary>
-        <div className="mt-2 space-y-2">
-          <p>The old link and the old slip stop working. Give the patient the new QR code.</p>
-          <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => issueNewVisitLink(visit.id, showNewLink))}>
-            Issue a new link<span className="sr-only"> {visit.code}</span>
-          </Button>
-        </div>
-      </details>
+      <NewLinkPanel code={visit.code} saving={saving} onConfirm={() => act(() => issueNewVisitLink(visit.id, showNewLink))} />
       {(saving || note || okNote) && (
         <p role="status" className={`mt-2 font-semibold ${saving || !note ? "" : "text-red-800"}`}>
           {saving ? "Saving…" : note || okNote}
