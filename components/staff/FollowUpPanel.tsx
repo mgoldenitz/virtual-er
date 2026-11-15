@@ -25,31 +25,41 @@ const RED = "border-red-800 bg-red-50 text-red-900";
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-/** The words and colour of each flag; null when there is nothing to flag. */
-function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: string; tone: string } | null {
+/** One flag: the words on screen, their colour, and the words screen readers hear. */
+type Flag = { text: string; tone: string; spoken: string };
+
+/** A flag whose spoken words are the same as its words on screen. */
+const same = (text: string, tone: string): Flag => ({ text, tone, spoken: text });
+
+/**
+ * The words and colour of each flag; null when there is nothing to flag. `spoken` leaves out
+ * minute counts, so the words do not change, and are not read again, every minute.
+ */
+export function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): Flag | null {
   switch (followUp.kind) {
     case "phone":
-      return { text: `No reply ${CALL_SECOND_ALERT_MINUTES} min after call-back. Phone the patient now.`, tone: AMBER };
+      return same(`No reply ${CALL_SECOND_ALERT_MINUTES} min after call-back. Phone the patient now.`, AMBER);
     case "phone_again": {
       // "again" only if someone already phoned; staff may have missed the first flag.
       const ask = visit.phone_attempts === 0 ? "Phone the patient now." : "Phone the patient again.";
-      return { text: `Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. ${ask}`, tone: AMBER };
+      return same(`Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. ${ask}`, AMBER);
     }
     case "paused":
-      return { text: `Phoned, answered. Follow-up paused until ${clock(followUp.until)}.`, tone: AMBER };
+      return same(`Phoned, answered. Follow-up paused until ${clock(followUp.until)}.`, AMBER);
     case "review":
-      return {
-        text: `Review: unable to reach. No answered call ${CALL_REVIEW_MINUTES} min after the call-back. Stays in the line until a nurse confirms.`,
-        tone: RED,
-      };
+      return same(
+        `Review: unable to reach. No answered call ${CALL_REVIEW_MINUTES} min after the call-back. Stays in the line until a nurse confirms.`,
+        RED,
+      );
     case "contacted_not_arrived":
-      return {
-        text: "Answered the phone, but hasn’t arrived or tapped ‘I’m on my way’ yet.",
-        tone: AMBER,
-      };
+      return same("Answered the phone, but hasn’t arrived or tapped ‘I’m on my way’ yet.", AMBER);
     case "on_way_not_arrived": {
       const since = visit.confirmed_at ? minutesBetween(visit.confirmed_at, now) : 0;
-      return { text: `On the way, not arrived. Confirmed ${formatMinutes(since)} ago.`, tone: AMBER };
+      return {
+        text: `On the way, not arrived. Confirmed ${formatMinutes(since)} ago.`,
+        tone: AMBER,
+        spoken: "On the way, not arrived.",
+      };
     }
     default:
       return null;
@@ -60,9 +70,8 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
   const followUp = staffFollowUp(visit, now);
   const flag = flagFor(followUp, visit, now);
   const canPhone = canRecordPhoneCall(visit, now);
-  // Screen readers hear each new flag once (politely). The minute counts are left out so the
-  // words do not change, and so are not read again, every minute.
-  const spoken = flag ? `Visit ${visit.code}: ${flag.text.replace(/ Confirmed [^.]+ ago\./, "")}` : "";
+  // Screen readers hear each new flag once (politely), without the minute counts.
+  const spoken = flag ? `Visit ${visit.code}: ${flag.spoken}` : "";
   const announcer = (
     <p role="status" className="sr-only">
       {spoken}

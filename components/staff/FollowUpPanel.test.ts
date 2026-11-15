@@ -1,0 +1,28 @@
+// Checks the words that screen readers hear for a staff flag: they leave out the minute count,
+// so they do not change (and are not read again) every minute.
+
+import { describe, expect, it, vi } from "vitest";
+import { checkInAtDesk } from "@/lib/visitActions";
+import { flagFor } from "./FollowUpPanel";
+
+// The panel's buttons save through Supabase; this test never presses them.
+vi.mock("@/data/staffActions", () => ({}));
+
+const now = new Date("2026-11-15T20:00:00Z");
+const minutesAgo = (min: number) => new Date(now.getTime() - min * 60_000).toISOString();
+const input = { id: "v1", code: "ABC234", access_token: "TOKEN", site: "A" as const, ctas_level: 4 as const, language: "en" };
+
+describe("flagFor spoken words", () => {
+  it.each([5, 95])("says 'On the way, not arrived.' with no time, %i minutes after the tap", (minutes) => {
+    const visit = { ...checkInAtDesk(input, "waiting", new Date(minutesAgo(200))), confirmed_at: minutesAgo(minutes) };
+    const flag = flagFor({ kind: "on_way_not_arrived" }, visit, now);
+    expect(flag?.spoken).toBe("On the way, not arrived.");
+    expect(flag?.text).toContain("ago");
+  });
+
+  it("speaks the full words when the flag has no time in it", () => {
+    const visit = checkInAtDesk(input, "waiting", new Date(minutesAgo(30)));
+    const flag = flagFor({ kind: "contacted_not_arrived" }, visit, now);
+    expect(flag?.spoken).toBe(flag?.text);
+  });
+});
