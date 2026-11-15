@@ -5,13 +5,14 @@
 
 import Link from "next/link";
 import type { PatientView } from "@/lib/patientView";
-import { fill, textFor, type PatientText } from "@/lib/text";
+import { textFor, type PatientText } from "@/lib/text";
+import { formatWaitRange } from "@/lib/waitText";
 import { Button } from "@/components/Button";
 import { CallReminder } from "./CallReminder";
 
 type Props = { view: PatientView; language: string; onOnMyWay: () => void; sending: boolean };
 
-function Waiting({ view, t }: { view: PatientView; t: PatientText }) {
+function Waiting({ view, language, t }: { view: PatientView; language: string; t: PatientText }) {
   const p = t.patient;
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
@@ -24,7 +25,7 @@ function Waiting({ view, t }: { view: PatientView; t: PatientText }) {
       <p className="text-base">{p.placeCanChange}</p>
       <p className="text-lg">
         {p.waitLabel}{" "}
-        <strong>{view.waitLow !== null && view.waitHigh !== null && fill(p.waitRange, { low: view.waitLow, high: view.waitHigh })}</strong>
+        <strong>{view.waitLow !== null && view.waitHigh !== null && formatWaitRange(view.waitLow, view.waitHigh, language)}</strong>
       </p>
       <p className="text-sm text-slate-700">{p.simulated}</p>
     </section>
@@ -117,7 +118,7 @@ function Expired({ t }: { t: PatientText }) {
 export function PatientStatus({ view, language, onOnMyWay, sending }: Props) {
   const t = textFor(language);
   if (view.expired) return <Expired t={t} />;
-  if (view.status === "waiting") return <Waiting view={view} t={t} />;
+  if (view.status === "waiting") return <Waiting view={view} language={language} t={t} />;
   if (view.status === "called" || view.status === "on_the_way") {
     return <Called view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} t={t} />;
   }
