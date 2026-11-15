@@ -7,7 +7,17 @@ import { textFor } from "@/lib/text";
 import { SoundSwitch } from "./SoundSwitch";
 
 // Replace the real sound player, so the tests never touch the browser's audio.
-vi.mock("./alertSound", () => ({ unlockSound: vi.fn(), playAlert: vi.fn() }));
+vi.mock("./alertSound", () => ({ unlockSound: vi.fn(), playAlert: vi.fn(), stopVibration: vi.fn() }));
+
+// React writes quote marks as &quot; in the HTML, so the expected words are escaped the same way.
+function htmlText(words: string): string {
+  return words
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 describe("SoundSwitch", () => {
   it("shows the English notice and a Turn on sound button", () => {
@@ -33,5 +43,25 @@ describe("SoundSwitch", () => {
   it("does not show Sound is on before the patient taps the button", () => {
     const html = renderToStaticMarkup(<SoundSwitch status="called" language="en" />);
     expect(html).not.toContain("Sound is on");
+  });
+
+  it("shows the offWhileCalled line when the visit is called and the sound is off", () => {
+    const html = renderToStaticMarkup(<SoundSwitch status="called" language="en" />);
+    expect(html).toContain(htmlText(textFor("en").sound.offWhileCalled));
+  });
+
+  it("does not show the offWhileCalled line while waiting", () => {
+    const html = renderToStaticMarkup(<SoundSwitch status="waiting" language="en" />);
+    expect(html).not.toContain(htmlText(textFor("en").sound.offWhileCalled));
+  });
+
+  it("does not show the failed line on first render", () => {
+    const html = renderToStaticMarkup(<SoundSwitch status="called" language="en" />);
+    expect(html).not.toContain('data-testid="sound-failed"');
+  });
+
+  it("shows the Arabic offWhileCalled line for ar when called", () => {
+    const html = renderToStaticMarkup(<SoundSwitch status="called" language="ar" />);
+    expect(html).toContain(htmlText(textFor("ar").sound.offWhileCalled));
   });
 });

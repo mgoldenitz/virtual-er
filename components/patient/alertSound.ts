@@ -5,10 +5,23 @@ import { BEEP_HZ, BEEP_SECONDS, BEEP_VOLUME } from "@/lib/calledAlert";
 /** The one shared sound player. It is made by unlockSound() after a tap, then reused. */
 let context: AudioContext | null = null;
 
+/** The longest time playAlert() waits for the player to start again, in milliseconds. */
+const RESUME_WAIT_MS = 1000;
+
 /** The browser's audio player class (Safari older versions use the webkit name). */
 function audioContextClass(): typeof AudioContext | undefined {
   const webkitWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
   return window.AudioContext ?? webkitWindow.webkitAudioContext;
+}
+
+/** True when the player is running and can make sound. */
+function isRunning(ctx: AudioContext): boolean {
+  return ctx.state === "running";
+}
+
+/** Waits this many milliseconds, then finishes. */
+function waitAtMost(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -30,30 +43,54 @@ export async function unlockSound(): Promise<boolean> {
   }
 }
 
-/** Plays one short beep (BEEP_HZ, BEEP_SECONDS long, at BEEP_VOLUME; see lib/calledAlert.ts) and a vibration where the phone allows it. */
-export function playAlert(): void {
+/**
+ * Plays one short beep (BEEP_HZ, BEEP_SECONDS long, at BEEP_VOLUME; see lib/calledAlert.ts) and a vibration where the phone allows it.
+ * Gives true when the beep played. Gives false when it did not play (no player, or the player would not start).
+ */
+export async function playAlert(): Promise<boolean> {
   try {
-    if (context) {
-      const ctx = context;
-      // iPhone can pause the player while the page is hidden; start it again before each beep.
-      if (ctx.state !== "running") void ctx.resume().catch(() => undefined);
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const now = ctx.currentTime;
-      oscillator.type = "sine";
-      oscillator.frequency.value = BEEP_HZ;
-      // Start at BEEP_VOLUME and fade to almost silence at the end, so the beep does not click.
-      gain.gain.setValueAtTime(BEEP_VOLUME, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + BEEP_SECONDS);
-      oscillator.connect(gain);
-      gain.connect(ctx.destination);
-      oscillator.start(now);
-      oscillator.stop(now + BEEP_SECONDS);
+    // Vibrate first, so the phone still vibrates when the beep cannot play.
+    vibrate();
+    if (!context) return false;
+    const ctx = context;
+    // iPhone can pause the player while the page is hidden; start it again before each beep.
+    if (!isRunning(ctx)) {
+      await Promise.race([ctx.resume(), waitAtMost(RESUME_WAIT_MS)]);
+      if (!isRunning(ctx)) return false;
     }
-    if (typeof navigator.vibrate === "function") {
-      navigator.vibrate([200, 100, 200]);
-    }
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    oscillator.type = "sine";
+    oscillator.frequency.value = BEEP_HZ;
+    // Start at BEEP_VOLUME and fade to almost silence at the end, so the beep does not click.
+    gain.gain.setValueAtTime(BEEP_VOLUME, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + BEEP_SECONDS);
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start(now);
+    oscillator.stop(now + BEEP_SECONDS);
+    return true;
   } catch {
     // Ignore sound and vibration errors. The on-screen words remain the real alert.
+    return false;
+  }
+}
+
+/** One vibration pattern (200 ms on, 100 ms off, 200 ms on) where the phone allows it. */
+function vibrate(): void {
+  try {
+    if (typeof navigator.vibrate === "function") navigator.vibrate([200, 100, 200]);
+  } catch {
+    // Ignore: the on-screen words remain the real alert.
+  }
+}
+
+/** Stops a vibration that is running. Phones with no vibration are ignored. */
+export function stopVibration(): void {
+  try {
+    navigator.vibrate?.(0);
+  } catch {
+    // Ignore: the on-screen words remain the real alert.
   }
 }
