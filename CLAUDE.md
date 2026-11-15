@@ -66,6 +66,8 @@ Save every handoff file in the handoffs/ folder of this project, never in a temp
 
 Make one handoff file per review. When I paste the model's answer back, add it at the bottom of that same file under a "Response" heading (with your check of it below that), never in a separate -response file. Only reviews that are still open stay in handoffs/. Once a review is done or skipped, move its file into handoffs/archive/ and update any links to it.
 
+In a handoff, write "checked" only for a check whose output is in this session or whose result is in docs/progress.md. Put every other check under "Not checked".
+
 From 2026-11-10 every handoff goes to a Gemini model (from 2026-11-14, Gemini Hydrogen 4 replaces Gemini 3.1 Pro, which I no longer have); I do not use Kimi, Grok, DeepSeek, GPT-6 Astra, GPT-6.1 Sol, GPT-6.1 Terra or Gemini 4 Argon. Use Gemini Hydrogen 4, High, unless a step below says otherwise. When I have no Gemini Hydrogen 4 credits, Gemini 3.6 Flash, High, takes any step; say so in the note. Because one model family now does every review, each review goes in a new Gemini chat (so it never checks its own work from memory), and the handoff asks it to find problems, not to confirm.
 
 - After each small change works and passes its tests: Gemini Hydrogen 4, High, reviews the result.
