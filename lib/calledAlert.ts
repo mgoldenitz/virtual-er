@@ -14,3 +14,16 @@ export const ALERT_REPEAT_MS = 30_000;
 export function shouldAlert(status: VisitStatus, soundOn: boolean, visible: boolean): boolean {
   return status === "called" && soundOn && visible;
 }
+
+/** What the sound box knows about the sound: not turned on, turned on, or the phone refused to start it. */
+export type SoundState = "off" | "on" | "failed";
+
+/**
+ * Which extra line the sound box shows under the button, or null for no line.
+ * "failed": the phone would not start the sound (lib/text sound.failed).
+ * "offWhileCalled": the visit is called and the sound is off (lib/text sound.offWhileCalled).
+ */
+export function soundNote(status: VisitStatus, state: SoundState): "failed" | "offWhileCalled" | null {
+  // TODO(human): pick the line from status and state.
+  return null;
+}

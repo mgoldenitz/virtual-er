@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { VisitStatus } from "./visit";
-import { ALERT_REPEAT_MS, shouldAlert } from "./calledAlert";
+import { ALERT_REPEAT_MS, shouldAlert, soundNote } from "./calledAlert";
 
 describe("shouldAlert", () => {
   it("alerts while called, with sound on and the page on screen", () => {
@@ -28,5 +28,26 @@ describe("shouldAlert", () => {
 describe("ALERT_REPEAT_MS", () => {
   it("repeats every 30 seconds", () => {
     expect(ALERT_REPEAT_MS).toBe(30_000);
+  });
+});
+
+describe("soundNote", () => {
+  it("shows the failed line when the phone would not start the sound", () => {
+    expect(soundNote("waiting", "failed")).toBe("failed");
+  });
+
+  it("keeps the failed line while called, because it already says to watch the screen", () => {
+    expect(soundNote("called", "failed")).toBe("failed");
+  });
+
+  it("asks to turn on sound only while called with the sound off", () => {
+    expect(soundNote("called", "off")).toBe("offWhileCalled");
+    expect(soundNote("waiting", "off")).toBeNull();
+    expect(soundNote("on_the_way", "off")).toBeNull();
+  });
+
+  it("shows no line while the sound is on", () => {
+    expect(soundNote("called", "on")).toBeNull();
+    expect(soundNote("waiting", "on")).toBeNull();
   });
 });
