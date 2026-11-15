@@ -35,7 +35,7 @@ export default function DashboardPage() {
           ))}
         </ul>
       </section>
-      <Link href="/staff" className="inline-block min-h-11 py-2 font-semibold text-blue-900 underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-slate-950">
+      <Link href="/staff" className="inline-block min-h-11 py-2 font-semibold text-brand underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-slate-950">
         Back to the staff screen
       </Link>
     </main>

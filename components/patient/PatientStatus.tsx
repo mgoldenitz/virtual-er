@@ -106,7 +106,7 @@ function Expired({ t }: { t: PatientText }) {
       <p className="text-lg">{t.expiredText}</p>
       <p className="text-lg">{p.expiredHelp}</p>
       <p className="text-lg">
-        <Link href="/" className="font-semibold text-blue-900 underline underline-offset-2">
+        <Link href="/" className="font-semibold text-brand underline underline-offset-2">
           {p.expiredNewVisit}
         </Link>
       </p>

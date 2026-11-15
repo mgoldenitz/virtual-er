@@ -6,7 +6,7 @@ import { textFor } from "@/lib/text";
 
 const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
-const linkStyle = "font-semibold text-blue-900 underline underline-offset-2";
+const linkStyle = "font-semibold text-brand underline underline-offset-2";
 
 function External({ href, children, newTab }: { href: string; children: string; newTab: string }) {
   return (

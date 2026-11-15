@@ -3,14 +3,14 @@
 /* Colour tokens. Every pair used for text passes WCAG 2.2 AA (4.5:1) on white.
    Patient screens use these as they are; the staff screens swap in the glass blue below. */
 @theme {
-  --color-brand: #1e40af;        /* buttons and links; white text on it is 8.7:1 */
-  --color-brand-strong: #1e3a8a; /* hover */
-  --color-ink: #111827;          /* main text, 17:1 */
-  --color-muted: #374151;        /* secondary text, 10:1 */
-  --color-canvas: #f8fafc;       /* page background behind cards */
+  --color-brand: #0f5e66;        /* deep teal: buttons and links; white text on it is 7.5:1 */
+  --color-brand-strong: #0b474d; /* hover, 10.4:1 */
+  --color-ink: #13212b;          /* main text, 16.4:1 */
+  --color-muted: #3d4f5c;        /* secondary text, 8.5:1 (7.9:1 on the canvas) */
+  --color-canvas: #f3f7f7;       /* page background behind cards; brand on it is 6.9:1 */
   --color-card: #ffffff;
-  --color-line: #e2e8f0;         /* card edges (decoration only) */
-  --color-control: #64748b;      /* input and select borders, 4.8:1 (WCAG needs 3:1) */
+  --color-line: #dbe7e8;         /* card edges (decoration only) */
+  --color-control: #5f7a80;      /* input and select borders, 4.6:1 (WCAG needs 3:1) */
 }
 
 body {
@@ -27,21 +27,21 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
 
-/* Staff screens (glass look). White text on #1856ff is 5.5:1. */
+/* Staff screens (glass look). White text on #0e6f78 is 5.9:1. */
 .theme-staff {
-  --color-brand: #1856ff;
-  --color-brand-strong: #0f3fd1;
-  --color-ink: #141414;
+  --color-brand: #0e6f78;
+  --color-brand-strong: #0b474d;
+  --color-ink: #13212b;
 }
 
 /* A soft, pale colour wash behind the glass panels. It stays light so text on the panels
    keeps its contrast even where the panel is see-through. */
 .staff-backdrop {
-  background-color: #eef2fb;
+  background-color: #edf5f5;
   background-image:
-    radial-gradient(at 10% 0%, rgb(24 86 255 / 0.22) 0, transparent 50%),
-    radial-gradient(at 95% 15%, rgb(58 52 78 / 0.14) 0, transparent 45%),
-    radial-gradient(at 50% 100%, rgb(7 202 107 / 0.12) 0, transparent 50%);
+    radial-gradient(at 10% 0%, rgb(14 111 120 / 0.2) 0, transparent 50%),
+    radial-gradient(at 95% 15%, rgb(61 79 92 / 0.12) 0, transparent 45%),
+    radial-gradient(at 50% 100%, rgb(94 170 160 / 0.14) 0, transparent 50%);
 }
 
 /* A frosted panel: mostly white (82%), so text stays dark-on-light. */
