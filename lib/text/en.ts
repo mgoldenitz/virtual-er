@@ -147,9 +147,12 @@ export const en = {
   },
   sound: {
     notice:
-      "This demo plays a sound and vibrates when you are called. This only works while this page is open and your phone is unlocked.",
+      "This demo can play a sound when you are called. It also vibrates if your phone allows it. Alerts work only while this page is open and your phone is unlocked. Take your phone off silent so you can hear it.",
     turnOn: "Turn on sound",
     on: "Sound is on",
+    failed: "Sound could not start on this phone. Watch this screen to see when you are called.",
+    turnOff: "Turn off sound",
+    offWhileCalled: "Sound is off. Tap \"Turn on sound\" for sound alerts.",
   },
   pausedHeading: "Off-site waiting is paused",
   textSize: { label: "Text size", normal: "Normal", large: "Large", extraLarge: "Extra large" },

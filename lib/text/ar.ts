@@ -1,6 +1,8 @@
 // Patient text in Modern Standard Arabic. DRAFT: written by Gemini 3.1 Pro on 2026-11-10/11
 // (handoffs/archive/2026-11-10-gemini-translations-phase3.md) and not yet approved by a
-// fluent speaker. Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
+// handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
+// Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
 
 import type { PatientText } from "./en";
 
@@ -121,9 +123,12 @@ export const ar: PatientText = {
   },
   sound: {
     notice:
-      "يقوم هذا العرض التجريبي بتشغيل صوت والاهتزاز عند استدعائك. يعمل هذا فقط عندما تكون هذه الصفحة مفتوحة وهاتفك غير مقفل.",
+      "يمكن لهذا العرض التجريبي تشغيل صوت عند استدعائك. كما أنه يهتز إذا كان هاتفك يسمح بذلك. تعمل التنبيهات فقط عندما تكون هذه الصفحة مفتوحة وهاتفك غير مقفل. أوقف الوضع الصامت في هاتفك لتتمكن من سماع الصوت.",
     turnOn: "تشغيل الصوت",
     on: "الصوت قيد التشغيل",
+    failed: "تعذّر تشغيل الصوت على هذا الهاتف. راقب هذه الشاشة لمعرفة متى يتم استدعاؤك.",
+    turnOff: "إيقاف الصوت",
+    offWhileCalled: "الصوت متوقف. اضغط على \"تشغيل الصوت\" للحصول على تنبيهات صوتية.",
   },
   pausedHeading: "الانتظار خارج الموقع متوقف مؤقتًا",
   textSize: { label: "حجم النص", normal: "عادي", large: "كبير", extraLarge: "كبير جدًا" },

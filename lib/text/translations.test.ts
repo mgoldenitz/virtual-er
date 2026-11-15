@@ -47,3 +47,10 @@ describe.each(Object.entries(LANGUAGES))("%s", (_name, text) => {
     expect(text.patient.fromHomeText).toHaveLength(3);
   });
 });
+
+// The "Sound is off" line tells the patient which button to tap, so it must use the button's exact words.
+describe.each(Object.entries({ en, ...LANGUAGES }))("%s sound lines", (_name, text) => {
+  it("names the Turn on sound button exactly", () => {
+    expect(text.sound.offWhileCalled).toContain(text.sound.turnOn);
+  });
+});

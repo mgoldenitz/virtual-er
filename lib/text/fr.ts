@@ -1,6 +1,8 @@
 // Patient text in Canadian French. DRAFT: written by Gemini 3.1 Pro on 2026-11-10/11
 // (handoffs/archive/2026-11-10-gemini-translations-phase3.md) and not yet approved by a
-// fluent speaker. Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
+// handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
+// Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
 
 import type { PatientText } from "./en";
 
@@ -121,9 +123,12 @@ export const fr: PatientText = {
   },
   sound: {
     notice:
-      "Cette démonstration émet un son et vibre lorsque vous êtes appelé. Cela ne fonctionne que lorsque cette page est ouverte et que votre téléphone est déverrouillé.",
+      "Cette démonstration peut émettre un son quand vous êtes appelé. Elle vibre aussi si votre téléphone le permet. Les alertes fonctionnent seulement quand cette page est ouverte et que votre téléphone est déverrouillé. Désactivez le mode silencieux de votre téléphone pour entendre le son.",
     turnOn: "Activer le son",
     on: "Le son est activé",
+    failed: "Le son n'a pas pu démarrer sur ce téléphone. Regardez cet écran pour voir quand vous êtes appelé.",
+    turnOff: "Désactiver le son",
+    offWhileCalled: "Le son est désactivé. Appuyez sur « Activer le son » pour avoir des alertes sonores.",
   },
   pausedHeading: "L'attente hors site est suspendue",
   textSize: { label: "Taille du texte", normal: "Normale", large: "Grande", extraLarge: "Très grande" },

@@ -1,6 +1,8 @@
 // Patient text in Urdu. DRAFT: written by Gemini 3.1 Pro on 2026-11-10/11
 // (handoffs/archive/2026-11-10-gemini-translations-phase3.md) and not yet approved by a
-// fluent speaker. Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
+// handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
+// Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
 
 import type { PatientText } from "./en";
 
@@ -121,9 +123,12 @@ export const ur: PatientText = {
   },
   sound: {
     notice:
-      "جب آپ کو بلایا جاتا ہے تو یہ ڈیمو آواز بجاتا ہے اور وائبریٹ کرتا ہے۔ یہ صرف اس وقت کام کرتا ہے جب یہ پیج کھلا ہو اور آپ کا فون ان لاک ہو۔",
+      "جب آپ کو بلایا جاتا ہے تو یہ ڈیمو آواز بجا سکتا ہے۔ اگر آپ کا فون اجازت دے تو یہ وائبریٹ بھی کرتا ہے۔ الرٹس صرف اس وقت کام کرتے ہیں جب یہ پیج کھلا ہو اور آپ کا فون ان لاک ہو۔ آواز سننے کے لیے اپنے فون کو سائلنٹ سے ہٹا دیں۔",
     turnOn: "آواز آن کریں",
     on: "آواز آن ہے",
+    failed: "اس فون پر آواز شروع نہیں ہو سکی۔ یہ دیکھنے کے لیے اس اسکرین کو دیکھتے رہیں کہ آپ کو کب بلایا جاتا ہے۔",
+    turnOff: "آواز آف کریں",
+    offWhileCalled: "آواز آف ہے۔ آواز والے الرٹس کے لیے \"آواز آن کریں\" پر ٹیپ کریں۔",
   },
   pausedHeading: "آف سائٹ انتظار روکا ہوا ہے",
   textSize: { label: "ٹیکسٹ کا سائز", normal: "نارمل", large: "بڑا", extraLarge: "بہت بڑا" },

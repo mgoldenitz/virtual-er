@@ -1,6 +1,8 @@
 // Patient text in Mandarin (Simplified Chinese). DRAFT: written by Gemini 3.1 Pro on 2026-11-10/11
 // (handoffs/archive/2026-11-10-gemini-translations-phase3.md) and not yet approved by a
-// fluent speaker. Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
+// handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
+// Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
 
 import type { PatientText } from "./en";
 
@@ -121,9 +123,12 @@ export const zh: PatientText = {
   },
   sound: {
     notice:
-      "当您被叫到时，此演示会播放声音并振动。这仅在页面打开且手机未锁定时有效。",
+      "当您被叫到时，此演示可以播放声音。如果您的手机允许，它也会振动。警报仅在此页面打开且手机未锁定时有效。请关闭手机的静音模式，以便听到声音。",
     turnOn: "开启声音",
     on: "声音已开启",
+    failed: "此手机无法启动声音。请留意此屏幕，查看何时叫到您。",
+    turnOff: "关闭声音",
+    offWhileCalled: "声音已关闭。点击“开启声音”以接收声音警报。",
   },
   pausedHeading: "院外候诊已暂停",
   textSize: { label: "文本大小", normal: "正常", large: "大", extraLarge: "超大" },
