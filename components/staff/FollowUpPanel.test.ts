@@ -1,6 +1,8 @@
 // Checks the words that screen readers hear for a staff flag: they leave out the minute count,
 // so they do not change (and are not read again) every minute.
 
+import type { ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { checkInAtDesk } from "@/lib/visitActions";
 import { flagFor } from "./FollowUpPanel";
@@ -18,6 +20,12 @@ describe("flagFor spoken words", () => {
     const flag = flagFor({ kind: "on_way_not_arrived" }, visit, now);
     expect(flag?.spoken).toBe("On the way, not arrived.");
     expect(flag?.text).toContain("ago");
+  });
+
+  it("shows 1h 35min on screen and gives screen readers the full words", () => {
+    const visit = { ...checkInAtDesk(input, "waiting", new Date(minutesAgo(200))), confirmed_at: minutesAgo(95) };
+    const html = renderToStaticMarkup(flagFor({ kind: "on_way_not_arrived" }, visit, now)?.body as ReactElement);
+    expect(html).toContain('Confirmed <span aria-hidden="true">1h 35min</span><span class="sr-only">1 hour 35 minutes</span> ago.');
   });
 
   it("speaks the full words when the flag has no time in it", () => {

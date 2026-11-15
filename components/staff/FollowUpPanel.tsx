@@ -11,6 +11,8 @@ import { formatMinutes } from "@/lib/duration";
 import { minutesBetween } from "@/lib/queue";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
+import type { ReactNode } from "react";
+import { Duration } from "./Duration";
 
 type Props = {
   visit: Visit;
@@ -25,8 +27,11 @@ const RED = "border-red-800 bg-red-50 text-red-900";
 
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-/** One flag: the words on screen, their colour, and the words screen readers hear. */
-type Flag = { text: string; tone: string; spoken: string };
+/**
+ * One flag: its words, their colour, and the words screen readers hear. `body`, when there, is what
+ * the screen shows in place of `text` (with a time that screen readers hear in full words).
+ */
+type Flag = { text: string; tone: string; spoken: string; body?: ReactNode };
 
 /** A flag whose spoken words are the same as its words on screen. */
 const same = (text: string, tone: string): Flag => ({ text, tone, spoken: text });
@@ -59,6 +64,11 @@ export function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): Flag 
         text: `On the way, not arrived. Confirmed ${formatMinutes(since)} ago.`,
         tone: AMBER,
         spoken: "On the way, not arrived.",
+        body: (
+          <>
+            On the way, not arrived. Confirmed <Duration minutes={since} /> ago.
+          </>
+        ),
       };
     }
     default:
@@ -86,7 +96,7 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
         <div className="mt-2 space-y-2" data-testid="follow-up">
           {flag && (
             <p className={`rounded-lg border-2 p-2 font-semibold ${flag.tone}`} data-testid={`flag-${followUp.kind}`}>
-              {flag.text}
+              {flag.body ?? flag.text}
             </p>
           )}
           {canPhone && (

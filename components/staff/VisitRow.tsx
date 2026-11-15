@@ -3,14 +3,14 @@
 // One patient in the staff's off-site list: minutes waited, call-back progress and actions.
 // The no-response flags and phone-call buttons are in FollowUpPanel.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from "@/data/staffActions";
-import { formatMinutes } from "@/lib/duration";
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
 import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
+import { Duration } from "./Duration";
 import { FollowUpPanel } from "./FollowUpPanel";
 import { NewLinkPanel } from "./NewLinkPanel";
 
@@ -25,20 +25,28 @@ type Props = {
 const NOT_SAVED = "Not saved: the database could not be reached. Try again.";
 const CHANGED = "The list just changed. Check this patient again.";
 
-function progress(visit: Visit, now: Date): string {
+function progress(visit: Visit, now: Date): ReactNode {
   if (visit.status === "waiting") {
     // "I'm still here" only shows the patient is still following the visit; never a health check.
     const lastTap = lastTapThisWait({ triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at });
-    return lastTap
-      ? `Waiting off-site · last "I'm still here" ${formatMinutes(minutesBetween(lastTap, now))} ago`
-      : "Waiting off-site";
+    if (!lastTap) return "Waiting off-site";
+    return (
+      <>
+        {`Waiting off-site · last "I'm still here" `}
+        <Duration minutes={minutesBetween(lastTap, now)} /> ago
+      </>
+    );
   }
   const sinceCall = visit.called_at ? minutesBetween(visit.called_at, now) : 0;
-  const steps = [`Called ${formatMinutes(sinceCall)} ago`];
+  const steps: string[] = [];
   // seen_at means the called screen was displayed on the phone, not that the patient read it.
   if (visit.seen_at) steps.push("Seen (screen shown, not necessarily read)");
   if (visit.status === "on_the_way") steps.push("On the way");
-  return steps.join(" · ");
+  return (
+    <>
+      Called <Duration minutes={sinceCall} /> ago{steps.map((step) => ` · ${step}`).join("")}
+    </>
+  );
 }
 
 export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
@@ -70,7 +78,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-mono text-xl font-bold tracking-widest">{visit.code}</p>
         <p>
-          CTAS {visit.ctas_level} · waited <strong>{formatMinutes(waited)}</strong>
+          CTAS {visit.ctas_level} · waited <strong><Duration minutes={waited} /></strong>
         </p>
       </div>
       <p className="mt-1 font-semibold" data-testid="progress">
