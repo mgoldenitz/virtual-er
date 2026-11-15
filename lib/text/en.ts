@@ -89,7 +89,6 @@ export const en = {
     onMyWay: "I'm on my way",
     sending: "Sending…",
     confirmed: "Thank you. Staff know you are on your way.",
-    alertLimits: "Demo limits: alerts on this page only work while it is open and your phone is unlocked.",
     notSaved: "Your answer did not save. Staff do not know you tapped it. Please try again or go to the desk.",
 
     fromHomeHeading: "Status: Started from home, not yet triaged",

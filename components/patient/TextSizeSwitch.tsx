@@ -40,7 +40,7 @@ export function TextSizeSwitch({ language }: { language: string }) {
                 value={option}
                 checked={checked}
                 onChange={() => chooseTextSize(option)}
-                className="h-5 w-5"
+                className="h-5 w-5 shrink-0"
               />
               <span>{words[option]}</span>
             </label>

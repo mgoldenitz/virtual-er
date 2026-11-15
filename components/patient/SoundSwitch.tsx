@@ -44,7 +44,7 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   }, [status, soundOn]);
 
   return (
-    <section className="clean-card space-y-2">
+    <div className="clean-card space-y-2">
       <p className="text-base">{t.notice}</p>
       {soundOn ? (
         <p ref={onWords} tabIndex={-1} className="font-semibold" data-testid="sound-on">
@@ -55,6 +55,6 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
           {t.turnOn}
         </Button>
       )}
-    </section>
+    </div>
   );
 }

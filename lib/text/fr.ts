@@ -73,7 +73,6 @@ export const fr: PatientText = {
     onMyWay: "Je suis en route",
     sending: "Envoi en cours…",
     confirmed: "Merci. Le personnel sait que vous êtes en route.",
-    alertLimits: "Limites de la démonstration : les alertes sur cette page ne fonctionnent que lorsqu'elle est ouverte et que votre téléphone est déverrouillé.",
     notSaved: "Votre réponse n'a pas été enregistrée. Le personnel ne sait pas que vous avez appuyé dessus. Veuillez réessayer ou vous rendre au bureau.",
     fromHomeHeading: "Statut : Commencée depuis la maison, pas encore triée",
     fromHomeText: [

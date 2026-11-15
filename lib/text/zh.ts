@@ -73,7 +73,6 @@ export const zh: PatientText = {
     onMyWay: "我正在路上",
     sending: "正在发送…",
     confirmed: "谢谢。工作人员知道您正在路上。",
-    alertLimits: "演示限制：此页面上的警报仅在页面打开且手机未锁定时有效。",
     notSaved: "您的回答未保存。工作人员不知道您点击了它。请重试或去前台。",
     fromHomeHeading: "状态：在家开始，尚未分诊",
     fromHomeText: [

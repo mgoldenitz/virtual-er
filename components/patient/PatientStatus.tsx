@@ -53,7 +53,6 @@ function Called({ view, onOnMyWay, sending, t }: Props & { t: PatientText }) {
           {sending ? p.sending : p.onMyWay}
         </Button>
       )}
-      <p className="text-sm text-slate-800">{p.alertLimits}</p>
     </section>
   );
 }
