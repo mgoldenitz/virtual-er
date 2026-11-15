@@ -16,6 +16,7 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   const soundOn = state === "on";
   const onWords = useRef<HTMLParagraphElement>(null);
   const turnOnButton = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLDivElement>(null);
   // Goes up by 1 on each "Turn on sound" and "Turn off sound" tap. A slow result that belongs to an
   // earlier tap (a test beep, an unlock or a repeat beep) sees a different number and changes nothing.
   const attempt = useRef(0);
@@ -30,6 +31,8 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   async function turnOn() {
     if (busy.current) return;
     busy.current = true;
+    // Clear an old failed line first, so screen readers read it again if this try fails too.
+    setState("off");
     const mine = ++attempt.current;
     try {
       const ok = await unlockSound();
@@ -61,12 +64,23 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
     stopVibration();
   }
 
+  /**
+   * True when moving focus takes it from nobody: focus is inside the sound box, or on the page body
+   * (after a phone tap, or because the focused "Sound is on" words just went away). False when the
+   * patient is on another button, such as "I'm still here", so a background beep failure leaves it there.
+   */
+  function focusNearBox(): boolean {
+    const focused = document.activeElement;
+    if (!focused || focused === document.body) return true;
+    return box.current?.contains(focused) === true;
+  }
+
   // Focus follows the change, so it never drops to the top of the page when a button goes away.
-  // On: move to the words "Sound is on" (read out when focused). From on to off or failed, for any
-  // reason (a tap, a failed test beep, a failed repeat beep): move to "Turn on sound".
+  // On: move to the words "Sound is on" (read out when focused). From on to off, or to failed (a
+  // fast failure can skip "on" on screen): move to "Turn on sound", unless focus is somewhere else.
   useEffect(() => {
     if (state === "on") onWords.current?.focus();
-    else if (wasOn.current) turnOnButton.current?.focus();
+    else if ((wasOn.current || state === "failed") && focusNearBox()) turnOnButton.current?.focus();
     wasOn.current = state === "on";
   }, [state]);
 
@@ -103,7 +117,7 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   const note = soundNote(status, state);
 
   return (
-    <div className="clean-card space-y-2">
+    <div ref={box} className="clean-card space-y-2">
       <p className="text-base">{t.notice}</p>
       {soundOn ? (
         <>

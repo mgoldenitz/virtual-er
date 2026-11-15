@@ -193,7 +193,7 @@ describe("SoundSwitch while called", () => {
     act(() =>
       root.render(
         <>
-          <button>I'm on my way</button>
+          <button>{"I'm on my way"}</button>
           <SoundSwitch status="called" language="en" />
         </>,
       ),
