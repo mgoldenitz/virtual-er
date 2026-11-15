@@ -30,7 +30,8 @@ function waitAtMost(ms: number): Promise<void> {
  */
 export async function unlockSound(): Promise<boolean> {
   try {
-    if (!context) {
+    // A phone can close the player (for example when headphones change); then make a new one.
+    if (!context || context.state === "closed") {
       const AudioClass = audioContextClass();
       if (!AudioClass) return false;
       context = new AudioClass();
