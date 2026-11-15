@@ -3,6 +3,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
+import { InlineScript } from "@/components/InlineScript";
+import { textSizeScript } from "@/lib/textSize";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,6 +20,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     // ignores attribute differences on these two tags only; mismatches inside the app's own
     // screens are still reported.
     <html lang="en" className="h-full" suppressHydrationWarning>
+      {/* A plain script, not next/script: in the App Router, beforeInteractive runs the code later,
+          so the page would still flash at Normal size. */}
+      <head>
+        <InlineScript html={textSizeScript()} />
+      </head>
       <body className="flex min-h-full flex-col bg-white text-slate-900" suppressHydrationWarning>
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />

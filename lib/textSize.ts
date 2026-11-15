@@ -2,6 +2,9 @@
 
 export const TEXT_SIZES = ["normal", "large", "extraLarge"] as const;
 
+/** The browser storage key that remembers the chosen size on this phone. */
+export const TEXT_SIZE_KEY = "vwr.textSize";
+
 export type TextSize = (typeof TEXT_SIZES)[number];
 
 const ROOT_FONT_SIZES: Record<TextSize, string> = {
@@ -18,4 +21,25 @@ export function isTextSize(value: unknown): value is TextSize {
 /** The font size of the whole page. Tailwind sizes are in rem, so all text and spacing grow together. */
 export function rootFontSize(size: TextSize): string {
   return ROOT_FONT_SIZES[size];
+}
+
+/**
+ * A short plain-JavaScript script for the page's <head>. It sets the page font size before the first
+ * paint on patient screens, so a patient who chose a larger size does not see the page at Normal
+ * size first. It does nothing outside /patient, and does nothing if browser storage is blocked.
+ * The key and the sizes are written in as JSON, so they are defined only in this file.
+ */
+export function textSizeScript(): string {
+  return `(function () {
+  if (!location.pathname.startsWith("/patient")) return;
+  try {
+    var saved = localStorage.getItem(${JSON.stringify(TEXT_SIZE_KEY)});
+    var sizes = ${JSON.stringify(ROOT_FONT_SIZES)};
+    if (saved && Object.prototype.hasOwnProperty.call(sizes, saved)) {
+      document.documentElement.style.fontSize = sizes[saved];
+    }
+  } catch {
+    // Storage blocked: the page stays at Normal size.
+  }
+})();`;
 }

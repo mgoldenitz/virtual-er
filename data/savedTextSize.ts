@@ -2,9 +2,8 @@
 // Nothing else about the patient is stored.
 
 import { useSyncExternalStore } from "react";
-import { isTextSize, type TextSize } from "@/lib/textSize";
+import { isTextSize, TEXT_SIZE_KEY, type TextSize } from "@/lib/textSize";
 
-const TEXT_SIZE_KEY = "vwr.textSize";
 const listeners = new Set<() => void>();
 let chosen: TextSize | undefined; // undefined = not read from storage yet
 
