@@ -57,6 +57,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 - No file over 300 lines. Split it before it gets there.
 - Before writing anything new, check whether it already exists and reuse it.
 - Clean up one folder at a time, without changing what the app does. Check the app still works after each folder, then make a save point.
+- In messages to me, put status names, file names and code words in backticks (`waiting`, not waiting), so I do not read them as plain English.
 
 ## Remind me when another model or agent is due
 
