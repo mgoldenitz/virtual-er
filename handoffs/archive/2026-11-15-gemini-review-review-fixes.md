@@ -1746,3 +1746,183 @@ index af5a3b7..870eac7 100644
 +})();`;
 +}
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-15:
+
+a. Bugs and state errors in components/patient/SoundSwitch.tsx and components/patient/alertSound.ts
+Closed AudioContext is never recreated in unlockSound()
+
+File: components/patient/alertSound.ts (unlockSound)
+
+What goes wrong: unlockSound() only creates a new AudioContext when !context. On iOS Safari and Android Chrome, an AudioContext can transition to state === "closed" (for example, after OS audio session reclamation or Bluetooth/headphone route changes). Once context.state === "closed", context is still non-null, so context.resume() rejects with InvalidStateError or resolves still "closed", locking the patient in "failed" on every tap until they reload the page.
+
+A way to see it happen: Tap "Turn on sound", close the context in DevTools (AudioContext.prototype.close or simulating an interrupted/closed audio session on mobile Safari), then tap "Turn on sound" again: it fails permanently.
+
+Smallest fix: Recreate the context when closed: if (!context || context.state === "closed") { ... }.
+
+Race condition between turnOn()'s await playAlert() and turnOff() or a status change
+
+File: components/patient/SoundSwitch.tsx (turnOn, turnOff)
+
+What goes wrong: While status === "waiting", turnOn() sets setState("on") (immediately showing "Sound is on" and "Turn off sound") before awaiting playAlert(), which can wait up to 1000 ms (RESUME_WAIT_MS). If the patient taps "Turn off sound" during that second, turnOff() sets state to "off", and when playAlert() then resolves false, turnOn() overwrites "off" with "failed". In addition, busy.current remains true after turnOff() during that second, silently ignoring an immediate re-tap on "Turn on sound", and turnOn() reads a stale status if the visit becomes "called" mid-await (playing a duplicate beep alongside the effect).
+
+A way to see it happen: Stub playAlert() to resolve false after 500 ms, tap "Turn on sound" while waiting, and tap "Turn off sound" within 500 ms: the UI briefly switches to "Turn on sound" and then flips to "failed".
+
+Smallest fix: Keep an incrementing attempt ref (const attempt = useRef(0)), increment it in both turnOn() and turnOff(), reset busy.current = false in turnOff(), and ignore stale async completions when attempt.current !== id.
+
+Race condition between useEffect tick() and user toggles / overlapping ticks
+
+File: components/patient/SoundSwitch.tsx (useEffect tick) and components/patient/alertSound.ts (playAlert)
+
+What goes wrong: When AudioContext is suspended after returning from the background on iOS Safari, tick() calls playAlert(), which waits up to 1000 ms. If the patient taps "Turn off sound" and immediately taps "Turn on sound" within that 1000 ms, the earlier playAlert() promise resolves false and runs setState("off"), turning sound back off after the user just re-enabled it. Furthermore, if visibilitychange and the 30-second setInterval fire within the same 1000 ms, two concurrent playAlert() calls run and both trigger vibrate().
+
+A way to see it happen: With status === "called" and soundOn === true, suspend AudioContext, trigger visibilitychange, and within 1 s toggle sound off and back on: the delayed .then((ok) => { if (!ok) setState("off"); }) turns sound back off.
+
+Smallest fix: Gate tick()'s .then(...) on the same attempt.current generation ref and skip starting a new tick() while a resume check is already in flight.
+
+Potential unhandled promise rejection when waitAtMost(1000) wins Promise.race
+
+File: components/patient/alertSound.ts (playAlert)
+
+What goes wrong: In await Promise.race([ctx.resume(), waitAtMost(RESUME_WAIT_MS)]), if waitAtMost(1000) resolves first on a stalled mobile AudioContext and ctx.resume() rejects afterward (e.g., NotAllowedError or InvalidStateError), the rejection happens after Promise.race has already settled and is never caught.
+
+A way to see it happen: Mock ctx.resume() to reject after 1200 ms and call playAlert(): playAlert() returns false at 1000 ms, followed 200 ms later by an unhandled rejection.
+
+Smallest fix: Attach .catch(() => undefined) directly to ctx.resume() inside Promise.race.
+
+b. Accessibility
+Focus after "Turn off sound" moves to "Turn on sound" without announcing that sound turned off
+
+File: components/patient/SoundSwitch.tsx (turnOff, useEffect on state)
+
+What goes wrong: Tapping "Turn off sound" unmounts "Sound is on" and moves focus straight to <Button ref="{turnOnButton}">Turn on sound</Button>. A screen reader announces "Turn on sound, button"—the opposite action—with no spoken confirmation that sound is now off, and skips reading "Sound is off..." (offWhileCalled) rendered below the button.
+
+A way to see it happen: Turn on a screen reader (VoiceOver or NVDA), tap "Turn on sound", then tap "Turn off sound": the screen reader only announces "Turn on sound, button".
+
+Smallest fix: Announce "Sound is off" via a persistent role="status" region (or associate the "Sound is off" status text with the button via aria-describedby) when turnOff() runs.
+
+Missing live regions on "failed" and "offWhileCalled" lines, plus focus drop on async failure
+
+File: components/patient/SoundSwitch.tsx (note === "failed" and note === "offWhileCalled")
+
+What goes wrong: Neither <p data-testid="sound-failed"> nor <p data-testid="sound-off-called"> is inside a live region (role="status"). When unlockSound() fails, focus stays on "Turn on sound" and screen readers read nothing at all—making the button appear broken. Worse, if playAlert() fails asynchronously after setState("on") already focused "Sound is on", unmounting "Sound is on" drops focus to document.body while "failed" (or "offWhileCalled" during tick()) appears silently below.
+
+A way to see it happen: Run delete window.AudioContext in DevTools with a screen reader active and press "Turn on sound": nothing is spoken when data-testid="sound-failed" appears.
+
+Smallest fix: Render a persistent <div role="status"> inside SoundSwitch that holds note so "failed" (and "offWhileCalled" when sound drops off mid-call) is announced politely without losing focus.
+
+Teal brand contrast on .staff-backdrop and <body> token mismatch
+
+File: app/globals.css (.theme-staff, .staff-backdrop) and app/layout.tsx (<body>)
+
+What goes wrong: Inside the 82%-white frosted cards, .theme-staff's --color-brand (#0e6f78) achieves 5.52:1 contrast, passing WCAG 2.2 AA (4.5:1). However, directly over the darkest radial gradient corner of .staff-backdrop (rgb(14 111 120 / 0.2) over #edf5f5), #0e6f78 drops to 4.09:1 (below 4.5:1), so any text-brand link placed outside a frosted panel fails AA. Separately, app/layout.tsx still hardcodes bg-white text-slate-900 on <body>, overriding the new --color-canvas (#f3f7f7) and --color-ink (#13212b) tokens.
+
+A way to see it happen: Place a text-brand link directly on .staff-backdrop outside a .glass-panel (or inspect <body> computed background color on / or /patient).
+
+Smallest fix: Use #0f5e66 for --color-brand in .theme-staff as well (5.17:1 even on the darkest corner of .staff-backdrop and 7.5:1 on white), and replace bg-white text-slate-900 on <body> in app/layout.tsx with bg-canvas text-ink.
+
+Compact hours format ("1h 35min", "2h") is mispronounced by screen readers
+
+File: lib/duration.ts (formatMinutes), components/staff/VisitRow.tsx, components/staff/ExpectedArrivals.tsx, components/staff/FollowUpPanel.tsx
+
+What goes wrong: Removing the space between digits and unit letters ("1h", "35min", "2h") causes screen readers to spell "1 aitch" / "2 aitch" and pronounce "35min" as the word "min" (rhyming with "tin"), whereas < 60 outputs "45 min" with a space.
+
+A way to see it happen: Navigate a staff VisitRow with a 95-minute or 120-minute wait using VoiceOver or NVDA.
+
+Smallest fix: Either spell out "1 hour 35 minutes" / "2 hours" (or "1 hr 35 min" with spaces) in formatMinutes, or keep the short visual string and render an aria-label / <span className="sr-only"> with expanded words.
+
+c. formatMinutes edge cases and the regex in components/staff/FollowUpPanel.tsx
+FollowUpPanel.tsx regex is fragile against periods and string ordering
+
+File: components/staff/FollowUpPanel.tsx (spoken line 65)
+
+What goes wrong: .replace(/ Confirmed [^.]+ ago\./, "") strips the duration by matching [^.]+ after a leading space. If a duration format ever includes a decimal point (e.g., 1.5h) or another period, [^.]+ stops early and the regex fails to match—causing the screen reader to re-announce the flag every minute. It also breaks if "Confirmed ... ago." ever appears at the start of flag.text without a leading space, and needlessly couples FollowUpPanel to formatMinutes's exact output.
+
+A way to see it happen: Pass a flag.text containing a decimal duration (such as "On the way, not arrived. Confirmed 1.5h ago.") into FollowUpPanel: spoken leaves "Confirmed 1.5h ago." intact.
+
+Smallest fix: Return { text, spoken, tone } directly from flagFor (with spoken: "On the way, not arrived." for on_way_not_arrived) instead of stripping substrings with a regex.
+
+formatMinutes spacing inconsistency and ungrouped multi-day hours
+
+File: lib/duration.ts (formatMinutes)
+
+What goes wrong: Values under 60 include a space ("45 min"), while values from 60 remove the space ("1h 35min"), and multi-day waits (e.g., a stale demo visit open for 1500 minutes) render as "25h" rather than rolling into days. (Numeric edge cases—0, negatives, decimals, NaN, Infinity, and exact multiples of 60—all return valid strings without throwing.)
+
+A way to see it happen: Call formatMinutes(45) vs formatMinutes(95) vs formatMinutes(1500).
+
+Smallest fix: Keep spacing consistent across all outputs (e.g., "45 min" and "1 hr 35 min" / "2 hr").
+
+d. Anything a test claims but does not really prove
+NewLinkPanel.test.tsx never tests the confirmation step or focus return
+
+File: components/staff/NewLinkPanel.test.tsx
+
+What goes wrong: The test only calls renderToStaticMarkup on the initial "idle" state. It never verifies that tapping "Issue a new link" reveals "Yes, issue a new link" and "Cancel", that focus moves to "Yes" and back to "Issue a new link", or that saving={true} blocks confirm().
+
+A way to see it happen: Break onClick={() => setMode("confirm")} or if (saving) return; in NewLinkPanel.tsx and run npm test: NewLinkPanel.test.tsx still passes.
+
+Smallest fix: Add a DOM interaction test (using react-dom/client + act) that clicks "Issue a new link", verifies "Yes, issue a new link" appears and receives focus, and checks "Cancel" and saving={true}.
+
+SoundSwitch.test.tsx never tests failure states, "Turn off sound", or the double-tap guard
+
+File: components/patient/SoundSwitch.test.tsx
+
+What goes wrong: Every test in SoundSwitch.test.tsx uses renderToStaticMarkup on initial render. None of the new interactive behaviours—unlockSound() returning false (sound-failed), playAlert() returning false on test beep or repeat tick, busy.current blocking a double-tap, or "Turn off sound" calling stopVibration()—are exercised.
+
+A way to see it happen: Remove setState("failed") or if (busy.current) return; in SoundSwitch.tsx and run npm test: all tests still pass.
+
+Smallest fix: Mount SoundSwitch in a DOM test and simulate clicks with mocked unlockSound / playAlert resolving true and false.
+
+CheckInPanel.test.tsx skips offsitePaused={true} and form submission
+
+File: components/staff/CheckInPanel.test.tsx
+
+What goes wrong: The file tests offsitePaused={null} and offsitePaused={false} via renderToStaticMarkup, but never renders offsitePaused={true} or submits the form (Enter -> finish("waiting")) while offsitePaused is null or true.
+
+A way to see it happen: Change offsitePaused ? ... : ... on line 214 of CheckInPanel.tsx and run npm test: CheckInPanel.test.tsx does not catch it.
+
+Smallest fix: Add a test case for render(true) verifying the paused banner and "Waits on-site (off-site waiting paused)" button label.
+
+sitePauses.test.ts hides a bug when state.pauses is null by running a priming save first
+
+File: data/sitePauses.test.ts and data/sitePauses.ts (setSitePaused line 74)
+
+What goes wrong: setSitePaused only updates the store immediately when state.pauses is already non-null (if (result !== "not_saved" && state.pauses)). If the initial /api/site-status read failed (state.pauses === null) or hadn't finished yet, a save does not update the store immediately. sitePauses.test.ts masks this by running an extra await setSitePaused("A", true) first just to populate the module-level state.pauses before testing the second save.
+
+A way to see it happen: Call setSitePaused("A", true) while pauseStateNow().pauses is null and fetch is held: pauseStateNow().pauses stays null until fetch resolves.
+
+Smallest fix: In data/sitePauses.ts, initialize { A: false, B: false, [site]: paused } when state.pauses is null (or test the first save directly without a priming save).
+
+components/patient/alertSound.ts has no unit tests at all
+
+File: lib/calledAlert.test.ts (and missing components/patient/alertSound.test.ts)
+
+What goes wrong: lib/calledAlert.test.ts only checks numeric constants (BEEP_VOLUME > 0.3, BEEP_SECONDS < 3, BEEP_HZ). The actual audio/vibration implementation in alertSound.ts—unlockSound(), playAlert()'s 1-second Promise.race resume timeout, vibrate() running when context is missing/suspended, and stopVibration()—is completely untested.
+
+A way to see it happen: Break Promise.race or remove vibrate() in alertSound.ts and run npm test: all 210 tests pass.
+
+Smallest fix: Add components/patient/alertSound.test.ts with fake timers and a stubbed AudioContext / navigator.vibrate covering unlockSound, playAlert resume timeout, and stopVibration.
+</pasted_content id="d169">
+
+### Claude's check (2026-11-15)
+
+I read each point against the code on this branch.
+
+Accepted:
+- a1, closed player: correct. `unlockSound()` makes a player only when there is none. Fix: make a new one when `state` is `closed`.
+- a2 and a3, late results: correct. A Turn off during the 1 s wait for the test beep can be undone by the late `failed` result, and a late tick can set `off`. Fix: an attempt counter in SoundSwitch; `turnOff` also clears `busy`; one tick at a time.
+- a4, late rejection of `resume()`: correct. Fix: `.catch` inside the race.
+- b2, the failed and sound-off lines are not read out, and focus drops when "Sound is on" goes away after a failure: correct. Fix: one `role="status"` box that is always there; focus moves to "Turn on sound" on any change from on to not on.
+- b3, staff teal on the darkest backdrop corner (4.09:1) and the body colours: plausible; I did not measure it. Fix: `.theme-staff` brand #0f5e66 and body `bg-canvas text-ink`; the contrast script must show 4.5:1 or more.
+- b4, "1h 35min" for screen readers: the owner chose hidden full words (screen keeps "1h 35min").
+- c1, the regex in FollowUpPanel: correct. Fix: `flagFor` gives the spoken words.
+- d1, d2, d3, d5, missing tests: correct. Fix: happy-dom click tests for SoundSwitch and NewLinkPanel, a paused render of CheckInPanel, and alertSound tests.
+
+Rejected:
+- d4, filling an unknown pause switch with `{ A: false, B: false }`: that would say the other site is not paused when nobody knows. Unknown stays unknown; the `load()` after each save fills it.
+- c2, a day unit ("25h"): no demo visit stays open for a day. Noted in known-issues.md.
+- b1, the extra announcement: covered by the status box in b2.
+
+The plan for the fixes is C:/Users/mgold/.claude/plans/calm-soaring-hearth.md (approved 2026-11-15).
