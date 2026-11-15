@@ -3,12 +3,13 @@
 
 import type { PatientView } from "./patientView";
 
-/** Not written yet: the test in deadToken.test.ts shows the bug first. */
+/**
+ * True when there is a token and the database answered "no visit" for it (null). Still
+ * loading (undefined) or a failed read ("unavailable") is never dead: the visit may be fine.
+ */
 export function isDeadToken(
   token: string | null | undefined,
   shown: PatientView | null | "unavailable" | undefined,
 ): boolean {
-  void token;
-  void shown;
-  return false;
+  return typeof token === "string" && shown === null;
 }

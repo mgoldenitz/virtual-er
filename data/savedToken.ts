@@ -22,7 +22,8 @@ export function saveToken(token: string): void {
   }
 }
 
-function forgetSavedToken(): void {
+/** Remove the saved token, for a damaged link or a token that no longer opens a visit. */
+export function forgetSavedToken(): void {
   try {
     window.localStorage.removeItem(TOKEN_KEY);
   } catch {

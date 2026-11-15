@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
 import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
-import { takeTokenFromLink } from "@/data/savedToken";
+import { forgetSavedToken, takeTokenFromLink } from "@/data/savedToken";
 import { EmergencyLine } from "@/components/EmergencyLine";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PatientShell } from "@/components/PatientShell";
@@ -16,6 +16,7 @@ import { SoundSwitch } from "@/components/patient/SoundSwitch";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
+import { isDeadToken } from "@/lib/deadToken";
 import { fill, textFor } from "@/lib/text";
 import { languageInfo, patientLanguage } from "@/lib/text/languages";
 
@@ -43,6 +44,14 @@ export default function PatientPage() {
   }, []);
 
   const result = usePatientView(token ?? null);
+
+  // The token opens no visit any more (for example staff issued a new link for a lost phone):
+  // say the link did not work, and forget the token so this phone never tries it again.
+  const deadToken = isDeadToken(token, result);
+  useEffect(() => {
+    if (deadToken) forgetSavedToken();
+  }, [deadToken]);
+  const linkFailed = brokenLink || deadToken;
   const loading = token === undefined || result === undefined;
   const unavailable = result === "unavailable";
   const view = result === "unavailable" ? null : result;
@@ -105,9 +114,9 @@ export default function PatientPage() {
       ) : !view ? (
         <section aria-labelledby="none-heading" className="clean-card space-y-2">
           <h2 id="none-heading" className="text-2xl font-bold">
-            {brokenLink ? p.brokenLinkHeading : p.noVisitHeading}
+            {linkFailed ? p.brokenLinkHeading : p.noVisitHeading}
           </h2>
-          {brokenLink && (
+          {linkFailed && (
             <p className="text-lg">{p.brokenLinkText}</p>
           )}
           <p className="text-lg">{p.findVisitHelp}</p>
