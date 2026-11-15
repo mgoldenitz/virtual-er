@@ -53,6 +53,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 - Screens go in app/. This is a Next.js App Router project, so each screen is a folder with a page.tsx (for example app/patient/page.tsx). Never create a pages/ folder; Next.js treats it as the older Pages Router.
 - Shared pieces (buttons, the footer, the 911 line, layout parts) go in components/.
+- Text on the screen uses straight quotes too ("I'm still here"), never &ldquo; or curly quote marks.
 - Saving and loading go in data/: Supabase calls, browser storage, and demo data.
 - Rules that decide things (line order, the no-response steps, the wait range, dashboard numbers) go in lib/, as small functions with tests.
 - One job per file.
