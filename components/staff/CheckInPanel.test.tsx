@@ -31,3 +31,13 @@ describe("CheckInPanel while the paused switch is not read", () => {
     expect(html).toContain("Start off-site waiting");
   });
 });
+
+describe("CheckInPanel while off-site waiting is paused", () => {
+  it("says it is paused and offers only on-site waiting", () => {
+    const html = render(true);
+    expect(html).toContain("Off-site waiting is paused at this site: the patient waits on-site.");
+    expect(html).not.toContain("Start off-site waiting");
+    expect(html).not.toContain("Offered, declined");
+    expect(html).toContain("Waits on-site");
+  });
+});
