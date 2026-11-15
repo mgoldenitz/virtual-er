@@ -24,8 +24,14 @@ function pickForm(forms: PluralForms, n: number, locale: string): string {
  * when there are no minutes). A negative or broken number counts as 0, as in formatMinutes().
  */
 export function formatDuration(minutes: number, words: DurationWords, end: "low" | "high" = "high"): string {
-  // TODO(human): build the words from hours and minutes with pickForm() and words.join.
-  return "";
+  const whole = Number.isFinite(minutes) && minutes > 0 ? Math.floor(minutes) : 0;
+  if (whole < 60) return pickForm(words.minute, whole, words.locale);
+  const hours = Math.floor(whole / 60);
+  const rest = whole % 60;
+  const hourForms = end === "low" && rest === 0 ? (words.hourLow ?? words.hour) : words.hour;
+  const hourText = pickForm(hourForms, hours, words.locale);
+  if (rest === 0) return hourText;
+  return fill(words.join, { h: hourText, m: pickForm(words.minute, rest, words.locale) });
 }
 
 /** The wait range line: "20 to 45 minutes" under an hour, else both ends in hours and minutes. */
