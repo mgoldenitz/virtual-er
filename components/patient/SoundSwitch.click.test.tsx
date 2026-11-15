@@ -38,6 +38,8 @@ const statusBox = () => container.querySelector('[role="status"]');
 async function press(words: string) {
   const target = button(words);
   if (!target) throw new Error(`No button "${words}"`);
+  // A real tap or Enter key puts focus on the button first; happy-dom's click() alone does not.
+  target.focus();
   await act(async () => target.click());
 }
 

@@ -16,16 +16,23 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   const soundOn = state === "on";
   const onWords = useRef<HTMLParagraphElement>(null);
   const turnOnButton = useRef<HTMLButtonElement>(null);
+  // Goes up by 1 on each "Turn on sound" and "Turn off sound" tap. A slow result that belongs to an
+  // earlier tap (a test beep, an unlock or a repeat beep) sees a different number and changes nothing.
+  const attempt = useRef(0);
   // True while a tap on "Turn on sound" is still being handled. Stops a double tap from running twice.
   const busy = useRef(false);
-  // True after "Turn off sound" is tapped, so focus can move to "Turn on sound" once it is back on screen.
-  const focusTurnOn = useRef(false);
+  // True while a repeat beep still waits for the player, so the next one does not start on top of it.
+  const beeping = useRef(false);
+  // True when the last state shown was "on", so focus can move when the sound goes off.
+  const wasOn = useRef(false);
 
   async function turnOn() {
     if (busy.current) return;
     busy.current = true;
+    const mine = ++attempt.current;
     try {
       const ok = await unlockSound();
+      if (mine !== attempt.current) return;
       if (!ok) {
         setState("failed");
         return;
@@ -33,39 +40,42 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
       setState("on");
       // When the visit is already called, the effect below plays the alert, so no test beep is needed.
       // If the test beep cannot play, say so now, not only when the patient is called.
-      if (status !== "called" && !(await playAlert())) setState("failed");
+      if (status !== "called") {
+        const played = await playAlert();
+        if (mine === attempt.current && !played) setState("failed");
+      }
     } finally {
-      busy.current = false;
+      // After "Turn off sound" the next tap belongs to a new attempt, which turnOff() already freed.
+      if (mine === attempt.current) busy.current = false;
     }
   }
 
   function turnOff() {
-    focusTurnOn.current = true;
+    attempt.current += 1;
+    busy.current = false;
     setState("off");
     stopVibration();
   }
 
-  // The button goes away after the tap, so move keyboard and screen-reader focus to the words
-  // "Sound is on" (they are read out when focused) instead of losing it to the top of the page.
+  // Focus follows the change, so it never drops to the top of the page when a button goes away.
+  // On: move to the words "Sound is on" (read out when focused). From on to off or failed, for any
+  // reason (a tap, a failed test beep, a failed repeat beep): move to "Turn on sound".
   useEffect(() => {
-    if (soundOn) onWords.current?.focus();
-  }, [soundOn]);
-
-  // After "Turn off sound", the "Turn on sound" button is back: move focus to it, so focus is not lost.
-  useEffect(() => {
-    if (state === "off" && focusTurnOn.current) {
-      focusTurnOn.current = false;
-      turnOnButton.current?.focus();
-    }
+    if (state === "on") onWords.current?.focus();
+    else if (wasOn.current) turnOnButton.current?.focus();
+    wasOn.current = state === "on";
   }, [state]);
 
   // Play now if the rule allows it, then again every ALERT_REPEAT_MS, and when the page comes back on screen.
   // If the phone will not play the beep, the box goes back to "off" so the page can say so.
   useEffect(() => {
     const tick = () => {
-      if (!shouldAlert(status, soundOn, document.visibilityState === "visible")) return;
+      if (beeping.current || !shouldAlert(status, soundOn, document.visibilityState === "visible")) return;
+      beeping.current = true;
+      const mine = attempt.current;
       void playAlert().then((ok) => {
-        if (!ok) setState("off");
+        beeping.current = false;
+        if (!ok && mine === attempt.current) setState("off");
       });
     };
     tick();
@@ -96,12 +106,15 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
           {t.turnOn}
         </Button>
       )}
-      {note === "failed" && <p data-testid="sound-failed">{t.failed}</p>}
-      {note === "offWhileCalled" && (
-        <p data-testid="sound-off-called" className="font-semibold">
-          {t.offWhileCalled}
-        </p>
-      )}
+      {/* Always on the page, so screen readers read a line when it appears. "Sound is on" stays out (see above). */}
+      <div role="status">
+        {note === "failed" && <p data-testid="sound-failed">{t.failed}</p>}
+        {note === "offWhileCalled" && (
+          <p data-testid="sound-off-called" className="font-semibold">
+            {t.offWhileCalled}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
