@@ -1,5 +1,7 @@
 // Plays the demo beep and vibration on the patient screen. iPhone Safari has no vibration for web pages, so only the beep plays there.
 
+import { BEEP_HZ, BEEP_SECONDS, BEEP_VOLUME } from "@/lib/calledAlert";
+
 /** The one shared sound player. It is made by unlockSound() after a tap, then reused. */
 let context: AudioContext | null = null;
 
@@ -28,7 +30,7 @@ export async function unlockSound(): Promise<boolean> {
   }
 }
 
-/** Plays one short beep (880 Hz, 0.4 seconds) and a vibration where the phone allows it. */
+/** Plays one short beep (BEEP_HZ, BEEP_SECONDS long, at BEEP_VOLUME; see lib/calledAlert.ts) and a vibration where the phone allows it. */
 export function playAlert(): void {
   try {
     if (context) {
@@ -39,14 +41,14 @@ export function playAlert(): void {
       const gain = ctx.createGain();
       const now = ctx.currentTime;
       oscillator.type = "sine";
-      oscillator.frequency.value = 880;
-      // Start at 0.3 and fade to almost silence at the end, so the beep does not click.
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+      oscillator.frequency.value = BEEP_HZ;
+      // Start at BEEP_VOLUME and fade to almost silence at the end, so the beep does not click.
+      gain.gain.setValueAtTime(BEEP_VOLUME, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + BEEP_SECONDS);
       oscillator.connect(gain);
       gain.connect(ctx.destination);
       oscillator.start(now);
-      oscillator.stop(now + 0.4);
+      oscillator.stop(now + BEEP_SECONDS);
     }
     if (typeof navigator.vibrate === "function") {
       navigator.vibrate([200, 100, 200]);

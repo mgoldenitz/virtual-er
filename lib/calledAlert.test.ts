@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { VisitStatus } from "./visit";
-import { ALERT_REPEAT_MS, shouldAlert, soundNote } from "./calledAlert";
+import { ALERT_REPEAT_MS, BEEP_HZ, BEEP_SECONDS, BEEP_VOLUME, shouldAlert, soundNote } from "./calledAlert";
 
 describe("shouldAlert", () => {
   it("alerts while called, with sound on and the page on screen", () => {
@@ -49,5 +49,21 @@ describe("soundNote", () => {
   it("shows no line while the sound is on", () => {
     expect(soundNote("called", "on")).toBeNull();
     expect(soundNote("waiting", "on")).toBeNull();
+  });
+});
+
+describe("the beep", () => {
+  it("is louder than before but never above full volume, where it would distort", () => {
+    expect(BEEP_VOLUME).toBeGreaterThan(0.3);
+    expect(BEEP_VOLUME).toBeLessThanOrEqual(1);
+  });
+
+  it("is short: well under the 3 seconds of WCAG 1.4.2", () => {
+    expect(BEEP_SECONDS).toBeLessThan(3);
+  });
+
+  it("stays in a pitch range that older ears hear well (500 to 1000 Hz)", () => {
+    expect(BEEP_HZ).toBeGreaterThanOrEqual(500);
+    expect(BEEP_HZ).toBeLessThanOrEqual(1000);
   });
 });
