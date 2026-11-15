@@ -11,3 +11,7 @@
 - navigator.onLine says "online" on Wi-Fi with no internet or behind a hotel or hospital sign-in page (captive portal), so the offline banner does not show there. Accepted for the demo (Gemini review 2026-11-14): the app does not test a real connection. It asks again when the page comes back on screen (`data/useOnline.ts`).
 - Open: Vercel firewall rate-limit rule for GET /api/site-status (owner).
 - Not done: when another staff screen pauses or resumes a site, the pause banner appears but is not announced to screen readers on this screen (Gemini pause review, point 4b, 2026-11-14).
+- TaskStop does not always end a Next dev server that Claude started; the node process can stay on port 3000. Check with `netstat -ano | findstr :3000` and ask the owner before stopping it.
+- Some files have CRLF line ends, and multi-line Edit calls can miss on them. Use a small Python edit script in the job's tmp folder that keeps the line ends.
+- `formatMinutes` has no day unit: 25 hours shows "25h". Accepted, because no demo visit stays open for a day (Gemini review c2, 2026-11-15).
+- happy-dom's `click()` does not move focus to the button. Click tests call `target.focus()` first, as a real tap does, or focus checks pass or fail for the wrong reason.

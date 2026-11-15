@@ -1926,3 +1926,9 @@ Rejected:
 - b1, the extra announcement: covered by the status box in b2.
 
 The plan for the fixes is C:/Users/mgold/.claude/plans/calm-soaring-hearth.md (approved 2026-11-15).
+
+### Claude's note after the fixes (2026-11-15)
+
+- a4 is not a bug. `unlockSound()` already races `resume()` against the 1 s wait with `Promise.race`, and the race handles a late rejection. The new test in `components/patient/alertSound.test.ts` stays as a guard. No code change for a4.
+- A3 (SoundSwitch late results, one beep at a time, focus, one status box): tests `a641010` (6 failed on the old code), fix `899aca2`.
+- A4 (more click and render tests): CheckInPanel paused render `1142680`, NewLinkPanel click tests `29f204e` (each fails when its guard is removed).

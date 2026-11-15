@@ -25,3 +25,11 @@ One line each: date, decision, who decided, where it is written.
 - 2026-11-13: 15 unused plugins are off for this project. Owner. .claude/settings.json.
 - 2026-11-13: Orchestrator and Haiku workers; progress log moved to docs/progress.md. Owner. CLAUDE.md, "Orchestrator and workers".
 - 2026-11-14: "Issue a new link" replaces the visit's access token (no database change); only while waiting, called or on the way; no confirm step and no undo; the visit code stays the same. Owner. lib/visitActions.ts, components/staff/VisitRow.tsx.
+- 2026-11-15: Staff brand colour is teal #0f5e66 (5.1:1 on the darkest backdrop corner); the page body uses `bg-canvas text-ink`. Gemini review b3, checked with the contrast script. app/globals.css, app/layout.tsx.
+- 2026-11-15: Beep volume 0.5 (was 0.3). Owner. lib/calledAlert.ts.
+- 2026-11-15: The patient wait range uses the long form in all 5 languages once the high end is 60 minutes or more ("45 minutes to 1 hour 20 minutes"); under 60 it stays "20 to 45 minutes". Owner. lib/waitText.ts, lib/text/*.ts.
+- 2026-11-15: Arabic uses natural grammar for 1 and 2 hours, with no digit ("ساعة", "ساعتين"). Owner. lib/text/ar.ts.
+- 2026-11-15: Staff times keep "1h 35min" on screen; screen readers get "1 hour 35 minutes" from hidden text. Owner. components/staff/Duration.tsx.
+- 2026-11-15: happy-dom is a dev dependency for click tests only; those files start with `// @vitest-environment happy-dom`, all other tests stay in Node. Owner.
+- 2026-11-15: The sound box has one `role="status"` box that is always on the page, for the failed and sound-off lines; "Sound is on" gets focus and stays out of it. Gemini review b2. components/patient/SoundSwitch.tsx.
+- 2026-11-15: Rejected from the Gemini review: filling an unknown pause switch with `{ A: false, B: false }` (unknown stays unknown) and a day unit in `formatMinutes`. Point a4 (late `resume()` rejection) is not a bug: `Promise.race` handles it.
