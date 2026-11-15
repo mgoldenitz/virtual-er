@@ -2,12 +2,18 @@
 
 import { useSyncExternalStore } from "react";
 
-function subscribe(onChange: () => void): () => void {
+/**
+ * Asks again when the connection changes, and also when the page comes back on screen: a phone
+ * that was locked or in the background can miss the "online" and "offline" events.
+ */
+export function watchConnection(onChange: () => void): () => void {
   window.addEventListener("online", onChange);
   window.addEventListener("offline", onChange);
+  document.addEventListener("visibilitychange", onChange);
   return () => {
     window.removeEventListener("online", onChange);
     window.removeEventListener("offline", onChange);
+    document.removeEventListener("visibilitychange", onChange);
   };
 }
 
@@ -22,5 +28,5 @@ function getServerSnapshot(): boolean {
 
 /** True when the browser has a connection. Re-renders when the connection drops or comes back. */
 export function useOnline(): boolean {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(watchConnection, getSnapshot, getServerSnapshot);
 }

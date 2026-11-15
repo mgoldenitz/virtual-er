@@ -8,5 +8,6 @@
 - Playwright MCP: `target` takes a ref from the last snapshot (for example `e73`), a CSS selector or a locator, never the role text from the snapshot (`combobox "Select language"` fails). Load the tool schema with ToolSearch before the first call.
 - The Vercel MCP cannot change firewall settings or list cron jobs; the owner does these in the dashboard.
 - Hook scripts: text piped from PowerShell starts with an invisible byte-order mark, so JSON.parse fails and the script exits silently. Strip `\uFEFF` first. In Git Bash, Node does not read paths like /c/Users; test with C:/Users paths.
-- navigator.onLine says "online" on Wi-Fi with no internet or behind a hotel or hospital sign-in page (captive portal), so the offline banner does not show there. Noted for the Gemini review; the demo does not test a real connection.
+- navigator.onLine says "online" on Wi-Fi with no internet or behind a hotel or hospital sign-in page (captive portal), so the offline banner does not show there. Accepted for the demo (Gemini review 2026-11-14): the app does not test a real connection. It asks again when the page comes back on screen (`data/useOnline.ts`).
 - Open: Vercel firewall rate-limit rule for GET /api/site-status (owner).
+- Not done: when another staff screen pauses or resumes a site, the pause banner appears but is not announced to screen readers on this screen (Gemini pause review, point 4b, 2026-11-14).
