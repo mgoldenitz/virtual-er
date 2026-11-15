@@ -677,3 +677,34 @@ Gemini 3.1 Pro, High, new chat, 2026-11-12 (pasted by the owner).
 - Known choice 4: **partly accepted.** Each call is one small read of a two-row table over Supabase's HTTP interface, but the route is open to anyone. Fix: a Vercel firewall rate-limit rule, the same way as `/api/start-visit` (the Vercel MCP may not change firewall settings, so the owner adds it in the dashboard).
 
 Checks after the fixes: 147 tests, type check and lint pass; start page checked at phone size.
+
+## Response 2
+
+Gemini Hydrogen 4, High, new chat, 2026-11-14 (pasted by the owner). It reviewed the diff above, which is from before `c5030f7`. Condensed, with nothing left out.
+
+1. Security: nothing found. The grant gives `select (site, offsite_paused)` to `service_role` only; the trigger function is `security invoker` with `search_path = ''` and no execute rights; the route takes no input and `supabaseServer()` stays behind `server-only`.
+2. Correctness: `data/sitePauses.ts`, `setSitePaused`. It calls `void load()` and does not put the saved value in the store. `PauseSwitch` goes back to idle before `/api/site-status` answers, so the banner, the switch and `CheckInPanel` show the old state for a short time. If that read fails, the old state stays for up to 60 seconds (`REREAD_MS`). Fix: when there is no error and `data` is an array (1 row saved, or 0 rows because the row already had that value), set the store to the new value, then `void load()`.
+3. Safety and wording: `app/staff/page.tsx` gives `offSiteCount={line.length}`, and `line` is `[]` while `visits` is `null`. The banner and the confirmation then say "0 patients still off-site" while patients wait. Fix: pass `null` while `visits` is `null` and leave the number out.
+4. Accessibility:
+   a. `PauseSwitch` `close()` focuses the `sr-only` `h3`: a keyboard user loses the visible focus (WCAG 2.4.7). After a save, focus on the heading can interrupt the polite announcement of the result. Fix: focus the visible button; do not move focus in `save()`.
+   b. The red `paused-banner` has no live region, so a change made on another staff screen is not spoken. Fix: a persistent `sr-only` `role="status"` inside `PauseSwitch`.
+   c. `StartVisit`: when both sites are paused the form unmounts with no live region and focus drops to the body; the single-site message mounts with `role="status"` already filled. Fix: one persistent `sr-only` status region; no `role="status"` on the message.
+5. Breaks to existing behaviour: nothing found.
+6. Known choices:
+   1. Real problem until the database step checks land: a staff screen that has not read the switch (`paused === null`) still offers "Start off-site waiting". Fix: disable it while the switch is unknown, and check `offsite_paused` in the database.
+   2. Real problem: hide "Offered, declined" and relabel "Not eligible" as "Waits on-site (off-site waiting paused)", saving `not_eligible`.
+   3. Acceptable: fail open on the start page; `start_home_visit` refuses anyway.
+   4. Real problem: add a Vercel firewall rate-limit rule on `/api/site-status`, the same as `/api/start-visit`.
+
+## Claude's check 2 (2026-11-14)
+
+- 1, 5, 6.3: agree, nothing to change.
+- 4c and 6.2: already fixed in `c5030f7` with the same fix (Gemini saw the older diff).
+- 2: right. Accepted. Both "saved" and "refused" mean the database now holds the new value, because the update has the condition `offsite_paused = not paused`.
+- 3: right. Accepted.
+- 4a: right. Accepted: focus goes to the one visible button after Cancel or a save.
+- 6.1: right. Accepted for the screen: while the switch is unknown, check-in does not offer "Start off-site waiting". The database check stays planned for later in Phase 3.
+- 4b: right, but it only matters with two staff screens open and a screen-reader user on one. Not now; noted in `docs/known-issues.md`.
+- 6.4: already accepted on 2026-11-12; the owner adds the rule in the Vercel dashboard. Still open.
+
+The fixes are step 8 of the plan for branch `phase3-review-fixes`.
