@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from "@/data/staffActions";
+import { formatMinutes } from "@/lib/duration";
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
 import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
@@ -29,11 +30,11 @@ function progress(visit: Visit, now: Date): string {
     // "I'm still here" only shows the patient is still following the visit; never a health check.
     const lastTap = lastTapThisWait({ triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at });
     return lastTap
-      ? `Waiting off-site · last "I'm still here" ${minutesBetween(lastTap, now)} min ago`
+      ? `Waiting off-site · last "I'm still here" ${formatMinutes(minutesBetween(lastTap, now))} ago`
       : "Waiting off-site";
   }
   const sinceCall = visit.called_at ? minutesBetween(visit.called_at, now) : 0;
-  const steps = [`Called ${sinceCall} min ago`];
+  const steps = [`Called ${formatMinutes(sinceCall)} ago`];
   // seen_at means the called screen was displayed on the phone, not that the patient read it.
   if (visit.seen_at) steps.push("Seen (screen shown, not necessarily read)");
   if (visit.status === "on_the_way") steps.push("On the way");
@@ -69,7 +70,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-mono text-xl font-bold tracking-widest">{visit.code}</p>
         <p>
-          CTAS {visit.ctas_level} · waited <strong>{waited} min</strong>
+          CTAS {visit.ctas_level} · waited <strong>{formatMinutes(waited)}</strong>
         </p>
       </div>
       <p className="mt-1 font-semibold" data-testid="progress">

@@ -8,6 +8,7 @@
 import { useState, type FormEvent } from "react";
 import { findVisitByCode } from "@/data/staffActions";
 import { backForReassessment, expectedArrivals, isExpected } from "@/lib/expectedArrivals";
+import { formatMinutes } from "@/lib/duration";
 import { minutesBetween } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -106,7 +107,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
             >
               <p>
                 <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span> · started{" "}
-                {minutesBetween(visit.created_at, now)} min ago
+                {formatMinutes(minutesBetween(visit.created_at, now))} ago
               </p>
               <Button variant="secondary" onClick={() => onChoose(visit)}>
                 Check in<span className="sr-only"> visit {visit.code}</span>

@@ -7,6 +7,7 @@
 import { confirmUnableToReachFor, recordPhoneCallFor } from "@/data/staffActions";
 import { CALL_PHONE_AGAIN_MINUTES, CALL_REVIEW_MINUTES, CALL_SECOND_ALERT_MINUTES } from "@/lib/demoTimes";
 import { canRecordPhoneCall, staffFollowUp, type StaffFollowUp } from "@/lib/followUp";
+import { formatMinutes } from "@/lib/duration";
 import { minutesBetween } from "@/lib/queue";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -48,7 +49,7 @@ function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): { text: stri
       };
     case "on_way_not_arrived": {
       const since = visit.confirmed_at ? minutesBetween(visit.confirmed_at, now) : 0;
-      return { text: `On the way, not arrived. Confirmed ${since} min ago.`, tone: AMBER };
+      return { text: `On the way, not arrived. Confirmed ${formatMinutes(since)} ago.`, tone: AMBER };
     }
     default:
       return null;
@@ -61,7 +62,7 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
   const canPhone = canRecordPhoneCall(visit, now);
   // Screen readers hear each new flag once (politely). The minute counts are left out so the
   // words do not change, and so are not read again, every minute.
-  const spoken = flag ? `Visit ${visit.code}: ${flag.text.replace(/ Confirmed \d+ min ago\./, "")}` : "";
+  const spoken = flag ? `Visit ${visit.code}: ${flag.text.replace(/ Confirmed [^.]+ ago\./, "")}` : "";
   const announcer = (
     <p role="status" className="sr-only">
       {spoken}
