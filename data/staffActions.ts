@@ -13,6 +13,7 @@ import {
   checkInAtDesk,
   checkInHomeVisit,
   confirmUnableToReach,
+  issueNewLink,
   markArrived,
   markRemoved,
   recordPhoneCall,
@@ -113,6 +114,13 @@ export const callBackVisit = (id: string) => changeVisit(id, (v) => callBack(v, 
 export const markVisitArrived = (id: string) => changeVisit(id, (v) => markArrived(v, serverNow()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
   changeVisit(id, (v) => markRemoved(v, reason, serverNow()));
+/** Lost or stolen phone: give the visit a new link. On "saved", `onSaved` gets the visit with its new token. */
+export async function issueNewVisitLink(id: string, onSaved: (visit: Visit) => void): Promise<ChangeResult> {
+  const result = await changeVisit(id, (v) => issueNewLink(v, makeAccessToken()));
+  const updated = cachedVisit(id);
+  if (result === "saved" && updated) onSaved(updated);
+  return result;
+}
 /**
  * "Recall all off-site patients": recall, in one database update, exactly the visits staff saw
  * in the confirmation, and only those still waiting (one recalled or closed on another screen

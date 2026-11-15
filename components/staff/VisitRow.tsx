@@ -4,7 +4,7 @@
 // The no-response flags and phone-call buttons are in FollowUpPanel.
 
 import { useState } from "react";
-import { callBackVisit, markVisitArrived, removeVisit } from "@/data/staffActions";
+import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from "@/data/staffActions";
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
 import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
@@ -42,16 +42,24 @@ function progress(visit: Visit, now: Date): string {
 export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  /** A short "it worked" message, for a change that keeps the patient on the list. */
+  const [okNote, setOkNote] = useState("");
   /** Save one change and show what happened. `leftListMessage` is announced when the patient leaves the list. */
   const act = async (change: () => Promise<ChangeResult>, leftListMessage?: string) => {
     if (saving) return; // while one change is on its way, further presses do nothing
     setSaving(true);
+    setOkNote("");
     const result = await change();
     setSaving(false);
     if (result === "saved" && leftListMessage) {
       onLeftList(leftListMessage);
     }
     setNote(result === "saved" ? "" : result === "not_saved" ? NOT_SAVED : CHANGED);
+  };
+  /** After "Issue a new link" saves: open the slip with the new QR code and say what happened. */
+  const showNewLink = (updated: Visit) => {
+    onShowSlip(updated);
+    setOkNote(`New link issued for ${visit.code}. The old link no longer works.`);
   };
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
 
@@ -99,9 +107,20 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
           </Button>
         </div>
       </details>
-      {(saving || note) && (
-        <p role="status" className={`mt-2 font-semibold ${saving ? "" : "text-red-800"}`}>
-          {saving ? "Saving…" : note}
+      <details className="mt-3">
+        <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
+          Lost or stolen phone
+        </summary>
+        <div className="mt-2 space-y-2">
+          <p>The old link and the old slip stop working. Give the patient the new QR code.</p>
+          <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => issueNewVisitLink(visit.id, showNewLink))}>
+            Issue a new link<span className="sr-only"> {visit.code}</span>
+          </Button>
+        </div>
+      </details>
+      {(saving || note || okNote) && (
+        <p role="status" className={`mt-2 font-semibold ${saving || !note ? "" : "text-red-800"}`}>
+          {saving ? "Saving…" : note || okNote}
         </p>
       )}
     </li>
