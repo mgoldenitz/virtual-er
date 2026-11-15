@@ -176,6 +176,15 @@ export function markRemoved(visit: Visit, reason: "left" | "no_show", now: Date)
 }
 
 /**
+ * Staff press "Issue a new link" (lost or stolen phone). The visit gets a new access token, so the
+ * old link and the old slip stop working. The visit code stays the same. Null when not allowed.
+ */
+export function issueNewLink(visit: Visit, token: string): Visit | null {
+  if (!["waiting", "called", "on_the_way"].includes(visit.status)) return null;
+  return { ...visit, access_token: token };
+}
+
+/**
  * The status a closed visit had just before Mark arrived, Left or No-show.
  * Statuses only move forward (waiting, then called, then on the way) and closing keeps
  * called_at and confirmed_at, so the visit's own times say where it was.

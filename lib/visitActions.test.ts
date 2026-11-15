@@ -3,6 +3,7 @@ import {
   callBack,
   checkInAtDesk,
   confirmOnMyWay,
+  issueNewLink,
   markArrived,
   markRemoved,
   markSeen,
@@ -127,5 +128,29 @@ describe("undo after Mark arrived, Left or No-show", () => {
     expect(undoClose(waiting, waiting)).toBeNull();
     const declined = checkInAtDesk(input, "declined", sec(0));
     expect(undoClose(declined, declined)).toBeNull();
+  });
+});
+
+describe("issue a new link", () => {
+  const waiting = checkInAtDesk(input, "waiting", t0);
+
+  it("replaces only the access token while waiting, called or on the way", () => {
+    const called = callBack(waiting, later(5))!;
+    const onTheWay = confirmOnMyWay(called, later(6))!;
+    for (const v of [waiting, called, onTheWay]) {
+      expect(issueNewLink(v, "NEWTOKEN")).toEqual({ ...v, access_token: "NEWTOKEN" });
+    }
+  });
+
+  it("refuses closed visits", () => {
+    const arrived = markArrived(waiting, later(5))!;
+    const removed = markRemoved(waiting, "left", later(5))!;
+    const unable = { ...waiting, status: "unable_to_reach" as const, closed_at: later(5).toISOString() };
+    for (const v of [arrived, removed, unable]) expect(issueNewLink(v, "NEWTOKEN")).toBeNull();
+  });
+
+  it("refuses declined and not-eligible visits (they never got a slip)", () => {
+    expect(issueNewLink(checkInAtDesk(input, "declined", t0), "NEWTOKEN")).toBeNull();
+    expect(issueNewLink(checkInAtDesk(input, "not_eligible", t0), "NEWTOKEN")).toBeNull();
   });
 });
