@@ -3,7 +3,10 @@
 // fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
 // handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
 // Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
 
+import type { DurationWords } from "./durationWords";
 import type { PatientText } from "./en";
 
 export const ar: PatientText = {
@@ -69,6 +72,8 @@ export const ar: PatientText = {
     placeCanChange: "يمكن أن يتغير مكانك إذا وصل مرضى حالاتهم أكثر استعجالاً. يتم دائمًا فحص المرضى ذوي الحالات الأكثر استعجالاً أولاً.",
     waitLabel: "الوقت المقدر حتى يتم استدعاؤك للعودة:",
     waitRange: "من {low} إلى {high} دقيقة",
+    // Used when the range reaches an hour; each end is built from the Duration words below.
+    waitRangeLong: "من {low} إلى {high}",
     simulated: "هذا التقدير محاكى للعرض التجريبي.",
     calledHeading: "يرجى العودة الآن",
     calledText: "يرجى العودة إلى مكتب قسم الطوارئ.",
@@ -145,4 +150,13 @@ export const ar: PatientText = {
     note: "الإجابة اختيارية. لا يتم حفظ اسمك.",
   },
   offline: "أنت غير متصل بالإنترنت. أعد الاتصال بالإنترنت لمعرفة حالتك.",
+};
+
+/** Hour and minute words for the wait range (lib/waitText.ts). */
+export const arDuration: DurationWords = {
+  locale: "ar",
+  // 1 and 2 have no digit; 2 takes the form used after "من" and "إلى".
+  hour: { one: "ساعة", two: "ساعتين", few: "{n} ساعات", many: "{n} ساعة", other: "{n} ساعة" },
+  minute: { one: "دقيقة", two: "دقيقتين", few: "{n} دقائق", many: "{n} دقيقة", other: "{n} دقيقة" },
+  join: "{h} و{m}",
 };

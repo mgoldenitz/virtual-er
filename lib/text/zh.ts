@@ -3,7 +3,10 @@
 // fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
 // handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
 // Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
 
+import type { DurationWords } from "./durationWords";
 import type { PatientText } from "./en";
 
 export const zh: PatientText = {
@@ -69,6 +72,8 @@ export const zh: PatientText = {
     placeCanChange: "如果有更紧急的患者到达，您的位置可能会改变。最紧急的患者总是优先就诊。",
     waitLabel: "预计还需多久叫您回来：",
     waitRange: "{low} 到 {high} 分钟",
+    // Used when the range reaches an hour; each end is built from the Duration words below.
+    waitRangeLong: "{low} 到 {high}",
     simulated: "此估计时间是为演示而模拟的。",
     calledHeading: "请现在回来",
     calledText: "请回到急诊室前台。",
@@ -145,4 +150,12 @@ export const zh: PatientText = {
     note: "回答是可选的。您的名字不会被保存。",
   },
   offline: "您已离线。请重新连接到互联网以查看您的状态。",
+};
+
+/** Hour and minute words for the wait range (lib/waitText.ts). */
+export const zhDuration: DurationWords = {
+  locale: "zh",
+  hour: { other: "{n} 小时" },
+  minute: { other: "{n} 分钟" },
+  join: "{h} {m}",
 };

@@ -3,7 +3,10 @@
 // fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
 // handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
 // Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
 
+import type { DurationWords } from "./durationWords";
 import type { PatientText } from "./en";
 
 export const fr: PatientText = {
@@ -69,6 +72,8 @@ export const fr: PatientText = {
     placeCanChange: "Votre place peut changer si des patients plus urgents arrivent. Les patients les plus urgents sont toujours vus en premier.",
     waitLabel: "Temps estimé avant d'être rappelé :",
     waitRange: "{low} à {high} minutes",
+    // Used when the range reaches an hour; each end is built from the Duration words below.
+    waitRangeLong: "{low} à {high}",
     simulated: "Cette estimation est simulée pour la démonstration.",
     calledHeading: "Veuillez revenir maintenant",
     calledText: "Veuillez retourner au bureau du service des urgences.",
@@ -145,4 +150,12 @@ export const fr: PatientText = {
     note: "La réponse est facultative. Votre nom n'est pas enregistré.",
   },
   offline: "Vous êtes hors ligne. Reconnectez-vous à Internet pour voir votre statut.",
+};
+
+/** Hour and minute words for the wait range (lib/waitText.ts). */
+export const frDuration: DurationWords = {
+  locale: "fr",
+  hour: { one: "{n} heure", other: "{n} heures" },
+  minute: { one: "{n} minute", other: "{n} minutes" },
+  join: "{h} {m}",
 };

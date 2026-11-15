@@ -3,7 +3,10 @@
 // fluent speaker. The sound lines are a later draft by Gemini Hydrogen 4 (2026-11-15,
 // handoffs/archive/2026-11-14-gemini-sound-text.md), also not yet approved.
 // Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
+// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
 
+import type { DurationWords } from "./durationWords";
 import type { PatientText } from "./en";
 
 export const ur: PatientText = {
@@ -69,6 +72,8 @@ export const ur: PatientText = {
     placeCanChange: "اگر زیادہ ایمرجنسی والے مریض آ جائیں تو آپ کی جگہ بدل سکتی ہے۔ سب سے زیادہ ایمرجنسی والے مریضوں کو ہمیشہ پہلے دیکھا جاتا ہے۔",
     waitLabel: "واپس بلائے جانے تک کا تخمینہ وقت:",
     waitRange: "{low} سے {high} منٹ",
+    // Used when the range reaches an hour; each end is built from the Duration words below.
+    waitRangeLong: "{low} سے {high}",
     simulated: "یہ تخمینہ ڈیمو کے لیے فرضی ہے۔",
     calledHeading: "براہ کرم اب واپس آ جائیں",
     calledText: "براہ کرم ایمرجنسی ڈیپارٹمنٹ ڈیسک پر واپس جائیں۔",
@@ -145,4 +150,14 @@ export const ur: PatientText = {
     note: "جواب دینا اختیاری ہے۔ آپ کا نام محفوظ نہیں کیا جاتا ہے۔",
   },
   offline: "آپ آف لائن ہیں۔ اپنا سٹیٹس دیکھنے کے لیے دوبارہ انٹرنیٹ سے کنیکٹ کریں۔",
+};
+
+/** Hour and minute words for the wait range (lib/waitText.ts). */
+export const urDuration: DurationWords = {
+  locale: "ur",
+  hour: { one: "{n} گھنٹہ", other: "{n} گھنٹے" },
+  // A whole hour just before "سے" takes "گھنٹے", also for 1.
+  hourLow: { one: "{n} گھنٹے", other: "{n} گھنٹے" },
+  minute: { other: "{n} منٹ" },
+  join: "{h} {m}",
 };

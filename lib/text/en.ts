@@ -2,6 +2,10 @@
 // Wording approved by the owner on 2026-11-10 (handoffs/archive/2026-11-10-gemini-patient-wording-phase3-response.md).
 // Sentences marked "SPEC" are fixed by SPEC.md: change them only if the owner changes SPEC.
 // Words in {braces} are filled in by the app (for example {low}); translators keep them as they are.
+// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
+
+import type { DurationWords } from "./durationWords";
 
 export const en = {
   // SPEC rule 3: on every patient screen, in every state and every language.
@@ -82,6 +86,8 @@ export const en = {
     // SPEC
     waitLabel: "Estimated time until you're called back:",
     waitRange: "{low} to {high} minutes",
+    // Used when the range reaches an hour; each end is built from the Duration words below.
+    waitRangeLong: "{low} to {high}",
     simulated: "This estimate is simulated for the demo.",
 
     calledHeading: "Please head back now",
@@ -174,3 +180,11 @@ export const en = {
 
 /** The shape every language's text must have. */
 export type PatientText = typeof en;
+
+/** Hour and minute words for the wait range (lib/waitText.ts) and the staff screen-reader words. */
+export const enDuration: DurationWords = {
+  locale: "en",
+  hour: { one: "{n} hour", other: "{n} hours" },
+  minute: { one: "{n} minute", other: "{n} minutes" },
+  join: "{h} {m}",
+};
