@@ -1,17 +1,17 @@
-# Gemini review: patient screen extras (offline banner, text size, sound and vibration)
+# Gemini review: patient screen extras (offline banner, text size, sound and vibration) and "Issue a new link"
 
-Status: ready to send. One combined review for item A (owner, 2026-11-14), parts a, b and c.
+Status: ready to send. One combined review for item A (owner, 2026-11-14), parts a, b and c, plus part d (staff "Issue a new link", added 2026-11-14).
 
 Model: Gemini Hydrogen 4, High, in a new chat. (No Hydrogen 4 credits: Gemini 3.6 Flash, High.)
 Give it everything below the line "Paste from here". Bring back its whole answer.
 
-Save points on branch `phase3-patient-extras` (not pushed): offline banner `5b1a7be`, `e6114d7`; text size `e68729c`; sound rule `2e56ebb`; sound box `69c7621`.
+Save points on branch `phase3-patient-extras` (not pushed): offline banner `5b1a7be`, `e6114d7`; text size `e68729c`; sound rule `2e56ebb`; sound box `69c7621`; new link rule `02b662c`, staff button `0a8d459`.
 
 ---
 
 Paste from here
 
-You are reviewing three small changes in a concept prototype of a virtual ER waiting room. It is a Next.js 16 (App Router, React 19) app. Low-acuity patients wait off-site after triage and follow their place in line on their own phone. When staff recall them, the screen changes to "Please head back now" with an "I'm on my way" button. Synthetic data only. Accessibility target: WCAG 2.2 AA. Every alert must also show as words on screen, never sound or colour alone. Five languages: English, French, Urdu, Arabic and Mandarin (Urdu and Arabic are right to left).
+You are reviewing four small changes in a concept prototype of a virtual ER waiting room. It is a Next.js 16 (App Router, React 19) app. Low-acuity patients wait off-site after triage and follow their place in line on their own phone. When staff recall them, the screen changes to "Please head back now" with an "I'm on my way" button. Synthetic data only. Accessibility target: WCAG 2.2 AA. Every alert must also show as words on screen, never sound or colour alone. Five languages: English, French, Urdu, Arabic and Mandarin (Urdu and Arabic are right to left).
 
 Find problems. Do not confirm that it is fine. List each problem with the file, what goes wrong, a way to see it happen, and the smallest fix. If you find nothing for a question, say "nothing found" for that question.
 
@@ -253,12 +253,56 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
 {(view.status === "waiting" || view.status === "called") && <SoundSwitch status={view.status} language={language} />}
 ```
 
+## Part d: staff "Issue a new link" for a lost or stolen phone
+
+The visit link (`/patient#t=<access_token>`, 26 Crockford base-32 characters from 16 random bytes) is a bearer token, saved on the phone in localStorage. Whoever holds the phone holds the visit. The patient comes to the desk; staff open "Lost or stolen phone" in the patient's row and tap "Issue a new link". The visit gets a new access token, the slip opens with the new QR code, and the row says "New link issued for ECFZAK. The old link no longer works." The visit code stays the same. No database change: the staff update policy already covers `access_token`, the patient functions look the visit up `where access_token = p_token`, no trigger touches `access_token`, and the column is `unique`. Patients have no realtime channel on visit rows (only a `change_signal` table), so the old phone reads again with its old token and gets no row. Owner decisions: allowed only while waiting, called or on the way; no confirm step (opening the `<details>` is the first step, like "Remove from list"); no undo.
+
+`lib/visitActions.ts` (the status check was written by the owner):
+
+```ts
+export function issueNewLink(visit: Visit, token: string): Visit | null {
+  if (!["waiting", "called", "on_the_way"].includes(visit.status)) return null;
+  return { ...visit, access_token: token };
+}
+```
+
+`data/staffActions.ts` (`changeVisit` applies the rule to the cached visit and updates only the changed fields `where id = ? and version = ?`; 0 rows back means someone changed the visit first, so it returns "refused"; a database error, including a unique violation, returns "not_saved"):
+
+```ts
+export async function issueNewVisitLink(id: string, onSaved: (visit: Visit) => void): Promise<ChangeResult> {
+  const result = await changeVisit(id, (v) => issueNewLink(v, makeAccessToken()));
+  const updated = cachedVisit(id);
+  if (result === "saved" && updated) onSaved(updated);
+  return result;
+}
+```
+
+`components/staff/VisitRow.tsx` (`act` shows "Saving…", then an error in red, or `okNote`, in one `role="status"` line):
+
+```tsx
+const showNewLink = (updated: Visit) => {
+  onShowSlip(updated);
+  setOkNote(`New link issued for ${visit.code}. The old link no longer works.`);
+};
+...
+<details className="mt-3">
+  <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">Lost or stolen phone</summary>
+  <div className="mt-2 space-y-2">
+    <p>The old link and the old slip stop working. Give the patient the new QR code.</p>
+    <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => issueNewVisitLink(visit.id, showNewLink))}>
+      Issue a new link<span className="sr-only"> {visit.code}</span>
+    </Button>
+  </div>
+</details>
+```
+
 ## Checks already done
 
-- Type check, lint, build and 168 unit tests pass.
+- Type check, lint, build and 171 unit tests pass.
 - Part a, Playwright at 390 x 844: the banner shows when the browser is set offline and goes when set online; no sideways scroll; in Arabic the page is right to left and the banner text is Arabic.
 - Part b, Playwright at 390 x 844 with Extra large (root 150%) in all five languages: no sideways scroll; Urdu and Arabic right to left; the three radio labels wrap to two lines in Urdu; the choice stays after a reload. Not checked: the phone's own text size setting turned up as well.
 - Part c, Playwright at 390 x 844 (beeps and vibrations counted by wrapping `createOscillator` and `navigator.vibrate`): the tap on the waiting screen gave 1 test beep and 1 vibration, focus moved to "Sound is on", no sideways scroll; after the staff recall, 1 alert at once and 1 more 30 seconds later; after "I'm on my way", no more alerts and the box was gone. Not yet checked: a real iPhone and a real Android phone; the box in Arabic.
+- Part d, Playwright (old phone) with the owner on /staff: the old phone showed "Please head back now"; after the tap it changed by itself to "No visit found on this phone" and stayed so after a reload (390 px); the staff row showed "New link issued for ECFZAK..."; the slip opened with a new QR code; the new link in a private window showed ECFZAK. The reviewer worker found no blockers.
 
 ## Questions
 
@@ -273,5 +317,6 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
 9. Part c: the box is a `<section>` with no heading or accessible name, and the called screen now shows two similar "demo limits" lines (one in the status card, one in the box). Is that a problem for screen readers or for reading? Should one line go?
 10. Part c: there is no "Turn off sound". Does a patient need it (for example in a quiet place)? If yes, where does it go, and what happens to the alert loop?
 11. Part c: if the phone discards the page while it is in the background (common on low-memory phones), the page loads again on return and the sound is off until a new tap. The patient sees the called screen but hears nothing. Is that acceptable for a demo, and should the screen ask for a tap?
-12. Phone problems after "Recall patient". The visit link is saved on the phone (localStorage), and the patient screen has no name, phone number or CTAS level. Staff get flags at 10 and 20 minutes ("Phone the patient now", "Phone the patient again", calls are simulated) and "Review: unable to reach" at 30 minutes with no answered call; a nurse confirms it. For each case, name what goes wrong and the smallest fix: (a) the phone dies, the patient charges it and opens the page again (same visit, current status, sound off until a new tap); (b) the phone dies and cannot be charged (the app cannot tell this from a patient who ignores the call; the patient can walk to the desk with the visit code or the slip); (c) the phone is lost or stolen (whoever has it can see the visit code, site, place in line and status, and can tap "I'm on my way" or "I'm still here", which gives staff false information). A staff button "Issue a new link" that stops the old link is planned as a separate item; say what it must do to be safe.
-13. Anything else that is wrong or missing in parts a, b or c.
+12. Phone problems after "Recall patient". The visit link is saved on the phone (localStorage), and the patient screen has no name, phone number or CTAS level. Staff get flags at 10 and 20 minutes ("Phone the patient now", "Phone the patient again", calls are simulated) and "Review: unable to reach" at 30 minutes with no answered call; a nurse confirms it. For each case, name what goes wrong and the smallest fix: (a) the phone dies, the patient charges it and opens the page again (same visit, current status, sound off until a new tap); (b) the phone dies and cannot be charged (the app cannot tell this from a patient who ignores the call; the patient can walk to the desk with the visit code or the slip); (c) the phone is lost or stolen (whoever has it can see the visit code, site, place in line and status, and can tap "I'm on my way" or "I'm still here", which gives staff false information). Part d now adds "Issue a new link"; question 13 covers it.
+13. Part d: is "Issue a new link" safe and enough? Consider: the desk cannot check that the person asking is the patient (the demo stores no name; the patient has the visit code and, maybe, the slip); one tap with no confirm and no undo; a race with the old phone tapping "I'm on my way" at the same moment (the version check); a unique-token collision shown as "the database could not be reached"; the old phone keeps the dead token in localStorage; the slip's QR code is shown on a staff screen others may see. Say what a hospital version must add, and what the demo must change now.
+14. Anything else that is wrong or missing in parts a, b, c or d.

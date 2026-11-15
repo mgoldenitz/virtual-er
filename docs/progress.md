@@ -12,6 +12,7 @@ To do in Phase 3 (from Grok's pass):
 
 One dated line per session, newest first.
 
+- 2026-11-14 (evening): staff "Issue a new link" for a lost or stolen phone: rule `issueNewLink` (owner wrote the status check, `02b662c`), button under "Lost or stolen phone" in the staff row (`0a8d459`). Browser check with the owner: old link stops at once, new link works. Added as part d to the Gemini handoff (question 13). SPEC line added. 171 tests pass.
 - 2026-11-14 (later): item A part c, sound and vibration on the called screen: rule `lib/calledAlert.ts` (owner wrote `shouldAlert`, `2e56ebb`), "Turn on sound" box `components/patient/SoundSwitch.tsx` and `alertSound.ts` (`69c7621`). Playwright at 390 px: test beep on tap, alert at once and every 30 s while called, stops after "I'm on my way". Part b checked at 390 px with Extra large in all five languages. Handoff for all three parts ready. Owner wants push notifications in the demo (later item). 168 tests pass.
 - 2026-11-14: branch `phase3-patient-extras` (not pushed): offline banner (`5b1a7be`, `e6114d7`) and text size control (`e68729c`) built by the builder worker and checked; one combined Gemini review for item A (`578e386`); Gemini Hydrogen 4 replaces 3.1 Pro (`04975ad`); worker effort medium; 13 more plugins off in settings.local.json; permission rules (no reading .env.local, ask before git push) and a 300-line hook (`29de8db`). 159 tests pass.
 
@@ -26,7 +27,7 @@ Links (share only these two):
 State on 2026-11-13:
 - **Phase 2 is closed** (`803fb2b`). **Phase 3 is in progress**; details in the Phase 3 section below.
 - Phase 3 done so far: package update; patient wording; all patient text in `lib/text/`; five languages with draft notices and a language switch; "I'm still here"; the no-response steps after "Recall patient"; "Recall all off-site patients"; "Pause off-site waiting" per site; folder-by-folder cleanup; `npm run dev` with the Norton fix. All are pushed and live.
-- 168 unit tests, type check, lint and build pass (2026-11-14, branch `phase3-patient-extras`). axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
+- 171 unit tests, type check, lint and build pass (2026-11-14, branch `phase3-patient-extras`). axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
 - Test visits EZRRSQ and two from the recall-all test may still be in the `visits` table; the owner can delete them.
 - Open review: `handoffs/2026-11-12-gemini-review-pause-switch.md`, waiting for the owner's Vercel firewall rule for GET `/api/site-status`.
 - Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
@@ -37,6 +38,7 @@ State on 2026-11-13:
   - (a) Offline banner: done (`components/patient/OfflineBanner.tsx`, `data/useOnline.ts`).
   - (b) Text size control: done (`components/patient/TextSizeSwitch.tsx`, `data/savedTextSize.ts`, `lib/textSize.ts`). Checked at 390 px with Extra large in all five languages (no sideways scroll).
   - (c) Sound and vibration on the called screen: done (`lib/calledAlert.ts`, `components/patient/SoundSwitch.tsx`, `components/patient/alertSound.ts`). Still to do: the owner's test on a real iPhone (Wi-Fi address of the computer on port 3000, or a deployment after an approved push).
+  - (d) Staff "Issue a new link" (lost or stolen phone): done (`lib/visitActions.ts` issueNewLink, `data/staffActions.ts` issueNewVisitLink, `components/staff/VisitRow.tsx`). Checked in the browser with the owner.
   - Next: the combined Gemini Hydrogen 4 review, `handoffs/2026-11-14-gemini-review-patient-extras.md` (ready to send). Its open points include no words when sound fails, "vibrates" on iPhone, no "Turn off sound", and two "demo limits" lines on the called screen.
 - Push notifications in the demo (owner wants them, 2026-11-14): a later item, after item A. Needs its own plan, a SPEC change (SPEC says the alerts work only while the page is open), a service worker, stored subscriptions, VAPID keys in a settings page (never in chat), and a Gemini review. iPhone shows web push only for a site added to the Home Screen (iOS 16.4 or later).
 - 24-hour deletion with the `daily_stats` table (SPEC hard rule 4).

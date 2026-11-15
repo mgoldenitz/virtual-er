@@ -85,6 +85,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
   - 30 minutes, with no answered call: the visit is flagged "Review: unable to reach" and stays in the line until a nurse confirms. On confirmation the status becomes unable_to_reach and the visit leaves the active line. The app does not record this as left without being seen; staff follow hospital policy outside the app.
   - If an unable_to_reach patient arrives later, staff can reopen the visit, which clears closed_at and sends it back to triage for reassessment (status: needs_reassessment).
 - The app never contacts anyone other than the patient. No emergency contacts are stored.
+- "Issue a new link" (owner, 2026-11-14), for a lost or stolen phone, while waiting, called or on the way: gives the visit a new link and QR code; the old link and slip stop working at once. The visit code stays the same.
 - Mark arrived, mark removed (left, no-show). Actions that end virtual waiting (arrived, removed, unable_to_reach confirmed, declined, not_eligible) set closed_at in the same update. Closed means virtual waiting ended, not that care is finished.
 - "Call everyone back" button for a surge or a system problem, with a confirmation step.
   - (owner, 2026-11-12: the button is "Recall all off-site patients"; see components/staff/RecallAllPanel.tsx.)

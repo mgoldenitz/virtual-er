@@ -24,3 +24,4 @@ One line each: date, decision, who decided, where it is written.
 - 2026-11-13: AGENTS.md points to CLAUDE.md instead of copying it. Owner. AGENTS.md.
 - 2026-11-13: 15 unused plugins are off for this project. Owner. .claude/settings.json.
 - 2026-11-13: Orchestrator and Haiku workers; progress log moved to docs/progress.md. Owner. CLAUDE.md, "Orchestrator and workers".
+- 2026-11-14: "Issue a new link" replaces the visit's access token (no database change); only while waiting, called or on the way; no confirm step and no undo; the visit code stays the same. Owner. lib/visitActions.ts, components/staff/VisitRow.tsx.
