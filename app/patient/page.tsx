@@ -12,6 +12,7 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PatientShell } from "@/components/PatientShell";
 import { OfflineBanner } from "@/components/patient/OfflineBanner";
 import { PatientStatus } from "@/components/patient/PatientStatus";
+import { SoundSwitch } from "@/components/patient/SoundSwitch";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
@@ -122,6 +123,7 @@ export default function PatientPage() {
           </p>
           {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
           <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} />
+          {(view.status === "waiting" || view.status === "called") && <SoundSwitch status={view.status} language={language} />}
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {p.notSaved}
