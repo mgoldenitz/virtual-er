@@ -108,6 +108,34 @@ describe("SoundSwitch taps", () => {
     expect(document.activeElement).toBe(button(t.turnOn));
   });
 
+  it("moves focus to Turn on sound after a phone tap (focus on the page) when the test beep fails", async () => {
+    vi.mocked(playAlert).mockResolvedValue(false);
+    show("waiting");
+    // A finger tap on a phone does not focus the button, so focus stays on the page body.
+    await act(async () => button(t.turnOn)?.click());
+    expect(document.activeElement).toBe(button(t.turnOn));
+  });
+
+  it("keeps the status box empty while the sound is on", async () => {
+    show("waiting");
+    await press(t.turnOn);
+    expect(container.textContent).toContain(t.on);
+    expect(statusBox()?.textContent).toBe("");
+  });
+
+  it("clears the failed line on a new try, so screen readers read it again if it fails again", async () => {
+    vi.mocked(unlockSound).mockResolvedValueOnce(false);
+    show("waiting");
+    await press(t.turnOn);
+    expect(statusBox()?.textContent).toBe(t.failed);
+    const unlock = later<boolean>();
+    vi.mocked(unlockSound).mockReturnValueOnce(unlock.promise);
+    await press(t.turnOn);
+    expect(statusBox()?.textContent).toBe("");
+    await settle(unlock, false);
+    expect(statusBox()?.textContent).toBe(t.failed);
+  });
+
   it("moves focus to Turn on sound when the test beep fails", async () => {
     vi.mocked(playAlert).mockResolvedValue(false);
     show("waiting");
@@ -157,6 +185,25 @@ describe("SoundSwitch while called", () => {
     // "I'm on my way" takes the sound box off the page.
     act(() => root.render(<></>));
     expect(stopVibration).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves focus on another button when a repeat beep fails in the background", async () => {
+    const beep = later<boolean>();
+    vi.mocked(playAlert).mockReturnValue(beep.promise);
+    act(() =>
+      root.render(
+        <>
+          <button>I'm on my way</button>
+          <SoundSwitch status="called" language="en" />
+        </>,
+      ),
+    );
+    await press(t.turnOn);
+    const other = button("I'm on my way");
+    other?.focus();
+    await settle(beep, false);
+    expect(button(t.turnOn)).toBeDefined();
+    expect(document.activeElement).toBe(other);
   });
 
   it("moves focus to Turn on sound when a beep fails and the sound goes off", async () => {
