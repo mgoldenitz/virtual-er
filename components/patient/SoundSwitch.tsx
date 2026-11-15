@@ -21,8 +21,9 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   const attempt = useRef(0);
   // True while a tap on "Turn on sound" is still being handled. Stops a double tap from running twice.
   const busy = useRef(false);
-  // True while a repeat beep still waits for the player, so the next one does not start on top of it.
-  const beeping = useRef(false);
+  // The attempt number of a beep that still waits for the player (null when none), so the next beep of
+  // the same attempt does not start on top of it. A beep of an older attempt does not block a new one.
+  const beeping = useRef<number | null>(null);
   // True when the last state shown was "on", so focus can move when the sound goes off.
   const wasOn = useRef(false);
 
@@ -40,8 +41,11 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
       setState("on");
       // When the visit is already called, the effect below plays the alert, so no test beep is needed.
       // If the test beep cannot play, say so now, not only when the patient is called.
+      // `beeping` is set before React runs the effect, so a status change to called does not beep twice.
       if (status !== "called") {
-        const played = await playAlert();
+        beeping.current = mine;
+        const played = await playAlert(() => mine === attempt.current);
+        if (beeping.current === mine) beeping.current = null;
         if (mine === attempt.current && !played) setState("failed");
       }
     } finally {
@@ -70,11 +74,11 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   // If the phone will not play the beep, the box goes back to "off" so the page can say so.
   useEffect(() => {
     const tick = () => {
-      if (beeping.current || !shouldAlert(status, soundOn, document.visibilityState === "visible")) return;
-      beeping.current = true;
       const mine = attempt.current;
-      void playAlert().then((ok) => {
-        beeping.current = false;
+      if (beeping.current === mine || !shouldAlert(status, soundOn, document.visibilityState === "visible")) return;
+      beeping.current = mine;
+      void playAlert(() => mine === attempt.current).then((ok) => {
+        if (beeping.current === mine) beeping.current = null;
         if (!ok && mine === attempt.current) setState("off");
       });
     };
@@ -86,6 +90,15 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
       document.removeEventListener("visibilitychange", tick);
     };
   }, [status, soundOn]);
+
+  // When the box leaves the page ("I'm on my way"), a beep that still waits must not play, and a
+  // vibration must stop.
+  useEffect(() => {
+    return () => {
+      attempt.current += 1;
+      stopVibration();
+    };
+  }, []);
 
   const note = soundNote(status, state);
 

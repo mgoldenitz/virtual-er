@@ -46,9 +46,10 @@ export async function unlockSound(): Promise<boolean> {
 
 /**
  * Plays one short beep (BEEP_HZ, BEEP_SECONDS long, at BEEP_VOLUME; see lib/calledAlert.ts) and a vibration where the phone allows it.
- * Gives true when the beep played. Gives false when it did not play (no player, or the player would not start).
+ * Gives true when the beep played. Gives false when it did not play (no player, the player would not start,
+ * or `stillWanted` says no after the wait: the patient tapped "Turn off sound" or left the screen).
  */
-export async function playAlert(): Promise<boolean> {
+export async function playAlert(stillWanted: () => boolean = () => true): Promise<boolean> {
   try {
     // Vibrate first, so the phone still vibrates when the beep cannot play.
     vibrate();
@@ -57,7 +58,7 @@ export async function playAlert(): Promise<boolean> {
     // iPhone can pause the player while the page is hidden; start it again before each beep.
     if (!isRunning(ctx)) {
       await Promise.race([ctx.resume(), waitAtMost(RESUME_WAIT_MS)]);
-      if (!isRunning(ctx)) return false;
+      if (!isRunning(ctx) || !stillWanted()) return false;
     }
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
