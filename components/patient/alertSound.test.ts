@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 class FakeContext {
   /** Every fake player made, so a test can close or pause them as the phone would. */
   static made: FakeContext[] = [];
-  static resumeResult: "run" | "hang" | "reject-late" = "run";
+  static resumeResult: "run" | "hang" | "reject-late" | "slow" = "run";
   state: "suspended" | "running" | "closed" = "suspended";
   currentTime = 0;
   destination = {};
@@ -19,10 +19,13 @@ class FakeContext {
       return Promise.resolve();
     }
     if (FakeContext.resumeResult === "hang") return new Promise(() => {});
+    if (FakeContext.resumeResult === "slow") {
+      return new Promise((resolve) => setTimeout(() => ((this.state = "running"), resolve()), 500));
+    }
     return new Promise((_, reject) => setTimeout(() => reject(new Error("late")), 2000));
   }
   createOscillator() {
-    return { type: "", frequency: { value: 0 }, connect() {}, start() {}, stop() {} };
+    return { type: "", frequency: { value: 0 }, connect() {}, start, stop: vi.fn() };
   }
   createGain() {
     return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} };
@@ -30,6 +33,8 @@ class FakeContext {
 }
 
 const vibrate = vi.fn();
+/** Called when a beep really starts, so a test can see that sound was made, not only a true result. */
+const start = vi.fn();
 
 /** A fresh copy of the module, so the shared player starts empty in each test. */
 async function load() {
@@ -46,6 +51,7 @@ beforeEach(() => {
   FakeContext.made = [];
   FakeContext.resumeResult = "run";
   vibrate.mockClear();
+  start.mockClear();
   vi.stubGlobal("window", { AudioContext: FakeContext });
   vi.stubGlobal("navigator", { vibrate });
 });
@@ -90,6 +96,20 @@ describe("playAlert", () => {
     const { unlockSound, playAlert } = await load();
     await unlockSound();
     expect(await playAlert()).toBe(true);
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(vibrate).toHaveBeenCalledWith([200, 100, 200]);
+  });
+
+  it("does not start the beep when it is no longer wanted after the wait for the player", async () => {
+    vi.useFakeTimers();
+    const { unlockSound, playAlert } = await load();
+    await unlockSound();
+    setAll("suspended");
+    FakeContext.resumeResult = "slow";
+    const result = playAlert(() => false);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(await result).toBe(false);
+    expect(start).not.toHaveBeenCalled();
   });
 
   it("still vibrates when there is no player", async () => {
@@ -107,6 +127,7 @@ describe("playAlert", () => {
     const result = playAlert();
     await vi.advanceTimersByTimeAsync(1000);
     expect(await result).toBe(false);
+    expect(start).not.toHaveBeenCalled();
   });
 
   it("leaves no unhandled error when resume() fails after the wait", async () => {

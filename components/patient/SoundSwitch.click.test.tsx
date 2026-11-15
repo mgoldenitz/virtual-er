@@ -134,6 +134,29 @@ describe("SoundSwitch while called", () => {
     await press(t.turnOn);
     await settle(oldBeep, false);
     expect(container.textContent).toContain(t.on);
+    // The second Turn on beeps again; the old beep that still waited must not block it.
+    expect(playAlert).toHaveBeenCalledTimes(2);
+  });
+
+  it("beeps once when the visit is called while the sound is still starting", async () => {
+    const unlock = later<boolean>();
+    vi.mocked(unlockSound).mockReturnValue(unlock.promise);
+    vi.mocked(playAlert).mockReturnValue(later<boolean>().promise);
+    show("waiting");
+    await press(t.turnOn);
+    show("called");
+    await settle(unlock, true);
+    expect(playAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops the vibration when the box goes away while a beep still waits", async () => {
+    vi.mocked(playAlert).mockReturnValue(later<boolean>().promise);
+    show("called");
+    await press(t.turnOn);
+    vi.mocked(stopVibration).mockClear();
+    // "I'm on my way" takes the sound box off the page.
+    act(() => root.render(<></>));
+    expect(stopVibration).toHaveBeenCalledTimes(1);
   });
 
   it("moves focus to Turn on sound when a beep fails and the sound goes off", async () => {
