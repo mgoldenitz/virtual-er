@@ -24,6 +24,7 @@ export type SoundState = "off" | "on" | "failed";
  * "offWhileCalled": the visit is called and the sound is off (lib/text sound.offWhileCalled).
  */
 export function soundNote(status: VisitStatus, state: SoundState): "failed" | "offWhileCalled" | null {
-  // TODO(human): pick the line from status and state.
+  if (state === "failed") return "failed";
+  if (state === "off" && status === "called") return "offWhileCalled";
   return null;
 }
