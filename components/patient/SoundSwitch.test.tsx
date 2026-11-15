@@ -32,12 +32,14 @@ describe("SoundSwitch", () => {
     expect(html).toContain(textFor("fr").sound.turnOn);
   });
 
-  // "Sound is on" gets focus after the tap (a screen reader reads it then), so the box has no live
-  // region of its own: one would read the words twice, next to the page's other announcements.
-  it("has no live region of its own", () => {
+  // "Sound is on" gets focus after the tap (a screen reader reads it then), so it stays out of the
+  // live region: there it would be read twice. The one live region holds only the failed and
+  // offWhileCalled lines, and it is always on the page, so screen readers read a line when it appears.
+  it("has one empty status box while waiting, and never puts Sound is on in a live region", () => {
     const html = renderToStaticMarkup(<SoundSwitch status="waiting" language="en" />);
-    expect(html).not.toContain('role="status"');
+    expect(html.match(/role="status"/g)).toHaveLength(1);
     expect(html).not.toContain("aria-live");
+    expect(html).toMatch(/<div role="status"[^>]*><\/div>/);
   });
 
   it("does not show Sound is on before the patient taps the button", () => {
