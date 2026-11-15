@@ -12,6 +12,7 @@ To do in Phase 3 (from Grok's pass):
 
 One dated line per session, newest first.
 
+- 2026-11-14 (later): item A part c, sound and vibration on the called screen: rule `lib/calledAlert.ts` (owner wrote `shouldAlert`, `2e56ebb`), "Turn on sound" box `components/patient/SoundSwitch.tsx` and `alertSound.ts` (`69c7621`). Playwright at 390 px: test beep on tap, alert at once and every 30 s while called, stops after "I'm on my way". Part b checked at 390 px with Extra large in all five languages. Handoff for all three parts ready. Owner wants push notifications in the demo (later item). 168 tests pass.
 - 2026-11-14: branch `phase3-patient-extras` (not pushed): offline banner (`5b1a7be`, `e6114d7`) and text size control (`e68729c`) built by the builder worker and checked; one combined Gemini review for item A (`578e386`); Gemini Hydrogen 4 replaces 3.1 Pro (`04975ad`); worker effort medium; 13 more plugins off in settings.local.json; permission rules (no reading .env.local, ask before git push) and a 300-line hook (`29de8db`). 159 tests pass.
 
 - 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim merged into main and pushed.
@@ -25,7 +26,7 @@ Links (share only these two):
 State on 2026-11-13:
 - **Phase 2 is closed** (`803fb2b`). **Phase 3 is in progress**; details in the Phase 3 section below.
 - Phase 3 done so far: package update; patient wording; all patient text in `lib/text/`; five languages with draft notices and a language switch; "I'm still here"; the no-response steps after "Recall patient"; "Recall all off-site patients"; "Pause off-site waiting" per site; folder-by-folder cleanup; `npm run dev` with the Norton fix. All are pushed and live.
-- 159 unit tests, type check and lint pass (2026-11-14, branch `phase3-patient-extras`). axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
+- 168 unit tests, type check, lint and build pass (2026-11-14, branch `phase3-patient-extras`). axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
 - Test visits EZRRSQ and two from the recall-all test may still be in the `visits` table; the owner can delete them.
 - Open review: `handoffs/2026-11-12-gemini-review-pause-switch.md`, waiting for the owner's Vercel firewall rule for GET `/api/site-status`.
 - Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
@@ -34,9 +35,10 @@ State on 2026-11-13:
 **Next: the rest of Phase 3** (SPEC Phase 3 list):
 - Item A on branch `phase3-patient-extras` (not pushed; ask before push or merge):
   - (a) Offline banner: done (`components/patient/OfflineBanner.tsx`, `data/useOnline.ts`).
-  - (b) Text size control: done (`components/patient/TextSizeSwitch.tsx`, `data/savedTextSize.ts`, `lib/textSize.ts`). Browser test at 390 px with Extra large still to do (ask before starting the dev server).
-  - (c) Sound and vibration on the called screen (text `sound` already in all five languages; must say it only works while the page is open and the phone unlocked; phones allow sound only after a tap, so a "Turn on sound" button). Next task for the builder.
-  - Then one combined Gemini Hydrogen 4 review: `handoffs/2026-11-14-gemini-review-patient-extras.md` (add parts b and c to it first).
+  - (b) Text size control: done (`components/patient/TextSizeSwitch.tsx`, `data/savedTextSize.ts`, `lib/textSize.ts`). Checked at 390 px with Extra large in all five languages (no sideways scroll).
+  - (c) Sound and vibration on the called screen: done (`lib/calledAlert.ts`, `components/patient/SoundSwitch.tsx`, `components/patient/alertSound.ts`). Still to do: the owner's test on a real iPhone (Wi-Fi address of the computer on port 3000, or a deployment after an approved push).
+  - Next: the combined Gemini Hydrogen 4 review, `handoffs/2026-11-14-gemini-review-patient-extras.md` (ready to send). Its open points include no words when sound fails, "vibrates" on iPhone, no "Turn off sound", and two "demo limits" lines on the called screen.
+- Push notifications in the demo (owner wants them, 2026-11-14): a later item, after item A. Needs its own plan, a SPEC change (SPEC says the alerts work only while the page is open), a service worker, stored subscriptions, VAPID keys in a settings page (never in chat), and a Gemini review. iPhone shows web push only for a site added to the Home Screen (iOS 16.4 or later).
 - 24-hour deletion with the `daily_stats` table (SPEC hard rule 4).
 - Database decisions already made: `confirm_on_my_way` fills `seen_at` itself when empty; move the allowed-step checks into the database.
 - Closing Phase 3: WCAG 2.2 AA check (axe-core at phone and laptop size, 200% text), /security-review over all Phase 3 changes, Gemini Hydrogen 4 (High, new chats) reviews equity and accessibility, then workflow and screen consistency; the fluent reviewers approve each language (set `approved: true` in `lib/text/languages.ts`); list any open handoff before the closing save point.
