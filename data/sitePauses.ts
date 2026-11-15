@@ -34,6 +34,11 @@ async function load(): Promise<void> {
   }
 }
 
+/** The last known state; for tests and code outside React. */
+export function pauseStateNow(): PauseState {
+  return state;
+}
+
 function watch(onChange: () => void): () => void {
   listeners.add(onChange);
   if (!stopReading) stopReading = keepFresh(load, () => state.failed, REREAD_MS);
@@ -64,9 +69,11 @@ export async function setSitePaused(site: Site, paused: boolean): Promise<Change
       .eq("site", site)
       .eq("offsite_paused", !paused)
       .select("site");
+    const result: ChangeResult = error || !Array.isArray(data) ? "not_saved" : data.length === 1 ? "saved" : "refused";
+    // "saved" and "refused" both mean the database now holds `paused`, so show it at once.
+    if (result !== "not_saved" && state.pauses) show({ pauses: { ...state.pauses, [site]: paused }, failed: state.failed });
     void load();
-    if (error || !Array.isArray(data)) return "not_saved";
-    return data.length === 1 ? "saved" : "refused";
+    return result;
   } catch {
     return "not_saved";
   }

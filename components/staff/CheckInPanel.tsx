@@ -28,11 +28,14 @@ type Props = {
   homeProblem: string | null;
   /** Leave the home visit: after it is checked in, or when staff cancel. */
   onHomeDone: () => void;
-  /** Off-site waiting is paused at this site: check-in offers on-site waiting only. */
-  offsitePaused: boolean;
+  /** true: paused; null: not read yet. Both mean check-in offers on-site waiting only. */
+  offsitePaused: boolean | null;
 };
 
 export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProblem, onHomeDone, offsitePaused }: Props) {
+  // Only a read that says "not paused" lets staff offer off-site waiting.
+  const onSiteOnly = offsitePaused !== false;
+
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
   const [language, setLanguage] = useState("en");
@@ -96,8 +99,12 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
       setMessage("Choose CTAS 4 or 5 first.");
       return;
     }
-    if (outcome === "waiting" && offsitePaused) {
-      setMessage("Off-site waiting is paused at this site. Press “Waits on-site” instead.");
+    if (outcome === "waiting" && onSiteOnly) {
+      setMessage(
+        offsitePaused === null
+          ? "Checking whether off-site waiting is paused. Press “Waits on-site” instead."
+          : "Off-site waiting is paused at this site. Press “Waits on-site” instead.",
+      );
       return;
     }
     if (outcome === "waiting" && !CHECKLIST.every((item) => ticked[item.id])) {
@@ -114,7 +121,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
     setMessage(
       outcome === "waiting"
         ? `Visit ${code} is now waiting off-site.`
-        : `Visit ${code} recorded as ${outcome === "declined" ? "offered, declined" : offsitePaused ? "waiting on-site (off-site waiting paused)" : "not eligible"}. The patient waits on-site as usual.`,
+        : `Visit ${code} recorded as ${outcome === "declined" ? "offered, declined" : offsitePaused === true ? "waiting on-site (off-site waiting paused)" : offsitePaused === null ? "waiting on-site" : "not eligible"}. The patient waits on-site as usual.`,
     );
   }
 
@@ -202,9 +209,11 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
 
       {!homeProblem && (
         <div className="flex flex-wrap gap-3">
-          {offsitePaused ? (
+          {onSiteOnly ? (
             <p className="w-full rounded-lg border-2 border-red-800 bg-red-50 p-3 font-semibold text-red-900">
-              Off-site waiting is paused at this site: the patient waits on-site.
+              {offsitePaused
+                ? "Off-site waiting is paused at this site: the patient waits on-site."
+                : "Checking whether off-site waiting is paused. The patient can wait on-site."}
             </p>
           ) : (
             <Button type="submit" aria-disabled={saving}>
@@ -214,13 +223,13 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
           {/* While paused nobody can be offered off-site waiting, so "Offered, declined" would count
               a patient as offered by mistake. "Waits on-site" records not_eligible, which leaves the
               patient out of the dashboard's "offered" percentage, as it should. */}
-          {!offsitePaused && (
+          {!onSiteOnly && (
             <Button variant="secondary" aria-disabled={saving} onClick={() => finish("declined")}>
               Offered, declined
             </Button>
           )}
           <Button variant="secondary" aria-disabled={saving} onClick={() => finish("not_eligible")}>
-            {offsitePaused ? "Waits on-site (off-site waiting paused)" : "Not eligible"}
+            {offsitePaused === true ? "Waits on-site (off-site waiting paused)" : offsitePaused === null ? "Waits on-site" : "Not eligible"}
           </Button>
         </div>
       )}

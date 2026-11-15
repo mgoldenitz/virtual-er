@@ -112,7 +112,7 @@ export default function StaffPage() {
             onCreated={showSlip}
             homeVisit={homeVisit}
             homeProblem={homeProblem}
-            offsitePaused={paused === true}
+            offsitePaused={paused}
             onHomeDone={() => setHomeVisit(null)}
           />
           {slip && <VisitSlip code={slip.code} token={slip.access_token} language={slip.language} onClose={() => setSlip(null)} />}
@@ -125,7 +125,7 @@ export default function StaffPage() {
           <p role="status" className="min-h-6 font-semibold">
             {announcement}
           </p>
-          <PauseSwitch key={`pause-${site}`} site={site} paused={paused} offSiteCount={line.length} onResult={setAnnouncement} />
+          <PauseSwitch key={`pause-${site}`} site={site} paused={paused} offSiteCount={visits ? line.length : null} onResult={setAnnouncement} />
           {visits && <RecallAllPanel key={`recall-${site}`} visits={visits} site={site} onResult={(message, closed) => (closed ? onLeftList(message) : setAnnouncement(message))} />}
           {visits === null || now === null ? (
             <p>{outOfDate ? "No list to show yet." : "Loading…"}</p>

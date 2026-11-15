@@ -15,8 +15,8 @@ type Props = {
   site: Site;
   /** The switch as last read, or null if it could not be read yet. */
   paused: boolean | null;
-  /** Patients still in the off-site line at this site (waiting or recalled). */
-  offSiteCount: number;
+  /** Patients still in the off-site line at this site (waiting or recalled), or null while the list is not read yet. */
+  offSiteCount: number | null;
   /** Called with words for staff and screen readers after each change. */
   onResult: (message: string) => void;
 };
@@ -28,8 +28,10 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
   const [checked, setChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const heading = useRef<HTMLHeadingElement>(null);
   const question = useRef<HTMLHeadingElement>(null);
+  // After Cancel or a save, focus lands on the one button that is still on screen.
+  const pauseButton = useRef<HTMLButtonElement>(null);
+  const resumeButton = useRef<HTMLButtonElement>(null);
 
   // Keyboard and screen-reader users land on each confirmation question when it opens.
   useEffect(() => {
@@ -40,11 +42,15 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
     return <p className="text-sm text-slate-700">Checking whether off-site waiting is paused at this site…</p>;
   }
 
+  // Count words only when the list has been read; otherwise the sentences name no number.
+  const stillOff = offSiteCount === null ? "the patients still off-site" : `the ${patientCount(offSiteCount)} still off-site`;
+  const alreadyOff = offSiteCount === null ? "Patients already off-site" : `The ${patientCount(offSiteCount)} already off-site`;
+
   const close = () => {
     setMode("idle");
     setChecked(false);
     setNote("");
-    window.setTimeout(() => heading.current?.focus(), 0);
+    window.setTimeout(() => (resumeButton.current ?? pauseButton.current)?.focus(), 0);
   };
 
   const save = async (pause: boolean) => {
@@ -74,7 +80,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
 
   return (
     <section aria-labelledby={`pause-heading-${site}`} className="space-y-2" data-testid="pause-switch">
-      <h3 id={`pause-heading-${site}`} ref={heading} tabIndex={-1} className="sr-only">
+      <h3 id={`pause-heading-${site}`} className="sr-only">
         Off-site waiting switch, Demo Site {site}
       </h3>
 
@@ -83,11 +89,10 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
           <p className="text-lg font-bold">Off-site waiting is paused at Demo Site {site}.</p>
           <p>
             No new off-site sign-ups: the start page sends patients to the emergency department, and check-in offers
-            on-site waiting only. Check every outstanding recall, and offer on-site waiting to the{" "}
-            {patientCount(offSiteCount)} still off-site.
+            on-site waiting only. Check every outstanding recall, and offer on-site waiting to {stillOff}.
           </p>
           {mode === "idle" && (
-            <Button variant="secondary" onClick={() => setMode("confirmResume")}>
+            <Button ref={resumeButton} variant="secondary" onClick={() => setMode("confirmResume")}>
               Turn off-site waiting back on…
             </Button>
           )}
@@ -95,7 +100,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
       )}
 
       {!paused && mode === "idle" && (
-        <Button variant="secondary" onClick={() => setMode("confirmPause")}>
+        <Button ref={pauseButton} variant="secondary" onClick={() => setMode("confirmPause")}>
           Pause off-site waiting at Demo Site {site}…
         </Button>
       )}
@@ -106,8 +111,8 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
             Pause off-site waiting at Demo Site {site}?
           </h4>
           <p>
-            Use this for downtime or a contact problem. New patients will wait on-site. The {patientCount(offSiteCount)}{" "}
-            already off-site keep their visits, and you will be asked to check each one.
+            Use this for downtime or a contact problem. New patients will wait on-site. {alreadyOff} keep their visits,
+            and you will be asked to check each one.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="danger" aria-disabled={saving} onClick={() => save(true)}>
