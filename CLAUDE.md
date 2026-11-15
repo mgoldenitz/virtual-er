@@ -46,6 +46,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 - For a bug: first write a test in lib/ that shows the bug, run it and see it fail, make a save point, then fix the code without changing that test.
 - For a change that touches more than one folder, or the database: start in plan mode and get my OK on a plan that names the files, the order of the work, and the tests that prove it.
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
+- Before you remove an import, search the file for other uses of that name.
 
 ## Keep the app organized so a beginner can read it
 
