@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
 import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
 import { forgetSavedToken, takeTokenFromLink } from "@/data/savedToken";
+import { useOnline } from "@/data/useOnline";
 import { EmergencyLine } from "@/components/EmergencyLine";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PatientShell } from "@/components/PatientShell";
@@ -26,6 +27,7 @@ export default function PatientPage() {
   const [brokenLink, setBrokenLink] = useState(false);
   const [sending, setSending] = useState(false);
   const chosenLanguage = useChosenLanguage();
+  const online = useOnline();
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
@@ -131,7 +133,10 @@ export default function PatientPage() {
             · <bdi>{fill(t.siteName, { site: view.site })}</bdi>
           </p>
           {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
-          <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} />
+          {/* Offline: a dashed frame shows the status may be old. The frame is always there, so the status keeps its place. */}
+          <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
+            <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} />
+          </div>
           {(view.status === "waiting" || view.status === "called") && <SoundSwitch status={view.status} language={language} />}
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
