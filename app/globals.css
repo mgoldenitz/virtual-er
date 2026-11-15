@@ -27,9 +27,10 @@ body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
 
-/* Staff screens (glass look). White text on #0e6f78 is 5.9:1. */
+/* Staff screens (glass look). The same teal as the patient side: 7.5:1 on white and 5.1:1 on
+   the darkest corner of the backdrop below (the older #0e6f78 was only 4.0:1 there). */
 .theme-staff {
-  --color-brand: #0e6f78;
+  --color-brand: #0f5e66;
   --color-brand-strong: #0b474d;
   --color-ink: #13212b;
 }

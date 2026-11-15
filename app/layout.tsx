@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <InlineScript html={textSizeScript()} />
       </head>
-      <body className="flex min-h-full flex-col bg-white text-slate-900" suppressHydrationWarning>
+      <body className="flex min-h-full flex-col bg-canvas text-ink" suppressHydrationWarning>
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
       </body>
