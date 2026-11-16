@@ -4,13 +4,14 @@
 // last tap, while waiting off-site (lib/stillHere.ts). The tap only tells staff the patient is
 // still following the visit; the screen says it is not a health check.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { recordStillHere } from "@/data/patientVisit";
 import type { PatientView } from "@/lib/patientView";
 import { stillHereState } from "@/lib/stillHere";
 import { textFor } from "@/lib/text";
 import { Button } from "@/components/Button";
 import { useNow } from "@/components/useNow";
+import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
 
 /** How long the thank-you stays after a tap. */
 const THANKS_MS = 5 * 60_000;
@@ -23,6 +24,9 @@ export function StillHerePrompt({ view, token, language }: { view: PatientView; 
   const t = textFor(language);
   const state = now ? stillHereState(view, now) : "not_due";
   const showing = state !== "not_due";
+  // If the prompt leaves with focus inside it (after the tap), focus goes to the status heading.
+  const lostFocus = useRef(false);
+  const markLost = useRescueFocus("status-heading", showing, lostFocus);
 
   // Tell screen readers once each time the prompt appears (politely; it is not urgent).
   useEffect(() => {
@@ -51,11 +55,7 @@ export function StillHerePrompt({ view, token, language }: { view: PatientView; 
         {announcement}
       </p>
       {showing && (
-        <section
-          aria-labelledby="still-here-heading"
-          className="space-y-3 rounded-xl border-4 border-brand bg-card p-4"
-          data-testid="still-here"
-        >
+        <PromptCard onFocusLost={markLost}>
           <h2 id="still-here-heading" className="text-xl font-bold">
             {t.stillHere.heading}
           </h2>
@@ -68,13 +68,28 @@ export function StillHerePrompt({ view, token, language }: { view: PatientView; 
               {t.patient.notSaved}
             </p>
           )}
-        </section>
+        </PromptCard>
       )}
-      {thanking && (
-        <p role="status" className="clean-card font-semibold" data-testid="still-here-thanks">
-          {t.stillHere.thanks} {t.stillHere.meaning}
-        </p>
-      )}
+      {/* Always on the page, so screen readers hear the thank-you when its text comes in. */}
+      <p role="status" className={thanking ? "clean-card font-semibold" : undefined} data-testid="still-here-thanks">
+        {thanking ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
+      </p>
     </>
+  );
+}
+
+/** The prompt's box. It tells the prompt when it leaves the page with focus inside it. */
+function PromptCard({ onFocusLost, children }: { onFocusLost: () => void; children: ReactNode }) {
+  const box = useRef<HTMLElement>(null);
+  useReportFocusOnLeave(box, onFocusLost);
+  return (
+    <section
+      ref={box}
+      aria-labelledby="still-here-heading"
+      className="space-y-3 rounded-xl border-4 border-brand bg-card p-4"
+      data-testid="still-here"
+    >
+      {children}
+    </section>
   );
 }
