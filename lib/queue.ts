@@ -41,7 +41,10 @@ export function placeInLine(visits: Visit[], visit: Visit): number | null {
 
 export const DEFAULT_GAP_MINUTES = 15;
 
-/** Average minutes between the last 5 call-backs at a site; 15 until there is history. */
+/** The smallest gap per place, so a fast burst of call-backs never gives a very short wait. */
+export const MIN_GAP_MINUTES = 5;
+
+/** Average minutes between the last 5 call-backs at a site; 15 until there is history, never under 5. */
 export function averageCallGap(visits: Visit[], site: Site): number {
   const times = visits
     .filter((v) => v.site === site && v.called_at)
@@ -51,7 +54,7 @@ export function averageCallGap(visits: Visit[], site: Site): number {
   if (times.length < 2) return DEFAULT_GAP_MINUTES;
   const gaps = times.slice(1).map((t, i) => (t - times[i]) / 60_000);
   const avg = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
-  return Math.max(avg, 1);
+  return Math.max(avg, MIN_GAP_MINUTES);
 }
 
 /**
