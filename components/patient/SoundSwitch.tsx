@@ -70,6 +70,8 @@ export function SoundSwitch({ status, language, onFocusLost }: Props) {
   async function turnOn() {
     if (busy.current) return;
     busy.current = true;
+    // A tap gives its own answer for focus, so an old answer from a failed repeat beep must not stay.
+    backgroundFocus.current = null;
     // Clear an old failed line first, so screen readers read it again if this try fails too.
     const clearedAt = state === "failed" ? Date.now() : null;
     setState("off");
@@ -106,6 +108,8 @@ export function SoundSwitch({ status, language, onFocusLost }: Props) {
   function turnOff() {
     attempt.current += 1;
     busy.current = false;
+    // A tap gives its own answer for focus, so an old answer from a failed repeat beep must not stay.
+    backgroundFocus.current = null;
     setState("off");
     stopVibration();
   }
