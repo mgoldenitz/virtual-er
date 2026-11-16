@@ -121,6 +121,7 @@ describe("SoundSwitch taps", () => {
     vi.mocked(playAlert).mockResolvedValue(false);
     show("waiting");
     // A finger tap on a phone does not focus the button, so focus stays on the page body.
+    expect(document.activeElement).toBe(document.body);
     await act(async () => button(t.turnOn)?.click());
     expect(document.activeElement).toBe(button(t.turnOn));
   });
@@ -162,6 +163,7 @@ describe("SoundSwitch taps", () => {
   it("moves focus to Turn on sound after a phone tap (focus on the page) when the sound cannot start", async () => {
     vi.mocked(unlockSound).mockResolvedValue(false);
     show("waiting");
+    expect(document.activeElement).toBe(document.body);
     await act(async () => button(t.turnOn)?.click());
     expect(document.activeElement).toBe(button(t.turnOn));
   });
@@ -215,6 +217,21 @@ describe("SoundSwitch while called", () => {
     // "I'm on my way" takes the sound box off the page.
     act(() => root.render(<></>));
     expect(stopVibration).toHaveBeenCalledTimes(1);
+    // The beep that still waits asks "still wanted?" before it plays; the answer must now be no.
+    const stillWanted = vi.mocked(playAlert).mock.calls[0][0];
+    expect(stillWanted?.()).toBe(false);
+  });
+
+  it("leaves focus on the page when a repeat beep fails after the patient tapped somewhere else on the phone", async () => {
+    const beep = later<boolean>();
+    vi.mocked(playAlert).mockReturnValue(beep.promise);
+    show("called");
+    await press(t.turnOn);
+    // A finger tap on plain text further down the page takes focus away to the page body.
+    (document.activeElement as HTMLElement | null)?.blur();
+    await settle(beep, false);
+    expect(button(t.turnOn)).toBeDefined();
+    expect(document.activeElement).toBe(document.body);
   });
 
   it("leaves focus on another button when a repeat beep fails in the background", async () => {

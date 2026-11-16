@@ -643,3 +643,49 @@ No problem found. French, Urdu and Mandarin are unchanged; Arabic gives "من {l
 - 5.2: the claim is wrong, but the test is added. With `|| state === "failed"` taken out, the old phone-tap test fails too (checked): inside `act()` React puts `on` and `failed` in one render, so `wasOn` stays false. New test for the direct case: phone tap, `unlockSound()` gives `false`, focus moves to "Turn on sound"; it also fails with that part taken out (checked).
 - Fix save points: tests `71ed446` (2 failed before the fix), fix after it. `npm test` 267 passed, lint no errors, build passed.
 - 5.3: not accepted for `called` to `waiting` (see 1.1). Replaced by a test for the hidden page case in 1.2.
+
+## Response (DeepSeek V4.1 Flash Free, High)
+
+The owner ran this review with DeepSeek V4.1 Flash Free, High, on 2026-11-15. It reviewed the diff in this file, so its line numbers are for the code before `b4a0e54`.
+
+Problems, most serious first
+A failed call-back beep tells the patient they turned the sound off. In components/patient/SoundSwitch.tsx:96 a repeat beep that cannot play sets the state to "off", and lib/calledAlert.ts:41-44 then picks offWhileCalled, which reads "Sound is off. Tap 'Turn on sound' for sound alerts." The "failed" message ("Sound could not start on this phone") is only reachable from the test-beep path at SoundSwitch.tsx:52. Case: the visit is called, the patient taps Turn on sound, and the phone refuses (silent switch, no Web Audio). Every later tap repeats the same loop, so the patient is told to do the thing that keeps failing. Smallest fix: set "failed" on that path too, and keep the existing focus rule.
+A call-back that arrives during a test beep stays silent for up to 30 seconds. turnOn reads status from the render at click time (SoundSwitch.tsx:48), so a visit that becomes called during the player wait still runs the test-beep branch and sets beeping. The effect's tick then skips because of the guard at SoundSwitch.tsx:92, and the next attempt is one ALERT_REPEAT_MS later (lib/calledAlert.ts:7, 30 seconds). Case: status Waiting, tap Turn on sound on a slow phone, staff recall the patient during that wait. The patient hears one test beep and then nothing. Smallest fix: read the live status from a ref inside turnOn, so a called visit never starts a test beep.
+Focus falls to the page body when the box leaves the page. The cleanup at SoundSwitch.tsx:110-115 bumps the attempt and stops the vibration but does not move focus, and app/patient/page.tsx:140 removes the box as soon as the status is no longer waiting or called. Case: a keyboard user turns sound on, focus sits on "Sound is on", and staff mark the patient arrived from the staff tab. The focused node disappears, activeElement becomes body, and the next Tab starts at the top of the page. Smallest fix: in that cleanup, if focus was inside the box, move it to the status heading.
+On a phone the body is always the focused element, so focusNearBox() (SoundSwitch.tsx:72-76) cannot tell "just tapped" from "reading further down". Case: the patient scrolls to the bottom of the patient page, a repeat beep fails, and focus moves to Turn on sound, which scrolls the page back up to the box. Requirement 2 holds for keyboard users only. Smallest fix: take focus on a failure only when the failure follows a tap, using a flag set in turnOn.
+The empty-then-failed step is not guaranteed and is not tested. SoundSwitch.tsx:35 clears the line and :41-42 sets it again after await unlockSound(). In a browser the first update is flushed at the end of the click event and the second after the await, so the empty step does happen today. If both updates ever land in one commit, the region goes from one identical sentence to the same sentence, and any screen reader that ignores an identical repeat (NVDA and JAWS commonly do; I have not tested either) stays silent. The test at SoundSwitch.click.test.tsx:126 uses a pending promise, which forces the separation, so the fast path is untested.
+Several tests can pass while the behaviour is wrong.
+SoundSwitch.click.test.tsx:111 cannot show that focus was on the body; it passes equally if the button already had focus.
+SoundSwitch.click.test.tsx:205 (expect(button(t.turnOn)).toBeDefined()) is always true, and the test never checks that the failed state was reached.
+SoundSwitch.click.test.tsx:180 proves stopVibration ran, not that the waiting beep did not play, because playAlert is mocked and its stillWanted callback is never called.
+SoundSwitch.click.test.tsx:169 counts calls to a mocked playAlert, not beeps.
+components/staff/FollowUpPanel.test.ts:52-58 checks the sr-only span but never the visible text, so the claim "the screen keeps 10 min" is untested.
+lib/text/text.test.ts:55 hand-feeds high: "60 minutes", a string formatWaitRange never produces. For 40 to 60 the app renders "40 minutes to 1 hour", so the SPEC example at SPEC.md:60 is not tested at all.
+lib/waitText.test.ts:39-42 covers only 5-10 and 10-15; nothing covers 11 to 59 (the Arabic many form), and nothing would fail if the low end gained a minute word.
+A player that never settles leaves the button dead. lib/patient/../alertSound.ts:40 awaits context.resume() with no time limit, while playAlert waits at most 1 second (alertSound.ts:9). Case: the patient taps Turn on sound, setState("off") clears the box, busy stays true, and every later tap is ignored with no message. This predates the diff, but the new clear at SoundSwitch.tsx:35 makes the dead state look normal. Smallest fix: race resume() with the same 1 second wait and set "failed".
+Answers to the five questions
+Race cases. No further beep race in the counter itself. beeping is set before React runs the effect, and keying it by attempt means an old beep cannot block a new one. The waiting-to-called change and a fast double status change are handled for the beep, but item 2 is the cost of that handling: the call-back alert is delayed.
+
+Focus nowhere. Yes, one case: item 3. Everything else ends on a control, and item 4 is the opposite problem, focus taken when it should stay.
+
+Empty-then-failed. It works today for the reason above, but it rests on React's flush timing rather than on anything the code guarantees, and no test covers the fast path. The screen readers to check are NVDA and JAWS first, then VoiceOver on iOS and TalkBack.
+
+The four languages, 5 to 59. No wrong line. I generated every pair from 0 to 59 in Arabic and compared each with the plural rule for the high number: 0 mismatches, so 3 to 10 take "دقائق" and 11 to 59 take "دقيقة", and the low end stays a bare digit. French, Urdu and Mandarin are unchanged for the short line. Outside the range you asked about, Arabic high of 1 or 2 drops the digit ("من 0 إلى دقيقة"), and the Mandarin hour line keeps a space around 到, both as before.
+
+Do the tests prove it. No, for the reasons in items 5 and 6. The Arabic fix is the weakest: two examples, no many-form case. The staff flag fix proves the spoken half only.
+
+Not checked here: a real screen reader, a real phone, and fluent review of the Arabic line.
+
+### My check of the DeepSeek response
+
+- 1 (a failed repeat beep shows "Sound is off"): not accepted. The `failed` line says "Watch this screen to see when you are called", which is wrong when the visit is already called. A new tap is the correct thing to do, because a stopped player can start again only inside a tap. The case given does not occur: with no Web Audio, `unlockSound()` gives `false` at the tap and the box already shows `failed`.
+- 2 (a call during the test beep gives a 30 s gap): not accepted. The test beep that waits plays when the player starts, which is at the time of the call, and the next beep comes after the normal 30 s. The test "beeps once when the visit is called while the sound is still starting" shows this on purpose.
+- 3 (focus drops to the page when the box leaves): valid, but the fix is in `app/patient/page.tsx` (the box leaves with the "I'm on my way" button and other parts). It touches a second folder, so it needs a plan first. Not done in this change.
+- 4 (on a phone, a background failure takes focus and scrolls): accepted. New test "leaves focus on the page when a repeat beep fails after the patient tapped somewhere else on the phone" fails before the fix (checked).
+- 5 (empty-then-failed is not certain): already fixed in `b4a0e54` by the `STATUS_CLEAR_MS` pause, with a test for the fast path.
+- 6, tests: accepted for the body focus check before a phone tap (added to both phone-tap tests), for `stillWanted` after the box leaves (added: it gives `false`), and for the visible "10 min" in `FollowUpPanel.test.ts` (added). Not accepted: `toBeDefined()` on `find()` is not always true, because `find()` gives `undefined` when no button matches. Counting calls to the mocked `playAlert` is correct here, because the beep player itself has its own tests in `alertSound.test.ts`.
+- 6, wait range: the Arabic 11 to 59 form is covered by `(10, 15)` and `(20, 45)` in `lib/waitText.test.ts`. The SPEC example "40 to 60 minutes" does not match what the app shows ("40 minutes to 1 hour"); this question goes to the owner.
+- 7 (`unlockSound()` has no time limit): accepted. New test "gives false after 1 second when the player will not start" fails before the fix (checked: it times out after 5 s).
+- Arabic high of 1 or 2: outside the range of the app (the shortest wait is 5 minutes). No change.
+
+Not checked: a real screen reader, a real phone.

@@ -46,12 +46,13 @@ const statusWords = (html: string) => html.match(/<p role="status"[^>]*>(.*?)<\/
 
 describe("FollowUpPanel phone and review flags", () => {
   it.each([
-    ["phone", 12, "10 minutes"],
-    ["phone_again", 22, "20 minutes"],
-    ["review", 32, "30 minutes"],
-  ])("the %s flag, called back %i minutes ago, gives screen readers '%s', never 'min'", (kind, calledMinutesAgo, words) => {
+    ["phone", 12, "10 minutes", "10 min"],
+    ["phone_again", 22, "20 minutes", "20 min"],
+    ["review", 32, "30 minutes", "30 min"],
+  ])("the %s flag, called back %i minutes ago, gives screen readers '%s', never 'min', and shows '%s'", (kind, calledMinutesAgo, words, shown) => {
     const html = panelHtml(calledMinutesAgo);
     expect(html).toContain(`data-testid="flag-${kind}"`);
+    expect(html).toContain(`<span aria-hidden="true">${shown}</span>`);
     expect(html).toContain(`<span class="sr-only">${words}</span>`);
     expect(statusWords(html)).toContain(words);
     expect(statusWords(html)).not.toMatch(/\bmin\b/);

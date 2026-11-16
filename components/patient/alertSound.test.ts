@@ -84,6 +84,15 @@ describe("unlockSound", () => {
     expect(await playAlert()).toBe(true);
   });
 
+  it("gives false after 1 second when the player will not start, so the tap does not wait for ever", async () => {
+    vi.useFakeTimers();
+    FakeContext.resumeResult = "hang";
+    const { unlockSound } = await load();
+    const result = unlockSound();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await result).toBe(false);
+  });
+
   it("gives false when the browser has no sound player", async () => {
     vi.stubGlobal("window", {});
     const { unlockSound } = await load();
