@@ -14,4 +14,4 @@
 - TaskStop does not always end a Next dev server that Claude started; the node process can stay on port 3000. Check with `netstat -ano | findstr :3000` and ask the owner before stopping it.
 - Some files have CRLF line ends, and multi-line Edit calls can miss on them. Use a small Python edit script in the job's tmp folder that keeps the line ends.
 - `formatMinutes` has no day unit: 25 hours shows "25h". Accepted, because no demo visit stays open for a day (Gemini review c2, 2026-11-15).
-- happy-dom's `click()` does not move focus to the button. Click tests call `target.focus()` first, as a real tap does, or focus checks pass or fail for the wrong reason.
+- happy-dom's `click()` does not move focus to the button. Click tests call `target.focus()` first, as a mouse click or the Enter key does, or focus checks pass or fail for the wrong reason. To test a phone tap (focus stays on the page body), click without `focus()`.
