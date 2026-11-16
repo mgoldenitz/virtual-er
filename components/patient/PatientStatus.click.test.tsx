@@ -91,4 +91,20 @@ describe("PatientStatus focus", () => {
     );
     expect(document.activeElement).toBe(heading());
   });
+
+  it("moves focus to the heading in the same change when a part leaves with focus but the status stays", () => {
+    const lost = { current: false };
+    const render = (sending: boolean) =>
+      act(() =>
+        root.render(<PatientStatus view={view} language="en" onOnMyWay={() => {}} sending={sending} lostFocus={lost} />),
+      );
+    render(false);
+    // A part below left with focus inside it, in a change that keeps the status at called.
+    lost.current = true;
+    (document.activeElement as HTMLElement | null)?.blur();
+    render(true);
+    // The report is used now, not kept for a later status change.
+    expect(lost.current).toBe(false);
+    expect(document.activeElement).toBe(heading());
+  });
 });
