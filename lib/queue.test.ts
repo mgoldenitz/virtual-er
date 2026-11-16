@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeLine, averageCallGap, minutesBetween, placeInLine, waitRange } from "./queue";
+import { activeLine, averageCallGap, MIN_GAP_MINUTES, minutesBetween, placeInLine, waitRange } from "./queue";
 import type { Visit } from "./visit";
 import { checkInAtDesk } from "./visitActions";
 
@@ -48,8 +48,15 @@ describe("wait range", () => {
     expect(averageCallGap(visits, "A")).toBe(15); // gaps 10 and 20
   });
 
+  // Changed on purpose on 2026-11-16 (was waitRange(1, 1)): a gap under 5 minutes can no longer come in.
   it("never shows a range below 5 minutes or with equal ends", () => {
-    expect(waitRange(1, 1)).toEqual({ low: 5, high: 10 });
+    expect(MIN_GAP_MINUTES).toBe(5);
+    expect(waitRange(1, MIN_GAP_MINUTES)).toEqual({ low: 5, high: 10 });
+  });
+
+  it("never gives a gap under 5 minutes, even when call-backs come 1 minute apart", () => {
+    const visits = [0, 1].map((m, i) => visit(`v${i}`, m, { status: "arrived", called_at: at(m).toISOString() }));
+    expect(averageCallGap(visits, "A")).toBe(5);
   });
 
   it("counts whole minutes", () => {

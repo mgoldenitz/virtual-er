@@ -36,10 +36,11 @@ describe("patient view from a database row", () => {
     expect(view.waitHigh).toBe(25);
   });
 
-  it("never uses a gap under 1 minute", () => {
-    const view = patientViewFromRow({ ...waiting, average_gap_minutes: 0 });
-    expect(view.waitLow).toBe(5);
-    expect(view.waitHigh).toBe(10);
+  // Changed on purpose on 2026-11-16 (was "never uses a gap under 1 minute"): the floor is now 5 minutes per place.
+  it("never uses a gap under 5 minutes", () => {
+    const view = patientViewFromRow({ ...waiting, place_in_line: 3, average_gap_minutes: 2 });
+    expect(view.waitLow).toBe(10);
+    expect(view.waitHigh).toBe(20);
   });
 
   it("has no place or wait range once called", () => {
