@@ -1,4 +1,6 @@
 -- Check for the wait gap in get_patient_visit (migration 20261116000000_wait_gap_distinct_moments.sql).
+-- Run the whole file at once (do not select and run one part): the Editor shows only the last
+-- result, so the file keeps the first results in a temp table and shows all rows at the end.
 -- Run it in the Supabase SQL Editor after that migration. It saves nothing: everything happens
 -- inside "begin ... rollback", so the synthetic visits, the paused trigger and the cleared
 -- call-back times all go away at the end.
@@ -7,13 +9,19 @@
 -- check could not put call-backs at different times. Why real call-back times are cleared:
 -- real call-backs at the same site would change the average.
 --
--- Expected result (2 rows):
---   site A  average_gap_minutes = 25
+-- Expected result (4 rows):
+--   1 site A  average_gap_minutes = 25
 --     Moments 60, 40 and 10 minutes ago count. The "Recall all" of 3 visits 60 minutes ago is
 --     one moment, and the call-back 4 hours ago is too old. 3 moments give 2 gaps: (60 - 10) / 2 = 25.
 --     The old function gave 46 here: (240 - 10) / 5.
---   site B  average_gap_minutes = null
+--   2 site B  average_gap_minutes = null
 --     Only one distinct moment (a "Recall all" of 2 visits), so the phone uses 15 minutes per place.
+--   3 site B, 7 moments  average_gap_minutes = 16
+--     6 more call-backs at 20, 40, 60, 80, 100 and 170 minutes ago, next to the one at 30.
+--     Only the newest 6 moments count: (100 - 20) / 5 = 16. The oldest 6 would give
+--     (170 - 30) / 5 = 28, and no limit would give (170 - 20) / 6 = 25.
+--   4 site A, not waiting  average_gap_minutes = null
+--     A patient who already arrived gets no wait gap, even with call-backs at the site.
 
 begin;
 
@@ -34,12 +42,32 @@ insert into public.visits (code, access_token, site, source, status, triaged_at,
   ('ZZZZ3B', 'ZZZZZZZZZZZZZZZZZZZZZZZZB1', 'B', 'desk', 'arrived', now() - interval '2 hours', now() - interval '30 minutes'),
   ('ZZZZ3C', 'ZZZZZZZZZZZZZZZZZZZZZZZZB2', 'B', 'desk', 'arrived', now() - interval '2 hours', now() - interval '30 minutes');
 
-select v.site, v.average_gap_minutes
-from (
-  select * from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZA0')
-  union all
-  select * from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZB0')
-) v
-order by v.site;
+-- Rows 1 and 2, kept until the end (the temp table goes away with the rollback).
+create temp table wait_gap_rows as
+select '1 site A' as check_case, v.average_gap_minutes
+from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZA0') v
+union all
+select '2 site B', v.average_gap_minutes
+from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZB0') v;
+
+insert into public.visits (code, access_token, site, source, status, triaged_at, called_at) values
+  -- Site B: 6 more call-backs, so 7 distinct moments in all (row 3).
+  ('ZZZZ3D', 'ZZZZZZZZZZZZZZZZZZZZZZZZB3', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '20 minutes'),
+  ('ZZZZ3E', 'ZZZZZZZZZZZZZZZZZZZZZZZZB4', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '40 minutes'),
+  ('ZZZZ3F', 'ZZZZZZZZZZZZZZZZZZZZZZZZB5', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '60 minutes'),
+  ('ZZZZ3G', 'ZZZZZZZZZZZZZZZZZZZZZZZZB6', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '80 minutes'),
+  ('ZZZZ3H', 'ZZZZZZZZZZZZZZZZZZZZZZZZB7', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '100 minutes'),
+  ('ZZZZ3J', 'ZZZZZZZZZZZZZZZZZZZZZZZZB8', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '170 minutes'),
+  -- Site A: a patient who already arrived and was never called (row 4).
+  ('ZZZZ4A', 'ZZZZZZZZZZZZZZZZZZZZZZZZC0', 'A', 'desk', 'arrived', now() - interval '30 minutes', null);
+
+insert into wait_gap_rows
+select '3 site B, 7 moments', v.average_gap_minutes
+from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZB0') v
+union all
+select '4 site A, not waiting', v.average_gap_minutes
+from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZC0') v;
+
+select check_case, average_gap_minutes from wait_gap_rows order by check_case;
 
 rollback;
