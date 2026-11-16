@@ -162,3 +162,29 @@ Give each problem with the line, what goes wrong, and a fix. Say "no problem fou
 ## Not checked
 - The migration and the check file on the real database (not run yet).
 - That the old function gave 46 for the check data (worked out by hand only).
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-16. Its points are kept; the wording is shortened.
+
+1. Average gap. `(max - min) / (count - 1)` is the exact mean of the gaps (the gaps add up to max - min). Two details: `round()` on `double precision` rounds a tie such as 2.5 to the even number (2), so cast to `numeric` for half-up rounding. And the current moment is not counted: with call-backs at 10:00 and 10:05 and none after, the value at 12:55 is still 5, not the 170-minute stall. Consider a fallback to null sooner than 3 hours.
+2. `select distinct ... order by ... limit 6` is valid and keeps the newest 6. But `distinct` only joins times from the same transaction; two staff taps 1 microsecond apart count as two moments with a gap of 0. Fix: bucket times (for example `date_trunc('minute', ...)`) if quick single recalls should count as one.
+3. One "Recall all" with different times: yes, if it were many requests; with one UPDATE all rows share `now()`. Two separate call-backs with the same time: rare, except in a script with many UPDATEs in one transaction. Fix: keep "Recall all" one UPDATE; tests that need different times must not run several UPDATEs in one transaction.
+4. Cliffs: when the second-newest moment passes 3 hours, the value jumps to null (15 per place). Example: 10:00 and 10:05 give 5; at 13:00:01 the phone goes from 15-25 to 50-75 minutes. Also 10:00, 12:40, 12:50 give 85 at 12:59 and 10 at 13:00:01. Acceptable if intended; or widen to 4 hours, or explain in the patient text.
+5. Undo: if Undo or a re-triage leaves an old `called_at`, or the trigger only fills `called_at` when it was null, a second recall is not seen. Cancelled, removed and unable-to-reach visits still count, which is fine. Fix: check that Undo and reopen clear `called_at`.
+6. Index: not needed at about 100 visits a day; suggests `create index if not exists visits_site_called_at_idx on public.visits (site, called_at desc) where called_at is not null;` as the table grows without cleanup.
+7. Privacy: a polling patient learns within about 15 seconds that someone at the site was just called, and with exactly 2 moments can work out the earlier call-back time to about 30 seconds. The `waiting`-only gate is good. For a real hospital: round to 5 minutes or cache the value for 2 to 3 minutes. Whole minutes are enough for synthetic data.
+8. Check file: runs as `postgres`; `disable trigger` takes an exclusive lock on `visits` until `rollback`, so other requests wait while it runs. Danger if run line by line without `begin`. Expected numbers are right: site A 25, site B null, old function 46. Missing: more than 6 distinct moments (to prove `limit 6` keeps the newest), and a patient who is not `waiting` (to prove the value is null).
+
+## Claude's check of the response (2026-11-16)
+
+1. Mean: agrees. Tie rounding: correct but harmless (a tie needs a gap of exactly x.5 minutes, and the phone then rounds the range out to 5 minutes anyway). Not changed. Stall since the last call-back: a real point, and a product choice. Today, when staff stop calling back, the place in line and the estimate both stay still. Option for the owner: count "now" as a moment when the time since the last call-back is longer than the average, so the estimate grows during a stall. Not changed.
+2. Valid and newest 6: agrees. Two single recalls a few seconds apart are two patients called, so a gap near 0 there is the true pace; joining them would hide it. Not accepted.
+3. Checked: "Recall all" is one update (`data/staffActions.ts:134`, `.update({ status: "called", ... })` for the listed ids). The check file uses one insert, not several UPDATEs, and pauses the trigger. No change.
+4. Cliff: agrees that it jumps; the 3-hour window was the owner's choice in readiness review task 1. Owner may want a softer end (option, not changed).
+5. Checked: Undo is for closures only and keeps `called_at` (`Closure` in `lib/visitActions.ts` holds `status`, `removed_reason`, `arrived_at`, `closed_at`). A re-triage clears `called_at` (`applyTriage`, "fresh"), and the trigger sets a new `now()` whenever `called_at` changes to a new value (`20261110090134_visit_version_and_database_times.sql:38`), so a second recall is seen. Side effect, accepted: a re-triaged visit's first call-back leaves the pace history. Gemini's worry does not apply.
+6. Index: not needed now (YAGNI). Revisit with 24-hour cleanup in Phase 4 or 5.
+7. Privacy: agrees, and the place in line already shows the same event (it drops when someone ahead is called). Accepted for synthetic data; noted for a real deployment.
+8. Check file: the trigger change and the cleared times roll back with the transaction (Postgres `alter table` is transactional), and an error aborts the whole transaction, so nothing is saved. The lock lasts well under a second. Line-by-line use is the real risk: add a line at the top "Run the whole file at once". The two missing cases are cheap and worth adding: (a) after the first select, add 6 more distinct call-backs at site B (20, 40, 60, 80, 100 and 170 minutes ago) to the one at 30; the newest 6 give (100 - 20) / 5 = 16, the oldest 6 would give 28, no limit 25; (b) a site A patient whose status is not `waiting` gets null. Not done yet (owner to choose).
+
+Not checked: the migration and the check file on the real database.
