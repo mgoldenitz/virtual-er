@@ -11,6 +11,9 @@ import type { VisitStatus } from "@/lib/visit";
 function messageFor(status: VisitStatus, language: string): string {
   const a = textFor(language).announce;
   const messages: Partial<Record<VisitStatus, string>> = {
+    waiting: a.waiting,
+    declined: a.onsite,
+    not_eligible: a.onsite,
     called: a.called,
     on_the_way: a.onTheWay,
     arrived: a.arrived,

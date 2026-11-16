@@ -40,7 +40,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 6. No hospital logos or official branding.
 7. Joining from home never holds a place in the doctor's line. A patient's place in line starts when a nurse triages them at the hospital, because urgent patients are always seen first.
 8. Do not copy or display THP's wait-time numbers. Link to THP's dashboard on THP's own site (https://www.thp.ca/emergency/A/visit.html; the trilliumhealthpartners.ca address no longer works, per the owner on 2026-11-10). THP's terms prohibit reuse of its site material without written permission. All wait estimates inside the app are simulated.
-9. Accessibility target: WCAG 2.2 AA (Ontario's legal minimum for public websites is WCAG 2.0 AA; 2.2 AA is the stronger design target). That means keyboard access, visible focus, labelled controls, touch targets of at least 24 by 24 CSS pixels, enough colour contrast, text that still works at 200% size, and pages that reflow on a small phone without sideways scrolling. Never rely on sound or colour alone: every alert and status also appears as words on screen.
+9. Accessibility target: WCAG 2.2 AA (Ontario's legal minimum for public websites is WCAG 2.0 AA; 2.2 AA is the stronger design target). That means keyboard access, visible focus, labelled controls, touch targets of at least 24 by 24 CSS pixels, enough colour contrast, a layout that still works when the user enlarges text to 200% in the browser or phone settings, and pages that reflow on a small phone without sideways scrolling. Never rely on sound or colour alone: every alert and status also appears as words on screen.
 
 ## Screens
 

@@ -24,7 +24,7 @@ One line each: date, decision, who decided, where it is written.
 - 2026-11-13: AGENTS.md points to CLAUDE.md instead of copying it. Owner. AGENTS.md.
 - 2026-11-13: 15 unused plugins are off for this project. Owner. .claude/settings.json.
 - 2026-11-13: Orchestrator and Haiku workers; progress log moved to docs/progress.md. Owner. CLAUDE.md, "Orchestrator and workers".
-- 2026-11-14: "Issue a new link" replaces the visit's access token (no database change); only while waiting, called or on the way; no confirm step and no undo; the visit code stays the same. Owner. lib/visitActions.ts, components/staff/VisitRow.tsx.
+- 2026-11-14: "Issue a new link" replaces the visit's access token (no database change); only while waiting, called or on the way; staff confirm first (`components/staff/NewLinkPanel.tsx`, commit `54bb71d`); no undo; the visit code stays the same. Owner. lib/visitActions.ts, components/staff/VisitRow.tsx.
 - 2026-11-15: Staff brand colour is teal #0f5e66 (5.1:1 on the darkest backdrop corner); the page body uses `bg-canvas text-ink`. Gemini review b3, checked with the contrast script. app/globals.css, app/layout.tsx.
 - 2026-11-15: Beep volume 0.5 (was 0.3). Owner. lib/calledAlert.ts.
 - 2026-11-15: The patient wait range uses the long form in all 5 languages once the high end is 60 minutes or more ("45 minutes to 1 hour 20 minutes"); under 60 it stays "20 to 45 minutes". Owner. lib/waitText.ts, lib/text/*.ts.

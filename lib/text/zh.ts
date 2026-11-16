@@ -5,6 +5,7 @@
 // Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
 // The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
 // Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
+// The 2 new announce lines (waiting, onsite) are a draft by Claude, 2026-11-16, not yet approved.
 
 import type { DurationWords } from "./durationWords";
 import type { PatientText } from "./en";
@@ -111,6 +112,8 @@ export const zh: PatientText = {
     reassess: "请前往分诊台。",
     stillHere: "请点击按钮确认您还在这里。",
     secondAlert: "紧急：请立即回到急诊室。",
+    waiting: "您现在已进入院外候诊队列。此页面显示您在队列中的位置。",
+    onsite: "请在急诊室内等候。工作人员准备好后会叫您。",
   },
   slip: {
     typeLink: "或者在手机浏览器中输入此链接：",

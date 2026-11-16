@@ -130,6 +130,8 @@ export const en = {
     reassess: "Please go to the triage desk.",
     stillHere: "Please tap the button to confirm you are still here.",
     secondAlert: "Urgent: Please return to the emergency department right now.",
+    waiting: "You are now in the off-site line. This page shows your place in line.",
+    onsite: "Please wait inside the emergency department. Staff will call you when they are ready.",
   },
 
   // Desk slip (printed for the patient).

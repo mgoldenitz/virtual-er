@@ -5,6 +5,7 @@
 // Same shape as lib/text/en.ts; words in {braces} are filled in by the app.
 // The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
 // Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
+// The 2 new announce lines (waiting, onsite) are a draft by Claude, 2026-11-16, not yet approved.
 
 import type { DurationWords } from "./durationWords";
 import type { PatientText } from "./en";
@@ -111,6 +112,8 @@ export const fr: PatientText = {
     reassess: "Veuillez vous rendre au bureau de triage.",
     stillHere: "Veuillez appuyer sur le bouton pour confirmer que vous êtes toujours ici.",
     secondAlert: "Urgent : Veuillez retourner au service des urgences immédiatement.",
+    waiting: "Vous êtes maintenant dans la file d'attente hors site. Cette page indique votre place dans la file.",
+    onsite: "Veuillez attendre à l'intérieur du service des urgences. Le personnel vous appellera lorsqu'il sera prêt.",
   },
   slip: {
     typeLink: "Ou tapez ce lien dans le navigateur de votre téléphone :",
