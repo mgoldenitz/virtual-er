@@ -803,3 +803,14 @@ Gemini Hydrogen 4, High, 2026-11-16, pasted by the owner. Short form of each poi
 - 4.2: confirmed by a temporary code change: with line 73 of `SoundSwitch.tsx` removed, all 67 patient tests pass. Code put back from a copy.
 - 4.3: confirmed by a temporary code change: with the visible check in `tick()` (line 133) replaced by `true`, all 67 patient tests pass. Code put back from a copy.
 - 4.4: true, but low: `renderToStaticMarkup` writes no new lines. A one-character fix.
+
+### Outcome (2026-11-16)
+
+The owner chose to fix 1.2 and add the tests for 4.1 to 4.4. Skipped: 1.1 and 2 (no path in the app today), 3 (owner decision of 2026-11-15).
+
+- 1.2: test `9e17382` (failed first: focus on the page body), fix `e726601`. Each screen of `PatientStatus` is now in a `ViewBox` with a key per screen (`expired`, `waiting`, `called`, `other`). When a box leaves with focus inside, it reports it, and focus goes to the new `#status-heading`.
+- 4.1: `components/patient/PatientStatus.sound.click.test.tsx` renders `PatientStatus` and `SoundSwitch` with one shared flag, as `app/patient/page.tsx` does. Proven: with `lostFocus ?? ownFlag` changed to `ownFlag`, it fails.
+- 4.3: the unlock test now sends `visibilitychange` while the page is still hidden and expects 1 beep. Proven: with the visible check in `tick()` replaced by `true`, it fails.
+- 4.4: the regex in `FollowUpPanel.test.ts` is now `([\s\S]*?)`.
+- 4.2: no test added. `turnOn()` runs only from the "Turn on sound" button, and that button is on the page only when the state is not `on`. A failed repeat beep sets `backgroundFocus` and then `off`; the state effect then sets `backgroundFocus` back to null before the button can be tapped. So no tap can see an old value, and no test can fail when line 73 is removed. The line stays as a guard.
+- Commit `918fefb` has the tests for 4.1, 4.3 and 4.4. 293 tests, lint and build pass.
