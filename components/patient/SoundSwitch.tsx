@@ -10,6 +10,7 @@ import { textFor } from "@/lib/text";
 import type { VisitStatus } from "@/lib/visit";
 import { playAlert, stopVibration, unlockSound } from "./alertSound";
 import { useReportFocusOnLeave } from "./useFocusRescue";
+import { focusIsOnNobody } from "./noFocus";
 
 /** Waits this many milliseconds (none when the number is 0 or less). */
 function waitMs(ms: number): Promise<void> {
@@ -22,9 +23,8 @@ function waitMs(ms: number): Promise<void> {
  * patient is on another button, such as "I'm still here", so a background beep failure leaves it there.
  */
 function focusNearBox(box: HTMLElement | null): boolean {
-  const focused = document.activeElement;
-  if (!focused || focused === document.body) return true;
-  return box?.contains(focused) === true;
+  if (focusIsOnNobody()) return true;
+  return box?.contains(document.activeElement) === true;
 }
 
 /**
@@ -33,10 +33,9 @@ function focusNearBox(box: HTMLElement | null): boolean {
  * On a phone, focus is on the page body after the patient taps plain text elsewhere on the page.
  */
 function mayTakeFocusInBackground(box: HTMLElement | null): boolean {
-  const focused = document.activeElement;
   // With no tap, focus on the page body means the patient is somewhere else on the page.
-  if (!focused || focused === document.body) return false;
-  return box?.contains(focused) === true;
+  if (focusIsOnNobody()) return false;
+  return box?.contains(document.activeElement) === true;
 }
 
 type Props = {

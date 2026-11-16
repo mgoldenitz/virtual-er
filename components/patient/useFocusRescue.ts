@@ -4,6 +4,7 @@
 // (for example the sound box when staff mark the visit arrived): focus goes to the status heading.
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { focusIsOnNobody } from "./noFocus";
 
 /**
  * Calls onLost when this part leaves the page while focus is inside it. A layout effect cleanup
@@ -33,8 +34,8 @@ export function useRescueFocus(targetId: string, trigger: unknown, lostRef: RefO
   useEffect(() => {
     if (!lostRef.current) return;
     lostRef.current = false;
-    const focused = document.activeElement;
-    if (focused && focused !== document.body && focused.isConnected) return;
+    // Focus on a part that is still on the page stays there.
+    if (!focusIsOnNobody() && document.activeElement?.isConnected) return;
     const target = document.getElementById(targetId);
     if (target) target.focus({ preventScroll: true });
   }, [targetId, trigger, lostRef]);
