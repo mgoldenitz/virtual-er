@@ -1,11 +1,11 @@
 // Checks the words that screen readers hear for a staff flag: they leave out the minute count,
 // so they do not change (and are not read again) every minute.
 
-import type { ReactElement } from "react";
+import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { checkInAtDesk } from "@/lib/visitActions";
-import { flagFor } from "./FollowUpPanel";
+import { FollowUpPanel, flagFor } from "./FollowUpPanel";
 
 // The panel's buttons save through Supabase; this test never presses them.
 vi.mock("@/data/staffActions", () => ({}));
@@ -32,5 +32,28 @@ describe("flagFor spoken words", () => {
     const visit = checkInAtDesk(input, "waiting", new Date(minutesAgo(30)));
     const flag = flagFor({ kind: "contacted_not_arrived" }, visit, now);
     expect(flag?.spoken).toBe(flag?.text);
+  });
+});
+
+/** The whole panel as HTML, for a visit called back `calledMinutesAgo` minutes ago with no phone call yet. */
+function panelHtml(calledMinutesAgo: number): string {
+  const visit = { ...checkInAtDesk(input, "waiting", new Date(minutesAgo(200))), status: "called" as const, called_at: minutesAgo(calledMinutesAgo) };
+  return renderToStaticMarkup(createElement(FollowUpPanel, { visit, now, saving: false, act: vi.fn() }));
+}
+
+/** The words in the panel's role="status" line, which screen readers hear. */
+const statusWords = (html: string) => html.match(/<p role="status"[^>]*>(.*?)<\/p>/)?.[1] ?? "";
+
+describe("FollowUpPanel phone and review flags", () => {
+  it.each([
+    ["phone", 12, "10 minutes"],
+    ["phone_again", 22, "20 minutes"],
+    ["review", 32, "30 minutes"],
+  ])("the %s flag, called back %i minutes ago, gives screen readers '%s', never 'min'", (kind, calledMinutesAgo, words) => {
+    const html = panelHtml(calledMinutesAgo);
+    expect(html).toContain(`data-testid="flag-${kind}"`);
+    expect(html).toContain(`<span class="sr-only">${words}</span>`);
+    expect(statusWords(html)).toContain(words);
+    expect(statusWords(html)).not.toMatch(/\bmin\b/);
   });
 });
