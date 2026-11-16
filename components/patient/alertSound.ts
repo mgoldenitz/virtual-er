@@ -5,7 +5,7 @@ import { BEEP_HZ, BEEP_SECONDS, BEEP_VOLUME } from "@/lib/calledAlert";
 /** The one shared sound player. It is made by unlockSound() after a tap, then reused. */
 let context: AudioContext | null = null;
 
-/** The longest time playAlert() waits for the player to start again, in milliseconds. */
+/** The longest time unlockSound() and playAlert() wait for the player to start, in milliseconds. */
 const RESUME_WAIT_MS = 1000;
 
 /** The browser's audio player class (Safari older versions use the webkit name). */
@@ -37,8 +37,10 @@ export async function unlockSound(): Promise<boolean> {
       context = new AudioClass();
     }
     // resume() is called during the tap (the browser allows sound then); the wait comes after.
-    await context.resume();
-    return context.state === "running";
+    // A player that never answers gives false after RESUME_WAIT_MS, so the box can say so.
+    const ctx = context;
+    await Promise.race([ctx.resume(), waitAtMost(RESUME_WAIT_MS)]);
+    return isRunning(ctx);
   } catch {
     return false;
   }
