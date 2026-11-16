@@ -8,6 +8,8 @@ import { confirmUnableToReachFor, recordPhoneCallFor } from "@/data/staffActions
 import { CALL_PHONE_AGAIN_MINUTES, CALL_REVIEW_MINUTES, CALL_SECOND_ALERT_MINUTES } from "@/lib/demoTimes";
 import { canRecordPhoneCall, staffFollowUp, type StaffFollowUp } from "@/lib/followUp";
 import { formatMinutes } from "@/lib/duration";
+import { enDuration } from "@/lib/text/en";
+import { formatDuration } from "@/lib/waitText";
 import { minutesBetween } from "@/lib/queue";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -37,23 +39,42 @@ type Flag = { text: string; tone: string; spoken: string; body?: ReactNode };
 const same = (text: string, tone: string): Flag => ({ text, tone, spoken: text });
 
 /**
+ * A flag with a fixed time in it: "10 min" on screen, "10 minutes" for screen readers, which can
+ * read "min" as letters. The time is a fixed step (not a count), so the words stay the same each minute.
+ */
+const withTime = (before: string, minutes: number, after: string, tone: string): Flag => ({
+  text: `${before}${formatMinutes(minutes)}${after}`,
+  tone,
+  spoken: `${before}${formatDuration(minutes, enDuration)}${after}`,
+  body: (
+    <>
+      {before}
+      <Duration minutes={minutes} />
+      {after}
+    </>
+  ),
+});
+
+/**
  * The words and colour of each flag; null when there is nothing to flag. `spoken` leaves out
- * minute counts, so the words do not change, and are not read again, every minute.
+ * minute counts that go up, so the words do not change, and are not read again, every minute.
  */
 export function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): Flag | null {
   switch (followUp.kind) {
     case "phone":
-      return same(`No reply ${CALL_SECOND_ALERT_MINUTES} min after call-back. Phone the patient now.`, AMBER);
+      return withTime("No reply ", CALL_SECOND_ALERT_MINUTES, " after call-back. Phone the patient now.", AMBER);
     case "phone_again": {
       // "again" only if someone already phoned; staff may have missed the first flag.
       const ask = visit.phone_attempts === 0 ? "Phone the patient now." : "Phone the patient again.";
-      return same(`Still no reply ${CALL_PHONE_AGAIN_MINUTES} min after call-back. ${ask}`, AMBER);
+      return withTime("Still no reply ", CALL_PHONE_AGAIN_MINUTES, ` after call-back. ${ask}`, AMBER);
     }
     case "paused":
       return same(`Phoned, answered. Follow-up paused until ${clock(followUp.until)}.`, AMBER);
     case "review":
-      return same(
-        `Review: unable to reach. No answered call ${CALL_REVIEW_MINUTES} min after the call-back. Stays in the line until a nurse confirms.`,
+      return withTime(
+        "Review: unable to reach. No answered call ",
+        CALL_REVIEW_MINUTES,
+        " after the call-back. Stays in the line until a nurse confirms.",
         RED,
       );
     case "contacted_not_arrived":
