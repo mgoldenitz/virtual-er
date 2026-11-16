@@ -2,6 +2,7 @@
 
 - Norton re-signs HTTPS. Node in the owner's own terminal fails server-side Supabase calls without --use-system-ca; `npm run dev` adds it (scripts/dev.mjs). Claude's Bash shell already trusts the certificate, which hides the problem.
 - Python here: `python -I` ignores PYTHONIOENCODING. Use `python -I -X utf8` for Urdu, Arabic, Chinese or symbols. Long heredoc scripts get mangled; write the script to a file first. Put code text that holds a backslash (a regex such as \bmin\b) in a raw string (r'''...'''), or Python changes \b into a backspace.
+- Do not edit text that has backslashes (regex, escapes) with `sed` in the Bash tool; the shell removes them. Use Edit.
 - Claude Code keeps per-project settings (switched-off MCP servers) under the folder path in ~/.claude.json. Moving the project folder loses them.
 - The Supabase MCP is read-only and often fails to connect. The owner runs database changes in the SQL Editor.
 - Playwright cannot sign in as staff; the owner does the staff half of browser tests.
