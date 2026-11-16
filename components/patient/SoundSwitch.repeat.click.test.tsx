@@ -95,4 +95,22 @@ describe("SoundSwitch repeat beep", () => {
     await act(async () => document.dispatchEvent(new Event("visibilitychange")));
     expect(playAlert).toHaveBeenCalledTimes(2);
   });
+
+  it("brings back Turn on sound, with focus, when the beep after the unlock fails too", async () => {
+    const beep = await soundOnWhileCalled();
+    // Focus is on the words "Sound is on", inside the box.
+    expect(document.activeElement).toBe(container.querySelector("[data-testid='sound-on']"));
+    hidePage(true);
+    await act(async () => beep.finish(false));
+    const second = later<boolean>();
+    vi.mocked(playAlert).mockReturnValue(second.promise);
+    hidePage(false);
+    await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+    expect(playAlert).toHaveBeenCalledTimes(2);
+    // The second beep fails while the page is on screen, so the sound goes off.
+    await act(async () => second.finish(false));
+    expect(button(t.turnOn)).toBeDefined();
+    expect(container.querySelector("[data-testid='sound-on']")).toBeNull();
+    expect(document.activeElement).toBe(button(t.turnOn));
+  });
 });
