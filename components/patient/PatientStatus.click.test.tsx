@@ -65,6 +65,17 @@ describe("PatientStatus focus", () => {
     expect(document.activeElement).toBe(heading());
   });
 
+  it("moves focus to the new heading when the old heading had focus and staff mark the visit arrived", () => {
+    show("called");
+    button(p.onMyWay)?.focus();
+    show("on_the_way");
+    // Focus is now on the heading of the called screen. That heading leaves when the screen changes.
+    expect(document.activeElement).toBe(heading());
+    show("arrived");
+    expect(heading()?.textContent).toBe(p.arrivedHeading);
+    expect(document.activeElement).toBe(heading());
+  });
+
   it("moves focus to the heading when the sound box below leaves with focus inside", () => {
     const lost = { current: false };
     act(() =>
