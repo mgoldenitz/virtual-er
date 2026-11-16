@@ -1,16 +1,15 @@
 // @vitest-environment happy-dom
-// Checks the status screen and the sound box together, as app/patient/page.tsx puts them:
-// one shared flag, so focus goes to the status heading when the sound box leaves with focus inside.
+// Checks the status screen and the sound box together, through StatusAndSound, the part the page
+// uses: one shared flag, so focus goes to the status heading when the sound box leaves with focus inside.
 
-import { act, useRef } from "react";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PatientView } from "@/lib/patientView";
 import { textFor } from "@/lib/text";
 import type { VisitStatus } from "@/lib/visit";
 import { playAlert, stopVibration, unlockSound } from "./alertSound";
-import { PatientStatus } from "./PatientStatus";
-import { SoundSwitch } from "./SoundSwitch";
+import { StatusAndSound } from "./StatusAndSound";
 
 // Replace the real sound player, so no real sound plays in the test.
 vi.mock("./alertSound", () => ({ unlockSound: vi.fn(), playAlert: vi.fn(), stopVibration: vi.fn() }));
@@ -36,23 +35,9 @@ const view: PatientView = {
   expired: false,
 };
 
-/** The same parts and the same shared flag as the patient page. */
-function Page({ status }: { status: VisitStatus }) {
-  const lostFocus = useRef(false);
-  return (
-    <>
-      <PatientStatus view={{ ...view, status }} language="en" onOnMyWay={() => {}} sending={false} lostFocus={lostFocus} />
-      {(status === "waiting" || status === "called") && (
-        <SoundSwitch
-          status={status}
-          language="en"
-          onFocusLost={() => {
-            lostFocus.current = true;
-          }}
-        />
-      )}
-    </>
-  );
+/** The status screen and the sound box, as the patient page shows them. */
+function Page({ status, online = true }: { status: VisitStatus; online?: boolean }) {
+  return <StatusAndSound view={{ ...view, status }} language="en" onOnMyWay={() => {}} sending={false} online={online} />;
 }
 
 let container: HTMLDivElement;
@@ -87,5 +72,13 @@ describe("PatientStatus with the sound box", () => {
     const heading = container.querySelector("#status-heading");
     expect(heading?.textContent).toBe(t.patient.arrivedHeading);
     expect(document.activeElement).toBe(heading);
+  });
+
+  it("puts the status in a dashed frame only while the phone is offline", () => {
+    const frame = () => container.querySelector('[data-testid="status-frame"]');
+    act(() => root.render(<Page status="waiting" online={false} />));
+    expect(frame()?.className).toContain("border-dashed");
+    act(() => root.render(<Page status="waiting" />));
+    expect(frame()?.className).toBe("");
   });
 });

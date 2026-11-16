@@ -3,7 +3,7 @@
 // The patient screen on the patient's own phone: opens the visit from the link's token
 // (or the one saved on this phone) and updates live.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
 import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
 import { forgetSavedToken, takeTokenFromLink } from "@/data/savedToken";
@@ -12,8 +12,7 @@ import { EmergencyLine } from "@/components/EmergencyLine";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { PatientShell } from "@/components/PatientShell";
 import { OfflineBanner } from "@/components/patient/OfflineBanner";
-import { PatientStatus } from "@/components/patient/PatientStatus";
-import { SoundSwitch } from "@/components/patient/SoundSwitch";
+import { StatusAndSound } from "@/components/patient/StatusAndSound";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
 import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
@@ -28,8 +27,6 @@ export default function PatientPage() {
   const [sending, setSending] = useState(false);
   const chosenLanguage = useChosenLanguage();
   const online = useOnline();
-  // True when the sound box left the page with focus inside it; the status screen then moves focus.
-  const lostFocus = useRef(false);
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
@@ -135,19 +132,7 @@ export default function PatientPage() {
             · <bdi>{fill(t.siteName, { site: view.site })}</bdi>
           </p>
           {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
-          {/* Offline: a dashed frame shows the status may be old. The frame is always there, so the status keeps its place. */}
-          <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
-            <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} lostFocus={lostFocus} />
-          </div>
-          {(view.status === "waiting" || view.status === "called") && (
-            <SoundSwitch
-              status={view.status}
-              language={language}
-              onFocusLost={() => {
-                lostFocus.current = true;
-              }}
-            />
-          )}
+          <StatusAndSound view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} online={online} />
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {p.notSaved}
