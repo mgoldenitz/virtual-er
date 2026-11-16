@@ -28,6 +28,10 @@ describe("formatDuration (English)", () => {
 });
 
 describe("formatWaitRange", () => {
+  it("gives the SPEC.md example for 40 to 60 minutes", () => {
+    expect(formatWaitRange(40, 60, "en")).toBe("40 minutes to 1 hour");
+  });
+
   it("keeps the short line when both ends are under an hour", () => {
     expect(formatWaitRange(20, 45, "en")).toBe("20 to 45 minutes");
     expect(formatWaitRange(20, 45, "fr")).toBe("20 à 45 minutes");
