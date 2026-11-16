@@ -26,7 +26,7 @@ export function StillHerePrompt({ view, token, language }: { view: PatientView; 
   const showing = state !== "not_due";
   // If the prompt leaves with focus inside it (after the tap), focus goes to the status heading.
   const lostFocus = useRef(false);
-  const markLost = useRescueFocus("status-heading", showing, lostFocus);
+  const markLost = useRescueFocus("status-heading", lostFocus);
 
   // Tell screen readers once each time the prompt appears (politely; it is not urgent).
   useEffect(() => {

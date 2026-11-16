@@ -150,7 +150,7 @@ export function PatientStatus({ view, language, onOnMyWay, sending, lostFocus }:
   // The page's flag when it gives one (the sound box sets it too), otherwise this screen's own.
   const ownFlag = useRef(false);
   // A focused part that left with this change (for example "I'm on my way"): focus goes to the heading.
-  const markLost = useRescueFocus("status-heading", `${view.expired}-${view.status}`, lostFocus ?? ownFlag);
+  const markLost = useRescueFocus("status-heading", lostFocus ?? ownFlag);
   const kind = viewKind(view);
   return (
     <ViewBox key={kind} onFocusLost={markLost}>

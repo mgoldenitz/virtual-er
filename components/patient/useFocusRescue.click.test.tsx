@@ -23,7 +23,7 @@ function Part({ lostRef }: { lostRef: RefObject<boolean> }) {
 }
 
 function Screen({ show, lost }: { show: boolean; lost: RefObject<boolean> }) {
-  useRescueFocus("status-heading", show, lost);
+  useRescueFocus("status-heading", lost);
   return (
     <>
       <h2 id="status-heading" tabIndex={-1}>

@@ -25,12 +25,14 @@ export function useReportFocusOnLeave(part: RefObject<HTMLElement | null>, onLos
 }
 
 /**
- * After each change of trigger: if a part reported lost focus (lost.current is true), focus goes to
- * the element with this id. Focus that is still on a button that stays, or on the page body after
- * a phone tap, does not move, so the page does not scroll.
+ * After each render: if a part reported lost focus (lost.current is true), focus goes to the element
+ * with this id. Focus that is still on a button that stays, or on the page body after a phone tap,
+ * does not move, so the page does not scroll.
+ * It runs after every render, not only when the status changes, so a report is used in the same
+ * change that made it and never waits to move focus at a later, unrelated change.
  * Gives back markLost, for a part that left with focus inside it.
  */
-export function useRescueFocus(targetId: string, trigger: unknown, lostRef: RefObject<boolean>): () => void {
+export function useRescueFocus(targetId: string, lostRef: RefObject<boolean>): () => void {
   useEffect(() => {
     if (!lostRef.current) return;
     lostRef.current = false;
@@ -38,7 +40,7 @@ export function useRescueFocus(targetId: string, trigger: unknown, lostRef: RefO
     if (!focusIsOnNobody() && document.activeElement?.isConnected) return;
     const target = document.getElementById(targetId);
     if (target) target.focus({ preventScroll: true });
-  }, [targetId, trigger, lostRef]);
+  });
   return () => {
     lostRef.current = true;
   };
