@@ -71,8 +71,8 @@ export const ar: PatientText = {
     placeInLine: "مكانك في الطابور:",
     placeCanChange: "يمكن أن يتغير مكانك إذا وصل مرضى حالاتهم أكثر استعجالاً. يتم دائمًا فحص المرضى ذوي الحالات الأكثر استعجالاً أولاً.",
     waitLabel: "الوقت المقدر حتى يتم استدعاؤك للعودة:",
-    waitRange: "من {low} إلى {high} دقيقة",
-    // Used when the range reaches an hour; each end is built from the Duration words below.
+    // The wait range line. Under an hour, {low} is a bare number and {high} has the minute word;
+    // from an hour, each end is built from the Duration words below.
     waitRangeLong: "من {low} إلى {high}",
     simulated: "هذا التقدير محاكى للعرض التجريبي.",
     calledHeading: "يرجى العودة الآن",

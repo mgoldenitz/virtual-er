@@ -52,7 +52,7 @@ describe("SPEC's fixed sentences", () => {
       "Your place can change if more urgent patients arrive. The most urgent patients are always seen first.",
     );
     expect(t.patient.waitLabel).toBe("Estimated time until you're called back:");
-    expect(fill(t.patient.waitRange, { low: 40, high: 60 })).toBe("40 to 60 minutes");
+    expect(fill(t.patient.waitRangeLong, { low: "40", high: "60 minutes" })).toBe("40 to 60 minutes");
     expect(t.returnNow.text).toBe("Please return now. Staff will review your visit if you do not respond.");
     expect(t.survey.question).toBe("How would you rate your waiting experience?");
   });

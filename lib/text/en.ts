@@ -85,8 +85,8 @@ export const en = {
     placeCanChange: "Your place can change if more urgent patients arrive. The most urgent patients are always seen first.",
     // SPEC
     waitLabel: "Estimated time until you're called back:",
-    waitRange: "{low} to {high} minutes",
-    // Used when the range reaches an hour; each end is built from the Duration words below.
+    // The wait range line. Under an hour, {low} is a bare number and {high} has the minute word;
+    // from an hour, each end is built from the Duration words below.
     waitRangeLong: "{low} to {high}",
     simulated: "This estimate is simulated for the demo.",
 

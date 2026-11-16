@@ -34,10 +34,14 @@ export function formatDuration(minutes: number, words: DurationWords, end: "low"
   return fill(words.join, { h: hourText, m: pickForm(words.minute, rest, words.locale) });
 }
 
-/** The wait range line: "20 to 45 minutes" under an hour, else both ends in hours and minutes. */
+/**
+ * The wait range line: "20 to 45 minutes" under an hour, else both ends in hours and minutes.
+ * Under an hour the minute word follows the high number only, so Arabic gets the right form
+ * for it ("من 5 إلى 10 دقائق", but "من 10 إلى 15 دقيقة").
+ */
 export function formatWaitRange(low: number, high: number, language: string | null | undefined): string {
   const t = textFor(language).patient;
-  if (high < 60) return fill(t.waitRange, { low, high });
   const words = (language && WORDS[language]) || enDuration;
+  if (high < 60) return fill(t.waitRangeLong, { low, high: formatDuration(high, words) });
   return fill(t.waitRangeLong, { low: formatDuration(low, words, "low"), high: formatDuration(high, words, "high") });
 }

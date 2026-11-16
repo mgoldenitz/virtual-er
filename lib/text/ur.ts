@@ -71,8 +71,8 @@ export const ur: PatientText = {
     placeInLine: "لائن میں آپ کی جگہ:",
     placeCanChange: "اگر زیادہ ایمرجنسی والے مریض آ جائیں تو آپ کی جگہ بدل سکتی ہے۔ سب سے زیادہ ایمرجنسی والے مریضوں کو ہمیشہ پہلے دیکھا جاتا ہے۔",
     waitLabel: "واپس بلائے جانے تک کا تخمینہ وقت:",
-    waitRange: "{low} سے {high} منٹ",
-    // Used when the range reaches an hour; each end is built from the Duration words below.
+    // The wait range line. Under an hour, {low} is a bare number and {high} has the minute word;
+    // from an hour, each end is built from the Duration words below.
     waitRangeLong: "{low} سے {high}",
     simulated: "یہ تخمینہ ڈیمو کے لیے فرضی ہے۔",
     calledHeading: "براہ کرم اب واپس آ جائیں",

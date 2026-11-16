@@ -71,8 +71,8 @@ export const zh: PatientText = {
     placeInLine: "您的排队位置：",
     placeCanChange: "如果有更紧急的患者到达，您的位置可能会改变。最紧急的患者总是优先就诊。",
     waitLabel: "预计还需多久叫您回来：",
-    waitRange: "{low} 到 {high} 分钟",
-    // Used when the range reaches an hour; each end is built from the Duration words below.
+    // The wait range line. Under an hour, {low} is a bare number and {high} has the minute word;
+    // from an hour, each end is built from the Duration words below.
     waitRangeLong: "{low} 到 {high}",
     simulated: "此估计时间是为演示而模拟的。",
     calledHeading: "请现在回来",

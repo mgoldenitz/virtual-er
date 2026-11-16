@@ -71,8 +71,8 @@ export const fr: PatientText = {
     placeInLine: "Votre place dans la file d'attente :",
     placeCanChange: "Votre place peut changer si des patients plus urgents arrivent. Les patients les plus urgents sont toujours vus en premier.",
     waitLabel: "Temps estimé avant d'être rappelé :",
-    waitRange: "{low} à {high} minutes",
-    // Used when the range reaches an hour; each end is built from the Duration words below.
+    // The wait range line. Under an hour, {low} is a bare number and {high} has the minute word;
+    // from an hour, each end is built from the Duration words below.
     waitRangeLong: "{low} à {high}",
     simulated: "Cette estimation est simulée pour la démonstration.",
     calledHeading: "Veuillez revenir maintenant",
