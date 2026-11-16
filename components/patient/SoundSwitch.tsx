@@ -5,10 +5,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/Button";
-import { ALERT_REPEAT_MS, type SoundState, shouldAlert, soundNote } from "@/lib/calledAlert";
+import { ALERT_REPEAT_MS, STATUS_CLEAR_MS, type SoundState, shouldAlert, soundNote } from "@/lib/calledAlert";
 import { textFor } from "@/lib/text";
 import type { VisitStatus } from "@/lib/visit";
 import { playAlert, stopVibration, unlockSound } from "./alertSound";
+
+/** Waits this many milliseconds (none when the number is 0 or less). */
+function waitMs(ms: number): Promise<void> {
+  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
+}
 
 export function SoundSwitch({ status, language }: { status: VisitStatus; language: string }) {
   const t = textFor(language).sound;
@@ -32,13 +37,20 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
     if (busy.current) return;
     busy.current = true;
     // Clear an old failed line first, so screen readers read it again if this try fails too.
+    const clearedAt = state === "failed" ? Date.now() : null;
     setState("off");
     const mine = ++attempt.current;
+    // Shows the failed line. After a cleared failed line, it first waits until the line has been
+    // empty for STATUS_CLEAR_MS. The wait comes after unlockSound(), which must run inside the tap.
+    const showFailed = async () => {
+      if (clearedAt !== null) await waitMs(STATUS_CLEAR_MS - (Date.now() - clearedAt));
+      if (mine === attempt.current) setState("failed");
+    };
     try {
       const ok = await unlockSound();
       if (mine !== attempt.current) return;
       if (!ok) {
-        setState("failed");
+        await showFailed();
         return;
       }
       setState("on");
@@ -49,7 +61,7 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
         beeping.current = mine;
         const played = await playAlert(() => mine === attempt.current);
         if (beeping.current === mine) beeping.current = null;
-        if (mine === attempt.current && !played) setState("failed");
+        if (mine === attempt.current && !played) await showFailed();
       }
     } finally {
       // After "Turn off sound" the next tap belongs to a new attempt, which turnOff() already freed.
@@ -91,9 +103,12 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
       const mine = attempt.current;
       if (beeping.current === mine || !shouldAlert(status, soundOn, document.visibilityState === "visible")) return;
       beeping.current = mine;
-      void playAlert(() => mine === attempt.current).then((ok) => {
+      // Still wanted: no tap since, and the page is still on screen. A beep stopped because the phone
+      // was locked is not a failure; the next visibilitychange tries again.
+      const wanted = () => mine === attempt.current && document.visibilityState === "visible";
+      void playAlert(wanted).then((ok) => {
         if (beeping.current === mine) beeping.current = null;
-        if (!ok && mine === attempt.current) setState("off");
+        if (!ok && wanted()) setState("off");
       });
     };
     tick();
