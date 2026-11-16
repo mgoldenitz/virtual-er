@@ -3,7 +3,7 @@
 // The patient screen on the patient's own phone: opens the visit from the link's token
 // (or the one saved on this phone) and updates live.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
 import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
 import { forgetSavedToken, takeTokenFromLink } from "@/data/savedToken";
@@ -28,6 +28,8 @@ export default function PatientPage() {
   const [sending, setSending] = useState(false);
   const chosenLanguage = useChosenLanguage();
   const online = useOnline();
+  // True when the sound box left the page with focus inside it; the status screen then moves focus.
+  const lostFocus = useRef(false);
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
@@ -135,9 +137,17 @@ export default function PatientPage() {
           {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
           {/* Offline: a dashed frame shows the status may be old. The frame is always there, so the status keeps its place. */}
           <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
-            <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} />
+            <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} lostFocus={lostFocus} />
           </div>
-          {(view.status === "waiting" || view.status === "called") && <SoundSwitch status={view.status} language={language} />}
+          {(view.status === "waiting" || view.status === "called") && (
+            <SoundSwitch
+              status={view.status}
+              language={language}
+              onFocusLost={() => {
+                lostFocus.current = true;
+              }}
+            />
+          )}
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {p.notSaved}

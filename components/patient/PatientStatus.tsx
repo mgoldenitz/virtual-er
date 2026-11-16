@@ -4,19 +4,46 @@
 // Waiting, Please head back now, Ready at the desk, and the states before and after those.
 
 import Link from "next/link";
+import { useRef, type RefObject } from "react";
 import type { PatientView } from "@/lib/patientView";
 import { textFor, type PatientText } from "@/lib/text";
 import { formatWaitRange } from "@/lib/waitText";
 import { Button } from "@/components/Button";
 import { CallReminder } from "./CallReminder";
+import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
 
-type Props = { view: PatientView; language: string; onOnMyWay: () => void; sending: boolean };
+type Props = {
+  view: PatientView;
+  language: string;
+  onOnMyWay: () => void;
+  sending: boolean;
+  /** Set to true by a part below (the sound box) that left the page with focus inside it. */
+  lostFocus?: RefObject<boolean>;
+};
+
+/** "I'm on my way". When it leaves the page with focus on it, it tells the status screen. */
+function OnMyWayButton({ onOnMyWay, sending, label, onFocusLost }: {
+  onOnMyWay: () => void;
+  sending: boolean;
+  label: string;
+  onFocusLost: () => void;
+}) {
+  const area = useRef<HTMLDivElement>(null);
+  useReportFocusOnLeave(area, onFocusLost);
+  return (
+    <div ref={area}>
+      <Button onClick={onOnMyWay} aria-disabled={sending} className="w-full text-lg">
+        {label}
+      </Button>
+    </div>
+  );
+}
 
 function Waiting({ view, language, t }: { view: PatientView; language: string; t: PatientText }) {
   const p = t.patient;
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
-      <h2 id="status-heading" className="text-2xl font-bold">
+      <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
         {p.waitingHeading}
       </h2>
       <p className="text-lg">
@@ -32,7 +59,7 @@ function Waiting({ view, language, t }: { view: PatientView; language: string; t
   );
 }
 
-function Called({ view, onOnMyWay, sending, t }: Props & { t: PatientText }) {
+function Called({ view, onOnMyWay, sending, t, onFocusLost }: Props & { t: PatientText; onFocusLost: () => void }) {
   const p = t.patient;
   const confirmed = view.status === "on_the_way";
   return (
@@ -40,7 +67,7 @@ function Called({ view, onOnMyWay, sending, t }: Props & { t: PatientText }) {
       aria-labelledby="status-heading"
       className="space-y-3 rounded-xl border-4 border-green-800 bg-green-50 p-4"
     >
-      <h2 id="status-heading" className="text-2xl font-bold text-green-950">
+      <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold text-green-950">
         {p.calledHeading}
       </h2>
       <p className="text-lg">{p.calledText}</p>
@@ -50,9 +77,12 @@ function Called({ view, onOnMyWay, sending, t }: Props & { t: PatientText }) {
           {p.confirmed}
         </p>
       ) : (
-        <Button onClick={onOnMyWay} aria-disabled={sending} className="w-full text-lg">
-          {sending ? p.sending : p.onMyWay}
-        </Button>
+        <OnMyWayButton
+          onOnMyWay={onOnMyWay}
+          sending={sending}
+          label={sending ? p.sending : p.onMyWay}
+          onFocusLost={onFocusLost}
+        />
       )}
     </section>
   );
@@ -84,7 +114,7 @@ function OtherStatus({ view, t }: { view: PatientView; t: PatientText }) {
   const { heading, text } = otherStatus(view.status, t);
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
-      <h2 id="status-heading" className="text-2xl font-bold">
+      <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
         {heading}
       </h2>
       {text.map((paragraph) => (
@@ -101,7 +131,7 @@ function Expired({ t }: { t: PatientText }) {
   const p = t.patient;
   return (
     <section aria-labelledby="status-heading" className="clean-card space-y-3">
-      <h2 id="status-heading" className="text-2xl font-bold">
+      <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
         {p.expiredHeading}
       </h2>
       <p className="text-lg">{t.expiredText}</p>
@@ -115,12 +145,16 @@ function Expired({ t }: { t: PatientText }) {
   );
 }
 
-export function PatientStatus({ view, language, onOnMyWay, sending }: Props) {
+export function PatientStatus({ view, language, onOnMyWay, sending, lostFocus }: Props) {
   const t = textFor(language);
+  // The page's flag when it gives one (the sound box sets it too), otherwise this screen's own.
+  const ownFlag = useRef(false);
+  // A focused part that left with this change (for example "I'm on my way"): focus goes to the heading.
+  const markLost = useRescueFocus("status-heading", `${view.expired}-${view.status}`, lostFocus ?? ownFlag);
   if (view.expired) return <Expired t={t} />;
   if (view.status === "waiting") return <Waiting view={view} language={language} t={t} />;
   if (view.status === "called" || view.status === "on_the_way") {
-    return <Called view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} t={t} />;
+    return <Called view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} t={t} onFocusLost={markLost} />;
   }
   return <OtherStatus view={view} t={t} />;
 }

@@ -9,6 +9,7 @@ import { ALERT_REPEAT_MS, STATUS_CLEAR_MS, type SoundState, shouldAlert, soundNo
 import { textFor } from "@/lib/text";
 import type { VisitStatus } from "@/lib/visit";
 import { playAlert, stopVibration, unlockSound } from "./alertSound";
+import { useReportFocusOnLeave } from "./useFocusRescue";
 
 /** Waits this many milliseconds (none when the number is 0 or less). */
 function waitMs(ms: number): Promise<void> {
@@ -38,7 +39,14 @@ function mayTakeFocusInBackground(box: HTMLElement | null): boolean {
   return box?.contains(focused) === true;
 }
 
-export function SoundSwitch({ status, language }: { status: VisitStatus; language: string }) {
+type Props = {
+  status: VisitStatus;
+  language: string;
+  /** Called when the box leaves the page while focus is inside it, so the page can move focus. */
+  onFocusLost?: () => void;
+};
+
+export function SoundSwitch({ status, language, onFocusLost }: Props) {
   const t = textFor(language).sound;
   const [state, setState] = useState<SoundState>("off");
   const soundOn = state === "on";
@@ -57,6 +65,7 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   const wasOn = useRef(false);
   // Set by a repeat beep that failed in the background: may the box take focus? null after a tap.
   const backgroundFocus = useRef<boolean | null>(null);
+  useReportFocusOnLeave(box, onFocusLost);
 
   async function turnOn() {
     if (busy.current) return;

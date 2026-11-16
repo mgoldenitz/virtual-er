@@ -10,10 +10,10 @@ import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
 // Tells React that this file runs its updates inside act().
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-function Part({ lost }: { lost: RefObject<boolean> }) {
+function Part({ lostRef }: { lostRef: RefObject<boolean> }) {
   const ref = useRef<HTMLDivElement>(null);
   useReportFocusOnLeave(ref, () => {
-    lost.current = true;
+    lostRef.current = true;
   });
   return (
     <div ref={ref}>
@@ -30,7 +30,7 @@ function Screen({ show, lost }: { show: boolean; lost: RefObject<boolean> }) {
         Heading
       </h2>
       <button>Stays</button>
-      {show && <Part lost={lost} />}
+      {show && <Part lostRef={lost} />}
     </>
   );
 }

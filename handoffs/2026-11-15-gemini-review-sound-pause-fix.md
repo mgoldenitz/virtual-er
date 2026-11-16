@@ -219,3 +219,59 @@ index d1ddce7..f109764 100644
   * The beep. 880 Hz is in the range that people with age-related hearing loss still hear well
   * (they lose high pitches first). 0.4 seconds is far below the 3 seconds after which WCAG 2.2
 ```
+
+## Response (Gemini Hydrogen 4, High)
+
+## Diff implementation (`SoundSwitch.tsx` and `calledAlert.ts`)
+
+No problem found in the production diff for either requirement within the app's stated status rules (`waiting` → `called` → `on_the_way`/closed).
+
+## Question 1: Stale failed line after the 500 ms wait
+
+No problem found: `attempt.current` increments in `turnOff()` and when `<SoundSwitch>` leaves the page on `on_the_way`/closed, `state` is `"off"` during the wait (so "Turn off sound" is not mounted), and a forward `waiting` → `called` transition leaves the failed tap as the latest attempt (`mine === attempt.current`) so `t.failed` remains current.
+
+## Question 2: `busy` staying true during the 500 ms wait
+
+Half a second is short enough that keeping `busy.current = true` through `showFailed()` is net helpful—it prevents rapid double-taps from resetting `clearedAt` and postponing or starving the screen-reader announcement. The only rough edge is visual: because `setState("off")` renders `<Button>` without `aria-disabled`, a sighted patient who taps "Turn on sound" right after a failure sees the error disappear and the button look clickable yet unresponsive for 500 ms (if you want the button state to match, expose `busy` in React state and set `aria-disabled={busy}` rather than HTML `disabled`).
+
+## Question 3: Is 500 ms enough for iPhone VoiceOver and TalkBack?
+
+500 ms is above both WebKit/VoiceOver (~100–250 ms) and Chromium/TalkBack (~150–350 ms) live-region coalescing windows, so clearing `<div role="status">` to `""` and setting `t.failed` 500 ms later queues the polite status message after `"Turn on sound, button"`. If real-device testing on a slower Android phone shows TalkBack occasionally coalescing the empty-text event while speech is busy, raise `STATUS_CLEAR_MS` in `lib/calledAlert.ts` (line 14) to **800–1,000 ms** (`800` or `1000`).
+
+## Question 4: Can a genuinely failing beep leave the box on "Sound is on" forever?
+
+No problem found: while the phone is unlocked (`document.visibilityState === "visible"`), `wanted()` evaluates to `true`, so any failing `playAlert(wanted)` calls `setState("off")`; if a beep failed while locked (`wanted() === false`), unlocking fires `visibilitychange` (and the 30-second interval backs it up) to retry `tick()` while visible and switch the box off.
+
+## Question 5: Tests that pass while the behaviour is wrong
+
+1. **Locked-phone test never checks that the beep is suppressed while locked or retried on `visibilitychange**`
+* **File:** `components/patient/SoundSwitch.click.test.tsx`
+
+* **Line:** Lines 239–248 (`"keeps the sound on when the phone is locked while a repeat beep waits for the player"`)
+
+* **Failing case:** The test stubs `playAlert` with `later<boolean>()` and settles it with `false` without ever invoking the `stillWanted` callback passed to `playAlert(wanted)`, and calls `hidePage(false)` on line 246 without dispatching `"visibilitychange"`. If someone changed line 108 of `SoundSwitch.tsx` to `const wanted = () => mine === attempt.current;` (playing the beep while the phone is locked) or deleted `document.addEventListener("visibilitychange", tick)`, this test would still pass.
+
+* **Smallest fix:** Capture the callback passed to `playAlert` (`vi.mocked(playAlert).mock.calls[0]?.[0]`) and assert `expect(stillWanted?.()).toBe(false)` after `hidePage(true)`, then dispatch `document.dispatchEvent(new Event("visibilitychange"))` after `hidePage(false)` and assert `expect(playAlert).toHaveBeenCalledTimes(2)` (and that a subsequent `false` result while visible switches back to `button(t.turnOn)`).
+
+2. **Pause tests do not prove `unlockSound()` runs inside the tap before the 500 ms wait**
+* **File:** `components/patient/SoundSwitch.click.test.tsx`
+
+* **Line:** Lines 135–160 (`"clears the failed line on a new try..."` and `"keeps the line empty for a pause before it shows failed again, when the new try fails at once"`)
+
+* **Failing case:** In the first test (lines 142–144), `expect(unlockSound).toHaveBeenCalledTimes(2)` is never checked before `settle(unlock, false)`; in the second test (lines 150–160), `unlockSound` resolves immediately. If someone moved `await waitMs(STATUS_CLEAR_MS)` *before* `await unlockSound()` in `turnOn()` (breaking gesture-gated `AudioContext.resume()` on mobile browsers), both tests would still pass.
+
+* **Smallest fix:** In `"clears the failed line on a new try..."`, assert `expect(unlockSound).toHaveBeenCalledTimes(2)` right after `await press(t.turnOn)` on line 142 (before `await settle(unlock, false)` and without advancing timers).
+
+### Check of the response (Claude, 2026-11-15)
+
+I checked each point against the code. For the test gaps I made a temporary change to the code, ran the tests, and put the code back (a mutation check). The output is in this session.
+
+- Diff, Q1, Q4: no problem found. I agree; nothing to do.
+- Q2 (`busy` during the 500 ms wait): correct that the button looks ready but does nothing. The wait is now up to 1 second (unlock) plus 500 ms. Optional fix: keep `busy` in React state and set `aria-disabled={busy}`, as "I'm on my way" does with `sending`. Not a bug; for the owner to decide.
+- Q3 (500 ms): no change now. The 800 to 1000 ms numbers have no source. Test on a real Android phone with TalkBack in the device tests.
+- Q5.1 (locked phone test): partly correct.
+  - Mutation "`wanted` does not check `visibilityState`": the test "keeps the sound on when the phone is locked..." fails. So this part of the claim is wrong: the same `wanted` function goes to `playAlert` and to the failure check.
+  - Mutation "remove the `visibilitychange` listener": all 30 tests pass. This gap is real. Fix: a test that unlocks the phone, sends `visibilitychange`, and expects a second `playAlert`.
+- Q5.2 (unlock before the wait): correct. Mutation "wait `STATUS_CLEAR_MS` before `unlockSound()`": all 19 tests in `SoundSwitch.click.test.tsx` pass. Fix: check `unlockSound` was called 2 times right after the second press, before any timer moves.
+
+Accepted: Q5.1 (the listener part), Q5.2. Optional: Q2. No change: Q3.
