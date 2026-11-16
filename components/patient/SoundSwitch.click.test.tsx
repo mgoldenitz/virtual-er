@@ -154,6 +154,8 @@ describe("SoundSwitch taps", () => {
     show("waiting");
     await press(t.turnOn);
     await press(t.turnOn);
+    // The phone allows sound only inside the tap, so the new unlock must not wait for the pause.
+    expect(unlockSound).toHaveBeenCalledTimes(2);
     await act(async () => vi.advanceTimersByTimeAsync(STATUS_CLEAR_MS - 1));
     expect(statusBox()?.textContent).toBe("");
     await act(async () => vi.advanceTimersByTimeAsync(1));

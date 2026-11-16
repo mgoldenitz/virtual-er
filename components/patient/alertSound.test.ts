@@ -88,8 +88,12 @@ describe("unlockSound", () => {
     vi.useFakeTimers();
     FakeContext.resumeResult = "hang";
     const { unlockSound } = await load();
-    const result = unlockSound();
-    await vi.advanceTimersByTimeAsync(1000);
+    let done = false;
+    const result = unlockSound().finally(() => (done = true));
+    // A slow phone needs the full second, so the tap must not give up early.
+    await vi.advanceTimersByTimeAsync(999);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
     expect(await result).toBe(false);
   });
 
