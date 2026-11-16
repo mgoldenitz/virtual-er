@@ -597,3 +597,48 @@ index c95c4a6..b19c418 100644
  }
 \ No newline at end of file
 ```
+
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-15 (pasted by the owner).
+
+### 1. Race cases in the sound box that the attempt counter still misses
+
+1.1 Stale `status` closure in `turnOn()` skips the test beep when `status` changes from `"called"` to `"waiting"` during `unlockSound()` (`components/patient/SoundSwitch.tsx`, line 48). Case: the visit starts on `called`; the patient taps "Turn on sound"; while `unlockSound()` waits, staff undo the recall, so `status` becomes `waiting`. `turnOn()` reads the old `called` and skips `playAlert()`; the effect sees `waiting` and does not beep either. If `playAlert()` would have failed, the box stays on "Sound is on". Fix: keep the latest status in a ref and check it on line 48.
+
+1.2 A change from `called` back to `waiting` (or the tab becoming hidden) while `tick()`'s `playAlert()` waits on `ctx.resume()` still plays the recall beep and can turn the sound off (`SoundSwitch.tsx` lines 91 to 96; `alertSound.ts` lines 55 and 61). `attempt.current` does not change when `status` changes, so `stillWanted()` stays true; if `playAlert()` fails, line 96 sets `off`. Also `vibrate()` runs before `stillWanted()` is checked. Fix: refs for the latest status and sound state, `stillWanted` = same attempt and `shouldAlert(...)`, guard line 96 with the latest status, and check `stillWanted()` before `vibrate()`.
+
+### 2. Focus rule leaving focus nowhere
+
+2.1 `focusNearBox()` checks `document.body` but not `document.documentElement` (line 74). Claim: Safari/WebKit and Firefox set `document.activeElement` to `<html>` when the focused node is removed, so focus stays at the top of the page. Fix: also accept `document.documentElement`.
+
+### 3. Empty-then-failed status line and screen readers
+
+3.1 React 19 can batch `setState("off")` and `setState("failed")` into one render when `unlockSound()` fails at once, so the status line never clears. Even with two commits (failed, empty, failed) a few milliseconds apart, VoiceOver (iOS and macOS), TalkBack, NVDA and JAWS can merge the quick polite updates or skip the same text again. Fix: when retrying from `failed`, wait about 50 ms (`setTimeout`) before calling `unlockSound()`.
+
+### 4. Arabic, French, Urdu or Mandarin range lines for 5 to 59
+
+No problem found. French, Urdu and Mandarin are unchanged; Arabic gives "من {low} إلى {high} دقائق" for high 5 to 10 and "من {low} إلى {high} دقيقة" for high 11 to 59.
+
+### 5. Do the tests prove each point?
+
+5.1 The retry test holds the second `unlockSound()` open with `later()`, so it forces two renders. With both calls `mockResolvedValueOnce(false)`, React could batch them. Fix: add that test.
+
+5.2 The phone-tap focus test still passes if `|| state === "failed"` is deleted from line 83, because `unlockSound()` succeeds first (`wasOn` becomes true). A phone tap where `unlockSound()` itself fails is not tested. Fix: add that test.
+
+5.3 The status race test covers only `waiting` to `called` during `unlockSound()`. Fix: add `called` to `waiting` during `unlockSound()` and during the wait in `tick()`.
+
+5.4 `alertSound.test.ts` (lines 103 to 113) does not check that `vibrate()` is skipped when `stillWanted()` is already false. Fix: clear `vibrate` first and expect no call.
+
+### Claude's check
+
+- 1.1 and 1.2, `called` back to `waiting`: not accepted. The case cannot happen. Statuses only move forward (`statusBeforeClose` in `lib/visitActions.ts`); there is no undo for a recall ("There is no undo: recalled patients stay recalled", `components/staff/RecallAllPanel.tsx`). The sound box is shown only for `waiting` and `called` (`app/patient/page.tsx:140`); every way out of `called` (on the way, arrived, removed) takes the box off the page, and the unmount raises the attempt counter.
+- 1.2, page hidden while the repeat beep waits for the player: accepted. A patient who locks the phone in the second while a repeat beep waits gets `false` back, and line 96 turns the sound off, so on return the screen says the sound is off although nothing is wrong with it. Fix: the repeat beep is wanted only while the attempt is the same and the page is on screen, and line 96 turns the sound off only when the beep was still wanted. The next `visibilitychange` tick then tries again.
+- 1.2, `vibrate()` before `stillWanted()`: not accepted. `stillWanted()` is true by construction when `playAlert()` starts (both callers create it in the same step), so checking it before `vibrate()` changes nothing. 5.4 falls with it: `playAlert(() => false)` from the start is not a case the app makes.
+- 2.1: not accepted. The HTML standard says `document.activeElement` gives the body when nothing has focus (the html element only when there is no body), and the focus fixup after a removed element leaves the body as the focused area. Safari and Firefox follow this. Not changed.
+- 3.1: accepted in part. The risk that screen readers merge "empty" and "failed" when they come a few milliseconds apart is real. The suggested fix is not safe: a wait before `unlockSound()` moves `resume()` out of the tap, and iPhone Safari can then refuse to start the sound. Fix instead: `unlockSound()` still runs at once; when a retry from `failed` fails again, the box waits until the line has been empty for `STATUS_CLEAR_MS` before it shows `failed`. React 19 does not merge the two changes here: the click flushes `setState("off")` before the code after `await` runs; the wait covers the screen reader side.
+- 4: agreed, no change.
+- 5.1: accepted, as the test for 3.1 (an at-once `false` on the retry, fake timers: the line is empty first, then `failed`).
+- 5.2: accepted. New test: phone tap, `unlockSound()` gives `false`, focus moves to "Turn on sound". Checked that it fails with `|| state === "failed"` taken out.
+- 5.3: not accepted for `called` to `waiting` (see 1.1). Replaced by a test for the hidden page case in 1.2.

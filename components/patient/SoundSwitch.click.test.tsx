@@ -5,6 +5,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { STATUS_CLEAR_MS } from "@/lib/calledAlert";
 import { textFor } from "@/lib/text";
 import type { VisitStatus } from "@/lib/visit";
 import { playAlert, stopVibration, unlockSound } from "./alertSound";
@@ -43,6 +44,12 @@ async function press(words: string) {
   await act(async () => target.click());
 }
 
+/** Copies a locked phone (the page is hidden) or an unlocked one. */
+function hidePage(hidden: boolean) {
+  if (hidden) Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+  else delete (document as { visibilityState?: string }).visibilityState;
+}
+
 /** Finishes a slow promise and lets React show the result. */
 async function settle<T>(slow: { finish: (value: T) => void }, value: T) {
   await act(async () => slow.finish(value));
@@ -60,6 +67,8 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  hidePage(false);
+  vi.useRealTimers();
 });
 
 describe("SoundSwitch taps", () => {
@@ -124,6 +133,7 @@ describe("SoundSwitch taps", () => {
   });
 
   it("clears the failed line on a new try, so screen readers read it again if it fails again", async () => {
+    vi.useFakeTimers();
     vi.mocked(unlockSound).mockResolvedValueOnce(false);
     show("waiting");
     await press(t.turnOn);
@@ -133,7 +143,27 @@ describe("SoundSwitch taps", () => {
     await press(t.turnOn);
     expect(statusBox()?.textContent).toBe("");
     await settle(unlock, false);
+    await act(async () => vi.advanceTimersByTimeAsync(STATUS_CLEAR_MS));
     expect(statusBox()?.textContent).toBe(t.failed);
+  });
+
+  it("keeps the line empty for a pause before it shows failed again, when the new try fails at once", async () => {
+    vi.useFakeTimers();
+    vi.mocked(unlockSound).mockResolvedValue(false);
+    show("waiting");
+    await press(t.turnOn);
+    await press(t.turnOn);
+    await act(async () => vi.advanceTimersByTimeAsync(STATUS_CLEAR_MS - 1));
+    expect(statusBox()?.textContent).toBe("");
+    await act(async () => vi.advanceTimersByTimeAsync(1));
+    expect(statusBox()?.textContent).toBe(t.failed);
+  });
+
+  it("moves focus to Turn on sound after a phone tap (focus on the page) when the sound cannot start", async () => {
+    vi.mocked(unlockSound).mockResolvedValue(false);
+    show("waiting");
+    await act(async () => button(t.turnOn)?.click());
+    expect(document.activeElement).toBe(button(t.turnOn));
   });
 
   it("moves focus to Turn on sound when the test beep fails", async () => {
@@ -204,6 +234,17 @@ describe("SoundSwitch while called", () => {
     await settle(beep, false);
     expect(button(t.turnOn)).toBeDefined();
     expect(document.activeElement).toBe(other);
+  });
+
+  it("keeps the sound on when the phone is locked while a repeat beep waits for the player", async () => {
+    const beep = later<boolean>();
+    vi.mocked(playAlert).mockReturnValue(beep.promise);
+    show("called");
+    await press(t.turnOn);
+    hidePage(true);
+    await settle(beep, false);
+    hidePage(false);
+    expect(button(t.turnOff)).toBeDefined();
   });
 
   it("moves focus to Turn on sound when a beep fails and the sound goes off", async () => {

@@ -7,6 +7,13 @@ import type { VisitStatus } from "./visit";
 export const ALERT_REPEAT_MS = 30_000;
 
 /**
+ * When a new try at "Turn on sound" fails again, the failed line stays empty for at least this
+ * long first. Screen readers can skip a line that goes away and comes back within a few
+ * milliseconds; after a pause they read it again.
+ */
+export const STATUS_CLEAR_MS = 500;
+
+/**
  * The beep. 880 Hz is in the range that people with age-related hearing loss still hear well
  * (they lose high pitches first). 0.4 seconds is far below the 3 seconds after which WCAG 2.2
  * 1.4.2 (Audio Control) needs a way to stop sound that plays by itself.
