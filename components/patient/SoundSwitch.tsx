@@ -15,6 +15,29 @@ function waitMs(ms: number): Promise<void> {
   return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
 }
 
+/**
+ * True when moving focus takes it from nobody: focus is inside the sound box, or on the page body
+ * (after a phone tap, or because the focused "Sound is on" words just went away). False when the
+ * patient is on another button, such as "I'm still here", so a background beep failure leaves it there.
+ */
+function focusNearBox(box: HTMLElement | null): boolean {
+  const focused = document.activeElement;
+  if (!focused || focused === document.body) return true;
+  return box?.contains(focused) === true;
+}
+
+/**
+ * Asked when a repeat beep fails with no tap (the sound goes off while called), just before the
+ * "Sound is on" words go away. True: focus may move to "Turn on sound". False: focus stays where it is.
+ * On a phone, focus is on the page body after the patient taps plain text elsewhere on the page.
+ */
+function mayTakeFocusInBackground(box: HTMLElement | null): boolean {
+  const focused = document.activeElement;
+  // With no tap, focus on the page body means the patient is somewhere else on the page.
+  if (!focused || focused === document.body) return false;
+  return box?.contains(focused) === true;
+}
+
 export function SoundSwitch({ status, language }: { status: VisitStatus; language: string }) {
   const t = textFor(language).sound;
   const [state, setState] = useState<SoundState>("off");
@@ -32,6 +55,8 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
   const beeping = useRef<number | null>(null);
   // True when the last state shown was "on", so focus can move when the sound goes off.
   const wasOn = useRef(false);
+  // Set by a repeat beep that failed in the background: may the box take focus? null after a tap.
+  const backgroundFocus = useRef<boolean | null>(null);
 
   async function turnOn() {
     if (busy.current) return;
@@ -76,24 +101,16 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
     stopVibration();
   }
 
-  /**
-   * True when moving focus takes it from nobody: focus is inside the sound box, or on the page body
-   * (after a phone tap, or because the focused "Sound is on" words just went away). False when the
-   * patient is on another button, such as "I'm still here", so a background beep failure leaves it there.
-   */
-  function focusNearBox(): boolean {
-    const focused = document.activeElement;
-    if (!focused || focused === document.body) return true;
-    return box.current?.contains(focused) === true;
-  }
-
   // Focus follows the change, so it never drops to the top of the page when a button goes away.
   // On: move to the words "Sound is on" (read out when focused). From on to off, or to failed (a
   // fast failure can skip "on" on screen): move to "Turn on sound", unless focus is somewhere else.
   useEffect(() => {
     if (state === "on") onWords.current?.focus();
-    else if ((wasOn.current || state === "failed") && focusNearBox()) turnOnButton.current?.focus();
+    else if ((wasOn.current || state === "failed") && (backgroundFocus.current ?? focusNearBox(box.current))) {
+      turnOnButton.current?.focus();
+    }
     wasOn.current = state === "on";
+    backgroundFocus.current = null;
   }, [state]);
 
   // Play now if the rule allows it, then again every ALERT_REPEAT_MS, and when the page comes back on screen.
@@ -108,7 +125,10 @@ export function SoundSwitch({ status, language }: { status: VisitStatus; languag
       const wanted = () => mine === attempt.current && document.visibilityState === "visible";
       void playAlert(wanted).then((ok) => {
         if (beeping.current === mine) beeping.current = null;
-        if (!ok && wanted()) setState("off");
+        if (!ok && wanted()) {
+          backgroundFocus.current = mayTakeFocusInBackground(box.current);
+          setState("off");
+        }
       });
     };
     tick();
