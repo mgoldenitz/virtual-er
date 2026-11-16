@@ -52,7 +52,7 @@ describe("FollowUpPanel phone and review flags", () => {
   ])("the %s flag, called back %i minutes ago, gives screen readers '%s', never 'min', and shows '%s'", (kind, calledMinutesAgo, words, shown) => {
     const html = panelHtml(calledMinutesAgo);
     // Look only inside this flag, so a time shown elsewhere in the panel cannot make the test pass.
-    const flag = html.match(new RegExp(`<p[^>]*data-testid="flag-${kind}"[^>]*>(.*?)</p>`))?.[1] ?? "";
+    const flag = html.match(new RegExp(`<p[^>]*data-testid="flag-${kind}"[^>]*>([\\s\\S]*?)</p>`))?.[1] ?? "";
     expect(flag).toContain(`<span aria-hidden="true">${shown}</span>`);
     expect(flag).toContain(`<span class="sr-only">${words}</span>`);
     expect(statusWords(html)).toContain(words);

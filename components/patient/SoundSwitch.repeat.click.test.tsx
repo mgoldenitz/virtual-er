@@ -88,6 +88,9 @@ describe("SoundSwitch repeat beep", () => {
     const beep = await soundOnWhileCalled();
     hidePage(true);
     await act(async () => beep.finish(false));
+    // A visibilitychange while the phone is still locked must not start a beep.
+    await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+    expect(playAlert).toHaveBeenCalledTimes(1);
     hidePage(false);
     await act(async () => document.dispatchEvent(new Event("visibilitychange")));
     expect(playAlert).toHaveBeenCalledTimes(2);
