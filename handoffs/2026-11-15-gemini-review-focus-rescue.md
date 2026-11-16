@@ -780,3 +780,26 @@ index baf12ea..fbef8be 100644
      expect(statusWords(html)).not.toMatch(/\bmin\b/);
    });
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-16, pasted by the owner. Short form of each point (the full text is in the session):
+
+1.1 `useRescueFocus` runs only when `trigger` changes. If a part with focus leaves without a status change, `lostFocus` stays true and a later status change takes focus. Fix: no dependency list, so the effect runs after every commit.
+1.2 After a rescue, focus is on the `Called` heading. Staff then mark the visit arrived: `Called` leaves, `OtherStatus` gives a new heading, and focus drops to the page, because no part reports it. Fix: report focus loss for the status view itself.
+2. The shared `lostFocus` ref can stay true (same cause as 1.1; same fix).
+3. The focus move to the heading and the `StatusAnnouncer` text 300 ms later can cut each other off on VoiceOver and TalkBack, or say the status twice on NVDA. Fix: skip or delay the announcement after a rescue.
+4.1 No test joins `PatientStatus` and `SoundSwitch` with one shared ref; the page wiring is not tested.
+4.2 No test fails if `backgroundFocus.current = null` is removed from `turnOn()`.
+4.3 No test fires `visibilitychange` while the page is still hidden; the visible check in `tick()` is not tested.
+4.4 The regex in `FollowUpPanel.test.ts` has no `s` flag, so a new line inside the flag would make the test read an empty string.
+
+### Claude's check (2026-11-16)
+
+- 1.1 and 2: true in principle, but no path in the app today. `SoundSwitch` and the "I'm on my way" button leave only when the status changes, so the trigger changes in the same commit. `StillHerePrompt` (`f679e2c`) has its own ref and its trigger `showing`. Hardening only.
+- 1.2: confirmed by reading `components/patient/PatientStatus.tsx`. `Called` (line 70) and `OtherStatus` (line 134) are different parts, each with its own `<h2 id="status-heading">`, so React removes the focused heading. Case: `called`, then "I'm on my way" (focus to the heading), then `arrived`. A real bug.
+- 3: not accepted now. It has no source, and polite regions normally wait for the current speech. The owner decided on 2026-11-15 to leave `StatusAnnouncer` as it is (`docs/decisions.md`). Check it in the Phase 5 real screen reader tests.
+- 4.1: confirmed. No test file renders `PatientStatus` and `SoundSwitch` together (grep).
+- 4.2: confirmed by a temporary code change: with line 73 of `SoundSwitch.tsx` removed, all 67 patient tests pass. Code put back from a copy.
+- 4.3: confirmed by a temporary code change: with the visible check in `tick()` (line 133) replaced by `true`, all 67 patient tests pass. Code put back from a copy.
+- 4.4: true, but low: `renderToStaticMarkup` writes no new lines. A one-character fix.
