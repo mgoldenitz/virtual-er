@@ -442,3 +442,14 @@ One part of the explanation is slightly incomplete, though not a reason to hide 
 ### 4. Codebase Rules (One Job per File, <= 300 Lines, Straight Quotes, Beginner Readability)
 
 **None found** in the diff: all quotes and apostrophes in `checkInText.ts`, `CheckInPanel.tsx`, `CheckInPanel.test.tsx`, `CheckInPanel.click.test.tsx`, and `docs/decisions.md` are straight ASCII quotes (`"` / `'`), every file has a single clear responsibility, `CheckInPanel.tsx` is 273 lines (under the 300-line cap, with 27 lines remaining), and the logic is straightforward for a beginner.
+
+## My check of the response
+
+Checked against `components/staff/CheckInPanel.tsx` (273 lines) on 2026-11-17.
+
+- Reasoning note: accepted as information. No change now. The two live regions can change in one update only if a parent update and a save result come in the same render batch; no handler does that today.
+- 1.1 (`neither button`): accepted. While `offsitePaused` is `false`, three buttons show ("Start off-site waiting", "Offered, declined", "Not eligible"). One fact in the review is wrong: a home visit also shows "Offered, declined" (the button has no `homeVisit` condition), so it has three buttons too. The fix is the same: "no button can save."
+- 1.2 (paused label): rejected for now. "Waits on-site" is the full label while `offsitePaused` is `null`, and the start of the label while it is `true`. Staff find the button by its first words. A shorter label is a product decision for the owner; it is listed in the report as an open option.
+- 1.3 (Enter guard): accepted. The guard message gets "Nothing was saved." `READ_FAILED` gets "If the network is still down, no button can save."
+- 3.1: accepted. The test checks the full `STALE_READ` in the rendered html (with `&quot;` decoded), and a new test renders a non-null `homeProblem` and checks that the warning `<p>` is empty and no `aria-describedby` is on the page. While `homeProblem` is set, no action buttons render (`{!homeProblem && ...}`), so the test checks that the Start button is not there.
+- 3.2: accepted. After the re-render with `offsitePaused={true}`, the test checks that "Waits on-site (off-site waiting paused)" is enabled, presses it, and checks a second `createDeskVisit` call with `not_eligible`. A new test covers a home visit that `checkInVisitFromHome` refuses with `paused`.
