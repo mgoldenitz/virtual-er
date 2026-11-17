@@ -115,6 +115,7 @@ declare
 begin
   for move in
     select * from (values
+    -- allowed moves (keep the same as lib/allowedSteps.ts)
       ('pre_arrival', 'waiting'), ('pre_arrival', 'declined'), ('pre_arrival', 'not_eligible'),
       ('needs_reassessment', 'waiting'), ('needs_reassessment', 'declined'), ('needs_reassessment', 'not_eligible'),
       ('waiting', 'called'), ('waiting', 'arrived'), ('waiting', 'removed'),
@@ -123,6 +124,7 @@ begin
       ('unable_to_reach', 'needs_reassessment'),
       ('arrived', 'waiting'), ('arrived', 'called'), ('arrived', 'on_the_way'),
       ('removed', 'waiting'), ('removed', 'called'), ('removed', 'on_the_way')
+    -- end of allowed moves
     ) as m(from_status, to_status)
   loop
     i := i + 1;

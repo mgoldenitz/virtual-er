@@ -18,6 +18,7 @@ import {
   startFromHome,
   undoClose,
 } from "./visitActions";
+import { PAUSE_REFUSED, STEP_REFUSED } from "./saveResult";
 
 // The newest migration that makes the trigger function: that is the one the database runs.
 // Only "create (or replace) function" counts, so a later "drop function" or "grant ... on
@@ -34,6 +35,21 @@ function newestTriggerSql(): string {
 
 // Removes "/* ... */" and "--" comments, so a move that is commented out does not count.
 const withoutComments = (sql: string) => sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
+
+// One move in SQL, such as ('waiting', 'called'). Group 1 is the "from" status, group 2 the "to" status.
+const PAIR = /\(\s*'(\w+)'\s*,\s*'(\w+)'\s*\)/g;
+
+// The "from>to" moves between the start and end markers of a SQL file. The start marker is the whole
+// line, because the check file has another comment that begins "-- allowed moves".
+function pairsBetweenMarkers(sql: string): string[] {
+  const start = "-- allowed moves (keep the same as lib/allowedSteps.ts)";
+  const block = withoutComments(sql.split(start)[1].split("-- end of allowed moves")[0]);
+  return [...block.matchAll(PAIR)].map((m) => `${m[1]}>${m[2]}`).sort();
+}
+
+// The moves in lib/allowedSteps.ts, as "from>to" pairs.
+const libMoves = (): string[] =>
+  Object.entries(ALLOWED_MOVES).flatMap(([from, tos]) => tos!.map((to) => `${from}>${to}`)).sort();
 
 const t0 = new Date("2026-11-09T20:00:00Z");
 const at = (min: number) => new Date(t0.getTime() + min * 60_000);
@@ -93,15 +109,31 @@ describe("allowed status moves", () => {
 
   it("is the same list as the database trigger", () => {
     const sql = newestTriggerSql();
-    const block = withoutComments(sql.split("-- allowed moves")[1].split("-- end of allowed moves")[0]);
-    const inSql = [...block.matchAll(/\(\s*'(\w+)'\s*,\s*'(\w+)'\s*\)/g)].map((m) => `${m[1]}>${m[2]}`).sort();
-    const inLib = Object.entries(ALLOWED_MOVES).flatMap(([from, tos]) => tos!.map((to) => `${from}>${to}`)).sort();
+    const inSql = pairsBetweenMarkers(sql);
+    const inLib = libMoves();
     expect(inSql).toEqual(inLib);
     const code = withoutComments(sql);
     const starts = code.match(/new\.status\s+not\s+in\s*\(([^)]*)\)/i)![1].match(/\w+/g)!.sort();
     expect(starts).toEqual([...START_STATUSES].sort());
-    const triage = code.match(/old\.status\s+in\s*\(([^)]*)\)/i)![1].match(/\w+/g)!.sort();
-    expect(triage).toEqual([...TRIAGE_STATUSES].sort());
+    // The start check refuses with the step code.
+    const startRefusal = /new\.status\s+not\s+in\s*\([^)]*\)\s*then\s+raise\s+exception\s+'[^']*'[^;]*?using\s+errcode\s*=\s*'(\w+)'/i;
+    expect(code.match(startRefusal)?.[1]).toBe(STEP_REFUSED);
+    // The site check refuses with the step code.
+    const siteRefusal = /if\s+new\.site\s+is\s+distinct\s+from\s+old\.site\s+then\s+raise\s+exception\s+'[^']*'[^;]*?using\s+errcode\s*=\s*'(\w+)'/i;
+    expect(code.match(siteRefusal)?.[1]).toBe(STEP_REFUSED);
+    // The move check is "not in (" a list, and its refusal uses the step code.
+    const moveRefusal = /if\s*\(\s*old\.status\s*,\s*new\.status\s*\)\s+not\s+in\s*\([\s\S]*?\)\s*then\s+raise\s+exception\s+'A visit cannot move[^']*'[^;]*?using\s+errcode\s*=\s*'(\w+)'/i;
+    expect(code.match(moveRefusal)?.[1]).toBe(STEP_REFUSED);
+    // The pause check: a new off-site wait, or a triage into one, reads the pause "for share" and refuses with the pause code.
+    const pauseCheck = /if\s+new\.status\s*=\s*'waiting'\s+and\s*\(\s*tg_op\s*=\s*'INSERT'\s+or\s+old\.status\s+in\s*\(([^)]*)\)\s*\)\s*then\s+select\s+offsite_paused\s+into\s+site_paused\s+from\s+public\.site_settings\s+where\s+site\s*=\s*new\.site\s+for\s+share\s*;\s*if\s+site_paused\s+is\s+distinct\s+from\s+false\s+then\s+raise\s+exception\s+'[^']*'\s*,\s*new\.site\s+using\s+errcode\s*=\s*'(\w+)'/i;
+    const pause = code.match(pauseCheck);
+    expect(pause?.[1].match(/\w+/g)?.sort()).toEqual([...TRIAGE_STATUSES].sort());
+    expect(pause?.[2]).toBe(PAUSE_REFUSED);
+  });
+
+  it("the check file tries every allowed move", () => {
+    const checkSql = readFileSync("supabase/checks/allowed_steps.sql", "utf8");
+    expect(pairsBetweenMarkers(checkSql)).toEqual(libMoves());
   });
 
   it("does not count a move inside either kind of SQL comment", () => {
