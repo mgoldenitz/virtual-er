@@ -32,7 +32,7 @@ What this is: a concept prototype of a virtual ER waiting room. Low-acuity patie
 
 Read SPEC.md before any work. Its hard rules always apply and win over anything else. Notes from earlier research are in notes/. I am new to coding: explain each new file in one plain sentence, and never ask me to paste keys, tokens or passwords into chat; tell me which file or settings page they go in.
 
-In a Learn by Doing request, give the first line of the code as a start. If I say I am stuck, give the full code with one plain sentence per line.
+In a Learn by Doing request, give the first line of the code as a start, and one example of a finished line of the same kind (for example `const X = "words staff read";`). Say which parts of the guidance are ideas, not text to copy. If I say I am stuck, give the full code with one plain sentence per line.
 
 Where a key goes: the line above wins in this project (a file or a settings page is fine); my global "plain PowerShell window" line is for keys I type into commands.
 
