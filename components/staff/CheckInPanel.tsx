@@ -90,6 +90,10 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
       setMessage(PAUSED_NOT_SAVED);
       return null;
     }
+    if (visit === "refused") {
+      setMessage("Not saved: the database refused this check-in. Nothing was recorded.");
+      return null;
+    }
     if (!visit) {
       setMessage("Not saved: the database could not be reached. Nothing was recorded. Try again.");
       return null;
@@ -111,8 +115,8 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
     if (outcome === "waiting" && onSiteOnly) {
       setMessage(
         offsitePaused === null
-          ? "Checking whether off-site waiting is paused. Press “Waits on-site” instead."
-          : "Off-site waiting is paused at this site. Press “Waits on-site” instead.",
+          ? 'Checking whether off-site waiting is paused. Press "Waits on-site" instead.'
+          : 'Off-site waiting is paused at this site. Press "Waits on-site" instead.',
       );
       return;
     }
@@ -121,7 +125,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
       return;
     }
     setSaving(true);
-    setMessage("Saving…");
+    setMessage("Saving...");
     const code = await save(outcome, ctas);
     setSaving(false);
     if (!code) return;

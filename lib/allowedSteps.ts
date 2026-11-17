@@ -1,5 +1,5 @@
 // Which status moves a visit may make, written once as data. The database trigger
-// visits_check_step (migration 20261117000000_allowed_steps.sql) holds the same list, and
+// visits_check_step (in the newest migration that makes it) holds the same list, and
 // lib/allowedSteps.test.ts checks that the two lists match and that every rule in
 // lib/visitActions.ts makes only these moves. Time rules (the phone steps) stay in the app.
 

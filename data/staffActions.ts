@@ -7,7 +7,7 @@
 import { changedFields } from "@/lib/changedFields";
 import { makeAccessToken, makeUniqueDisplayCode, normalizeDisplayCode } from "@/lib/codes";
 import type { RecallAllResult } from "@/lib/recallAll";
-import { PAUSE_REFUSED, resultForError } from "@/lib/saveResult";
+import { resultForError } from "@/lib/saveResult";
 import type { ChangeResult, Site, Visit } from "@/lib/visit";
 import {
   callBack,
@@ -73,9 +73,13 @@ async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Pr
 
 /**
  * Create a desk visit after triage. Returns the new visit so the slip can be shown,
- * "paused" if the site was paused on another screen, or null if it could not be saved.
+ * "paused" if the site was paused on another screen, "refused" if the database does not allow
+ * this step, or null if it could not be saved.
  */
-export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Promise<Visit | "paused" | null> {
+export async function createDeskVisit(
+  form: CheckInForm,
+  outcome: DeskOutcome,
+): Promise<Visit | "paused" | "refused" | null> {
   try {
     for (let attempt = 0; attempt < CODE_TRIES; attempt++) {
       const taken = new Set((readVisitList().visits ?? []).map((v) => v.code));
@@ -86,11 +90,16 @@ export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): 
       );
       const { data, error } = await supabaseBrowser().from("visits").insert(visit).select();
       if (error?.code === ALREADY_USED) continue; // an older visit not on this screen has the code
-      if (error?.code === PAUSE_REFUSED) {
-        void reloadSitePauses();
-        return "paused";
+      if (error) {
+        const result = resultForError(error.code);
+        if (result === "paused") {
+          void reloadSitePauses();
+          return "paused";
+        }
+        if (result === "refused") return "refused";
+        return null;
       }
-      if (error ||!Array.isArray(data) || data.length === 0) return null;
+      if (!Array.isArray(data) || data.length === 0) return null;
       putVisit(data[0] as StoredVisit);
       return data[0] as StoredVisit;
     }
