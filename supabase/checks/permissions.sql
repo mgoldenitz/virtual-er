@@ -26,11 +26,22 @@
 -- Supabase's security advisor warns that anon can run get_patient_visit, record_seen,
 -- confirm_on_my_way and record_still_here. That is on purpose (SPEC hard rule 5); each needs the visit's token.
 
-select grantee as role, 'table' as kind, table_name as name,
-       string_agg(privilege_type, ', ' order by privilege_type) as rights
-from information_schema.role_table_grants
-where table_schema = 'public' and grantee in ('anon', 'authenticated')
-group by grantee, table_name
+-- Table rights use has_table_privilege, not information_schema.role_table_grants: that view
+-- shows only roles the current user belongs to, so through the read-only Supabase connection
+-- it shows no table rights at all. has_table_privilege answers for any role and includes
+-- rights that come through PUBLIC or another role. It looks at whole-table rights only, not
+-- column rights; no migration here gives column rights.
+select r.rolname as role, 'table' as kind, c.relname as name,
+       string_agg(p.priv, ', ' order by p.priv) as rights
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+cross join pg_roles r
+cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'),
+                   ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')) as p(priv)
+where n.nspname = 'public' and c.relkind in ('r', 'v', 'm', 'p')
+  and r.rolname in ('anon', 'authenticated')
+  and has_table_privilege(r.oid, c.oid, p.priv)
+group by r.rolname, c.relname
 union all
 select r.rolname, 'function', p.proname, 'EXECUTE'
 from pg_proc p
