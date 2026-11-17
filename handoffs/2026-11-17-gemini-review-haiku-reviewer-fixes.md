@@ -348,3 +348,67 @@ index 9870485..2d773fc 100644
  rollback;
 +reset idle_in_transaction_session_timeout;
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-17, pasted by the owner:
+
+### 1. Sync test (`lib/allowedSteps.test.ts`)
+
+1. **`moveRefusal` is not tied to the `-- allowed moves` markers, so the trigger's `not in (...)` list can diverge from `ALLOWED_MOVES` — Severity: should fix**
+* **File and line:** `lib/allowedSteps.test.ts`, lines 44–48 (`pairsBetweenMarkers`) and lines 125–126 (`moveRefusal`).
+* **What goes wrong:** `pairsBetweenMarkers(sql)` parses tuples between `-- allowed moves (keep the same as lib/allowedSteps.ts)` and `-- end of allowed moves`, while `moveRefusal` separately matches `/if\s*\(\s*old\.status\s*,\s*new\.status\s*\)\s+not\s+in\s*\([\s\S]*?\)\s*then\s+raise\s+exception/i` anywhere in `code`. Nothing verifies that the list inside `moveRefusal`'s `not in (...)` is the same list bounded by the markers, and `[\s\S]*?` matches across statements up to `'A visit cannot move...'`.
+* **Concrete case:** Someone edits the migration's `if (old.status, new.status) not in (...)` to allow only `('waiting', 'called')` while leaving the `-- allowed moves` comments around a dead block or comment, or adds a second `if (old.status, new.status) not in (('waiting', 'called')) then raise exception 'Blocked' using errcode = 'VWR01';` above the marked check. Both `pairsBetweenMarkers` and `moveRefusal` pass while 21 of the 22 allowed moves fail in Postgres.
+* **Smallest fix:** Capture the body inside `moveRefusal`'s `not in (...)` directly (or assert that the `-- allowed moves` markers sit inside that matched `not in (...)` body) and extract pairs from that captured group rather than from free-floating comments.
+
+2. **`TG_OP` gating and `new.status is distinct from old.status` are not checked in the trigger regexes — Severity: should fix**
+* **File and line:** `lib/allowedSteps.test.ts`, lines 115–126 (`starts`, `startRefusal`, `siteRefusal`, `moveRefusal`).
+* **What goes wrong:** The test checks that `new.status not in (...)`, `new.site is distinct from old.site`, and `(old.status, new.status) not in (...)` appear with `STEP_REFUSED`, but never checks that `startRefusal` is gated to `TG_OP = 'INSERT'` or that `moveRefusal` and `siteRefusal` run on `TG_OP = 'UPDATE'` (with `moveRefusal` gated by `new.status is distinct from old.status`).
+* **Concrete case:** Moving `new.status not in ('pre_arrival', 'waiting', 'declined', 'not_eligible')` outside `if tg_op = 'INSERT'` blocks every `UPDATE` to `'called'` or `'arrived'` with `VWR01`; removing `if new.status is distinct from old.status` around `moveRefusal` rejects metadata-only updates (`confirm_on_my_way`, `record_still_here`, `issueNewVisitLink`) with `VWR01`; nesting `siteRefusal` inside `if new.status is distinct from old.status` allows `UPDATE visits SET site = 'B'` on a `'waiting'` row to move a visit into a paused site. In all three cases, `allowedSteps.test.ts` still passes.
+
+3. **`newestTriggerSql()` does not verify that the `BEFORE INSERT OR UPDATE` trigger on `public.visits` is still attached — Severity: minor**
+* **File and line:** `lib/allowedSteps.test.ts`, lines 26–37 (`newestTriggerSql`) and line 111.
+* **What goes wrong:** `newestTriggerSql()` finds the newest migration containing `create (or replace) function visits_check_step`, but does not check whether a later migration dropped or altered the trigger binding on `public.visits`.
+* **Concrete case:** A later migration drops the trigger or recreates it as `BEFORE UPDATE` only (omitting `INSERT`), bypassing desk check-in pause enforcement completely while all unit tests stay green.
+
+4. **Check-file test verifies only the 22 marker tuples, not the rest of `allowed_steps.sql` — Severity: minor**
+* **File and line:** `lib/allowedSteps.test.ts`, lines 135–138.
+* **What goes wrong:** `expect(pairsBetweenMarkers(checkSql)).toEqual(libMoves())` confirms that `supabase/checks/allowed_steps.sql` lists the 22 tuples between the markers, not that the loop executes them or that `START_STATUSES` / `TRIAGE_STATUSES` in the check script stay in sync.
+* **Concrete case:** Commenting out the `update` inside the loop in `allowed_steps.sql` while leaving the `values` list intact still passes `allowedSteps.test.ts`.
+
+### 2. Check file (`supabase/checks/allowed_steps.sql`) and SQL Editor session timeout
+
+1. **Session-level `SET` outside `BEGIN` does not match how the SQL Editor executes scripts, and leaks session state onto pooled backend connections on failure — Severity: should fix**
+* **File and line:** `supabase/checks/allowed_steps.sql`, lines 28 and 218 (`set idle_in_transaction_session_timeout = '10s';` / `reset idle_in_transaction_session_timeout;`).
+* **What goes wrong:**
+* **How the SQL Editor actually runs the script:** Clicking **Run** in the Supabase SQL Editor sends the entire script as one multi-statement batch over a pooled connection. If the final `do $$` block raises an exception, Postgres immediately marks the transaction aborted (`25P02`), skips `rollback;` and `reset ...;`, reaches the end of the submitted batch, and **rolls back the transaction immediately**—never leaving an `idle in transaction` session hanging for 10 seconds. The 10-second timeout only fires if someone runs statements piecemeal (`BEGIN;` in one request and pauses >10s before `ROLLBACK;`, where a 10s limit would actually kill an intentional manual inspection).
+* **Connection pooler (`Supavisor` transaction mode) leak:** Because `SET` on line 28 is outside `BEGIN;` (session-scoped rather than `SET LOCAL`), any failure before line 218 skips `reset idle_in_transaction_session_timeout;`. In transaction pooling mode, Supavisor returns that underlying Postgres backend to the pool without resetting session variables, leaving a 10-second `idle_in_transaction_session_timeout` active on that backend for subsequent unrelated callers.
+* **Concrete case:** A check row fails and the final `do $$` block raises an exception; execution aborts before line 218, leaving `idle_in_transaction_session_timeout = '10s'` set on the pooled Postgres session.
+* **Smallest fix:** Replace line 28 + line 218 with `set local idle_in_transaction_session_timeout = '10s';` immediately **after** `begin;` (line 30) and remove `reset idle_in_transaction_session_timeout;`. `SET LOCAL` is transaction-scoped, safe in transaction-mode pooling, and automatically cleared on both `ROLLBACK` and error abort.
+
+### 3. `CheckInPanel` (`components/staff/CheckInPanel.tsx`)
+
+1. **`(offsitePaused = false, pauseReadFailed = true)` still offers `"Start off-site waiting"` with no stale-read warning — Severity: should fix**
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 63 (`const onSiteOnly = offsitePaused !== false;`), 137–145 (`finish`), and 249–256.
+* **What goes wrong:** `useSitePauses()` keeps the last good `pauses` object when a later poll fails (`pauses` stays non-null while `failed` becomes `true`). In `(offsitePaused = false, pauseReadFailed = true)`, `onSiteOnly` evaluates to `false`, so `"Start off-site waiting"` stays visible and submittable without telling staff that the pause switch failed to refresh. (The database trigger `VWR02` still blocks saving if the site was paused in the meantime, so no invalid visit is saved, but the UI hides the read failure.)
+* **Concrete case:** Staff open `/staff` while Site A is unpaused (`offsitePaused = false`), then network/Supabase errors on a subsequent 5-second poll (`pauseReadFailed = true`, `offsitePaused` still `false`). `CheckInPanel` shows `"Start off-site waiting"` normally with no warning.
+
+2. **Red-box wording contradicts `"Offered, declined"` when paused or unreadable, and `"Waits on-site"` / `"Not eligible"` recording remains coupled — Severity: minor**
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 21, 27–31 (`onSiteOnlyText`), and 139–144 (`finish`).
+* **What goes wrong:**
+* Across all 6 `(offsitePaused, pauseReadFailed)` states, staff **cannot** start off-site waiting when `offsitePaused` is `true` or `null` (`onSiteOnly` is `true`, hiding the submit button and blocking Enter in `finish`), and `finish`'s `'Press "Waits on-site" instead.'` matches the third button's `"Waits on-site"` label.
+* However, when `offsitePaused === true` or `pauseReadFailed === true`, `onSiteOnlyText` states `"The patient waits on-site."` while the `"Offered, declined"` button is still visible beside `"Waits on-site"`—even though off-site waiting could not be offered. (Note: verify outside the diff hunks that the success message for `"Waits on-site"` / `"not_eligible"` says the patient waits on-site rather than off-site.)
+* **Concrete case:** Site A is paused (`offsitePaused = true`); the red box says `"Off-site waiting is paused at this site: the patient waits on-site."` while `"Offered, declined"` remains clickable right below it.
+
+### 4. `"refused"` result and text in `createDeskVisit` (`data/staffActions.ts` & `CheckInPanel.tsx`)
+
+1. **`"refused"` is the right result, and no error maps to a worse message, though `VWR01` on `INSERT` is slightly opaque — Severity: minor**
+* **File and line:** `data/staffActions.ts`, lines 93–101, and `components/staff/CheckInPanel.tsx`, lines 115–122.
+* **What goes wrong:** Nothing regresses—`lib/saveResult.ts` maps only `VWR02` $\to$ `"paused"` and `VWR01` $\to$ `"refused"`, so network errors, timeouts, and other SQLSTATEs still return `null` (`"Not saved: the database could not be reached. Nothing was recorded. Try again."`). On `INSERT`, `VWR01` only fires if `new.status` is outside `START_STATUSES` (which cannot happen from the UI unless the client bundle and DB migration are out of sync), so `"Not saved: the database refused this check-in. Nothing was recorded."` accurately stops staff from retrying a network error, though suggesting a page refresh would be slightly more helpful if a deploy mismatch ever triggered it.
+
+### 5. Codebase rules (one job per file, $\le$ 300 lines, straight quotes, beginner readability)
+
+1. **Duplicate three-way `offsitePaused` / `pauseReadFailed` ternary in `finish` and near-300-line length in `CheckInPanel.tsx` — Severity: minor**
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 27–31, 139–144, and 248–256.
+* **What goes wrong:** One job per file holds across all touched files, and all curly quotes (`“Waits on-site”`) and ellipses (`Saving…`) in the diff were replaced with straight quotes and `...`. However, lines 139–144 repeat the exact three-way `offsitePaused` / `pauseReadFailed` branch from `onSiteOnlyText` (lines 27–31) as a nested ternary (`offsitePaused === true ? ... : pauseReadFailed ? ... : ...`), which is harder for a beginner to read, and `CheckInPanel.tsx` reaches line 248 before the closing buttons—verify the full file stays $\le 300$ lines.
+* **Concrete case:** Reusing a small `blockedOffsiteMessage(offsitePaused, pauseReadFailed)` helper in `finish` removes the nested ternary and trims `CheckInPanel.tsx` by several lines.
