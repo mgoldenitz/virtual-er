@@ -24,10 +24,11 @@ const PAUSED_NOT_SAVED = 'Off-site waiting is paused at this site. Press "Waits 
 const READ_FAILED = "Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds.";
 
 // A later read failed, but the last good read said "not paused", so off-site waiting stays offered.
-// If the site was paused meanwhile, the database refuses the start (VWR02) and PAUSED_NOT_SAVED shows.
+// If the site was paused meanwhile, the database refuses the start (VWR02), so nothing is saved.
+// (If the network is still down, the screen says "could not be reached" in place of "paused".)
 const STALE_READ =
-  "Could not read the pause switch just now. The last read said off-site waiting is not paused. " +
-  "The screen tries again every 5 seconds. If the site is paused now, the start is not saved and the screen says so.";
+  "Warning: could not check just now whether off-site waiting is paused. The last check said not paused. " +
+  'The screen checks again every 5 seconds. If off-site waiting was paused since then, nothing is saved: press "Waits on-site" instead.';
 
 /** The red box text while check-in offers on-site waiting only (paused, read failed, or not read yet). */
 function onSiteOnlyText(offsitePaused: boolean | null, pauseReadFailed: boolean): string {
@@ -66,6 +67,8 @@ export function CheckInPanel({
 }: Props) {
   // Only a read that says "not paused" lets staff offer off-site waiting.
   const onSiteOnly = offsitePaused !== false;
+  // Off-site waiting is offered from an older good read, because the last read failed.
+  const staleRead = !onSiteOnly && pauseReadFailed;
 
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
@@ -251,16 +254,9 @@ export function CheckInPanel({
               {onSiteOnlyText(offsitePaused, pauseReadFailed)}
             </p>
           ) : (
-            <>
-              {pauseReadFailed && (
-                <p className="w-full rounded-lg border-2 border-amber-800 bg-amber-50 p-3 font-semibold text-amber-950">
-                  {STALE_READ}
-                </p>
-              )}
-              <Button type="submit" aria-disabled={saving}>
-                Start off-site waiting
-              </Button>
-            </>
+            <Button type="submit" aria-disabled={saving} aria-describedby={staleRead ? "stale-read-warning" : undefined}>
+              Start off-site waiting
+            </Button>
           )}
           {/* While paused nobody can be offered off-site waiting, so "Offered, declined" would count
               a patient as offered by mistake. "Waits on-site" records not_eligible, which leaves the
@@ -274,6 +270,18 @@ export function CheckInPanel({
             {offsitePaused === true ? "Waits on-site (off-site waiting paused)" : offsitePaused === null ? "Waits on-site" : "Not eligible"}
           </Button>
         </div>
+      )}
+
+      {/* Always on the page, so screen readers hear the warning when it comes. It is below the
+          buttons, so they do not move when a read fails or works again. */}
+      {!homeProblem && (
+        <p
+          id="stale-read-warning"
+          role="status"
+          className={staleRead ? "rounded-lg border-2 border-amber-800 bg-amber-50 p-3 font-semibold text-amber-950" : ""}
+        >
+          {staleRead ? STALE_READ : ""}
+        </p>
       )}
 
       <p role="status" className="min-h-6 font-semibold">
