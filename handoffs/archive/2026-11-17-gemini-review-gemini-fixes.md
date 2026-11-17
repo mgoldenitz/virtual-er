@@ -230,3 +230,7 @@ I read each point against the files at `193147f`. Gemini did not run the tests o
 - 7 (`set local` and the comment): partly right. Line 3 of the check file already says "Run the whole file at once". The comment at lines 27 to 30 is not exact: an error does not end the transaction; the transaction stays open (aborted) until `rollback` or the 10-second timeout. Cheap fix: reword the comment. Accept.
 
 Fixes to offer: 1, 3, 5, 7. Optional: 2 (one line), 4 (two words).
+
+## Done (2026-11-17)
+
+Owner chose 1, 3, 5 and 7. Done: test `1f5032d`, panel `29705fe` (points 1 and 3), click test `eb378b7` (point 5; a mutation try on the `paused` branch failed it), check file comment `7dadf93` (point 7). Not done: 2 and 6 (wrong), 4 (optional). Checked in this session: 57 test files, 316 tests, lint and build pass. Not checked: how NVDA or VoiceOver read the warning in a real browser.
