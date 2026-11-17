@@ -3,12 +3,14 @@
 // waiting is still offered from the last good read, and a start at a site that was paused since
 // then shows the paused message (the database refused it with VWR02). The fallback button stays
 // enabled, no visit is reported as created, and the paused message stays after a re-render as paused.
+// The paused message must name a button that is on the screen, before and after the new read.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeskVisit } from "@/data/staffActions";
 import { CheckInPanel } from "./CheckInPanel";
+import { PAUSED_NOT_SAVED } from "./checkInText";
 
 vi.mock("@/data/staffActions", () => ({ createDeskVisit: vi.fn(), checkInVisitFromHome: vi.fn() }));
 
@@ -32,6 +34,12 @@ afterEach(() => {
 
 /** The button whose words start with `words`. */
 const button = (words: string) => [...container.querySelectorAll("button")].find((b) => b.textContent?.startsWith(words));
+
+/** true when one of the button names in "quotes" in `text` is the start of a button on the screen. */
+function namesAButtonOnScreen(text: string): boolean {
+  const names = [...text.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  return names.some((name) => button(name) !== undefined);
+}
 
 describe("CheckInPanel taps after a failed pause read", () => {
   it("a start at a site paused since the last good read shows the paused message", async () => {
@@ -64,9 +72,8 @@ describe("CheckInPanel taps after a failed pause read", () => {
 
     expect(createDeskVisit).toHaveBeenCalledTimes(1);
     expect(vi.mocked(createDeskVisit).mock.calls[0][1]).toBe("waiting");
-    expect(container.textContent).toContain(
-      'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.',
-    );
+    expect(container.textContent).toContain(PAUSED_NOT_SAVED);
+    expect(namesAButtonOnScreen(PAUSED_NOT_SAVED)).toBe(true);
     // Nothing was saved, so no visit was created, and the fallback button is enabled again.
     expect(onCreated).not.toHaveBeenCalled();
     // At offsitePaused={false} the fallback button is labelled "Not eligible".
@@ -87,8 +94,7 @@ describe("CheckInPanel taps after a failed pause read", () => {
         />,
       ),
     );
-    expect(container.textContent).toContain(
-      'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.',
-    );
+    expect(container.textContent).toContain(PAUSED_NOT_SAVED);
+    expect(namesAButtonOnScreen(PAUSED_NOT_SAVED)).toBe(true);
   });
 });
