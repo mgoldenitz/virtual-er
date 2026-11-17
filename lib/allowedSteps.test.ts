@@ -20,17 +20,20 @@ import {
 } from "./visitActions";
 
 // The newest migration that makes the trigger function: that is the one the database runs.
+// Only "create (or replace) function" counts, so a later "drop function" or "grant ... on
+// function" line does not make the test read the wrong file.
 function newestTriggerSql(): string {
   const dir = "supabase/migrations";
+  const makesTrigger = /create\s+(or\s+replace\s+)?function\s+public\.visits_check_step\s*\(/i;
   const files = readdirSync(dir)
     .filter((name) => name.endsWith(".sql"))
     .sort()
-    .filter((name) => /function\s+public\.visits_check_step\s*\(/i.test(readFileSync(`${dir}/${name}`, "utf8")));
+    .filter((name) => makesTrigger.test(readFileSync(`${dir}/${name}`, "utf8")));
   return readFileSync(`${dir}/${files[files.length - 1]}`, "utf8");
 }
 
-// Removes "--" comments, so a move that is commented out does not count.
-const withoutComments = (sql: string) => sql.replace(/--.*$/gm, "");
+// Removes "/* ... */" and "--" comments, so a move that is commented out does not count.
+const withoutComments = (sql: string) => sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
 
 const t0 = new Date("2026-11-09T20:00:00Z");
 const at = (min: number) => new Date(t0.getTime() + min * 60_000);
@@ -99,6 +102,12 @@ describe("allowed status moves", () => {
     expect(starts).toEqual([...START_STATUSES].sort());
     const triage = code.match(/old\.status\s+in\s*\(([^)]*)\)/i)![1].match(/\w+/g)!.sort();
     expect(triage).toEqual([...TRIAGE_STATUSES].sort());
+  });
+
+  it("does not count a move inside either kind of SQL comment", () => {
+    const sql = "('a', 'b'),\n/* ('c', 'd'),\n('e', 'f'), */\n-- ('g', 'h'),\n('i', 'j')";
+    const pairs = [...withoutComments(sql).matchAll(/\(\s*'(\w+)'\s*,\s*'(\w+)'\s*\)/g)].map((m) => m[1]);
+    expect(pairs).toEqual(["a", "i"]);
   });
 
   it("triage puts a visit in the line only from a triage status", () => {

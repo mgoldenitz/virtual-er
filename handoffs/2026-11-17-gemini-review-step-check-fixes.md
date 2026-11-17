@@ -220,7 +220,7 @@ Gemini did not get the 7 files, so it guessed at the code. I checked each point 
 4. `VisitRow` gets "paused" (must fix): wrong. `needs_reassessment` to `waiting` goes only through `CheckInPanel` (its "Back for reassessment" text, `components/staff/CheckInPanel.tsx:152`, through `checkInVisitFromHome`). `RecentlyClosed` reopens to `needs_reassessment`, not `waiting`, and its Undo to `waiting` comes from `arrived` or `removed`, which the pause does not refuse. The `case "paused"` in `FollowUpPanel.tsx:71` is a follow-up kind, not this result.
 5. Message lost when the button hides (should fix): wrong. The message is in the `<p role="status">` at `CheckInPanel.tsx:246`, outside the branch that hides the button.
 6. Check file gaps (must fix): partly right.
-   - Undo from `removed` to `waiting` while paused has no row. Right; a cheap row to add.
+   - Undo from `removed` to `waiting` while paused has no row. Wrong (I first said right): row 21 (`7A`, expected `saved`) already tests it.
    - A null value cannot happen (`offsite_paused boolean not null`). A missing row has no test. Right, minor; a row can delete site B's row inside the rollback.
    - A run as `authenticated`: right that it is not tested; the same as "Not checked" above.
 7. Loop order (should fix): not a bug. The loop (lines 104 to 156) runs after both sites are set to unpaused (line 41) and before the pause (line 159).
@@ -229,4 +229,6 @@ Gemini did not get the 7 files, so it guessed at the code. I checked each point 
    - The file regex `/function\s+public\.visits_check_step\s*\(/` also matches a later `drop function` or `grant ... on function`. The test then fails (no markers), so it cannot be fooled, but it can fail for no reason. Right, minor; the regex can ask for `create (or replace) function`.
    - The start list and the pause list are already checked (`lib/allowedSteps.test.ts:98-99` and the triage test at line 104). Wrong.
 
-Fixes to offer: the two check file rows (6), and the two sync test changes (8).
+Fixes to offer: the missing settings row (6), and the two sync test changes (8).
+
+Owner chose all of them on 2026-11-17, and a Haiku `reviewer` worker reads the 7 files in place of a second Gemini review. Done: check file row 27 (`7N`, no settings row for site B, expected `paused`); the sync test finds only a `create (or replace) function` file and removes `/* ... */` comments, with a new test for the comments.

@@ -3,7 +3,7 @@
 -- Run the whole file at once in the Supabase SQL Editor, after those migrations. It saves nothing:
 -- everything happens inside "begin ... rollback", so the synthetic visits and the paused site
 -- come back as they were.
--- It shows 48 rows. In each row, got must be the same as expected, and ok must be true.
+-- It shows 49 rows. In each row, got must be the same as expected, and ok must be true.
 -- If any row is not ok, the last block stops with an error that names those rows.
 -- got is 'saved' (the database took it), 'refused' (error VWR01: not an allowed move, or a
 -- change of site) or 'paused' (error VWR02: it would start off-site waiting at a paused site).
@@ -19,6 +19,7 @@
 --   7J  desk, arrived before the pause: Undo to waiting while paused
 --   7K  desk, waiting: "I'm still here" while paused
 --   7M  desk, waiting at site B while site A is paused
+--   7N  desk, waiting at site B after site B's settings row is deleted: counts as paused
 --   8x  one visit for each of the 22 allowed moves (rows 101 to 122)
 
 begin;
@@ -184,6 +185,12 @@ insert into results select 25, 'paused: 7K I''m still here (record_still_here)',
 insert into results select 26, 'paused at A: 7M new visit, waiting at site B', pg_temp.try_step($q$
   insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at)
   values ('ZZZZ7M', 'ZZZZZZZZZZZZZZZZZZZZZZZ7M2', 'B', 'desk', 4, 'waiting', now(), now()) $q$), 'saved';
+
+-- Fail closed: with no settings row for site B, the check treats site B as paused.
+delete from public.site_settings where site = 'B';
+insert into results select 27, 'no settings row for B: 7N new visit, waiting at site B', pg_temp.try_step($q$
+  insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at)
+  values ('ZZZZ7N', 'ZZZZZZZZZZZZZZZZZZZZZZZ7N2', 'B', 'desk', 4, 'waiting', now(), now()) $q$), 'paused';
 
 select n, what, got, expected, got = expected as ok from results order by n;
 
