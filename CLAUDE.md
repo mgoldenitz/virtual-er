@@ -50,6 +50,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 - Before you write the plan, search the tests for the behaviour that the plan changes, and name each test that must change in the plan.
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
 - Before you remove an import, search the file for other uses of that name.
+- Change docs and code with the Edit tool, not a Python or sed script, when the new text has quotes or backslashes.
 
 ## Keep the app organized so a beginner can read it
 
