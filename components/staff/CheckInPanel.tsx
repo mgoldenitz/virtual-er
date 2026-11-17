@@ -23,6 +23,12 @@ const PAUSED_NOT_SAVED = 'Off-site waiting is paused at this site. Press "Waits 
 // The last read of the pause switch failed, and no earlier read worked. data/keepFresh.ts tries again every 5 seconds.
 const READ_FAILED = "Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds.";
 
+// A later read failed, but the last good read said "not paused", so off-site waiting stays offered.
+// If the site was paused meanwhile, the database refuses the start (VWR02) and PAUSED_NOT_SAVED shows.
+const STALE_READ =
+  "Could not read the pause switch just now. The last read said off-site waiting is not paused. " +
+  "The screen tries again every 5 seconds. If the site is paused now, the start is not saved and the screen says so.";
+
 /** The red box text while check-in offers on-site waiting only (paused, read failed, or not read yet). */
 function onSiteOnlyText(offsitePaused: boolean | null, pauseReadFailed: boolean): string {
   // Paused comes first: it is the safer fact, even when a later read failed.
@@ -245,9 +251,16 @@ export function CheckInPanel({
               {onSiteOnlyText(offsitePaused, pauseReadFailed)}
             </p>
           ) : (
-            <Button type="submit" aria-disabled={saving}>
-              Start off-site waiting
-            </Button>
+            <>
+              {pauseReadFailed && (
+                <p className="w-full rounded-lg border-2 border-amber-800 bg-amber-50 p-3 font-semibold text-amber-950">
+                  {STALE_READ}
+                </p>
+              )}
+              <Button type="submit" aria-disabled={saving}>
+                Start off-site waiting
+              </Button>
+            </>
           )}
           {/* While paused nobody can be offered off-site waiting, so "Offered, declined" would count
               a patient as offered by mistake. "Waits on-site" records not_eligible, which leaves the
