@@ -250,7 +250,8 @@ export function CheckInPanel({
             </Button>
           )}
           <Button variant="secondary" aria-disabled={saving} onClick={() => finish("not_eligible")}>
-            {offsitePaused === true ? "Waits on-site (off-site waiting paused)" : offsitePaused === null ? "Waits on-site" : "Not eligible"}
+            {/* The red box above says why; the label is the name the messages use. */}
+            {offsitePaused === false ? "Not eligible" : "Waits on-site"}
           </Button>
         </div>
       )}
