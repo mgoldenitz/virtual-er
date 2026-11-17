@@ -87,7 +87,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       {stillHereState({ status: visit.status, triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at }, now) ===
         "missed" && (
         <p className="mt-2 rounded-lg border-2 border-red-800 bg-red-50 p-2 font-semibold text-red-900" data-testid="still-here-flag">
-          Missed &ldquo;I&apos;m still here&rdquo;: no tap within {STILL_HERE_ANSWER_WITHIN_MINUTES} min of the prompt. Not a health check.
+          {`Missed "I'm still here": no tap within ${STILL_HERE_ANSWER_WITHIN_MINUTES} min of the prompt. Not a health check.`}
         </p>
       )}
       <FollowUpPanel visit={visit} now={now} saving={saving} act={act} />

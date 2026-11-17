@@ -78,7 +78,7 @@ export function flagFor(followUp: StaffFollowUp, visit: Visit, now: Date): Flag 
         RED,
       );
     case "contacted_not_arrived":
-      return same("Answered the phone, but hasn’t arrived or tapped ‘I’m on my way’ yet.", AMBER);
+      return same(`Answered the phone, but hasn't arrived or tapped "I'm on my way" yet.`, AMBER);
     case "on_way_not_arrived": {
       const since = visit.confirmed_at ? minutesBetween(visit.confirmed_at, now) : 0;
       return {

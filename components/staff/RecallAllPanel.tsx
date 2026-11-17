@@ -66,7 +66,7 @@ export function RecallAllPanel({ visits, site, onResult }: Props) {
         Recall all {patientCount(n)} waiting off-site at Demo Site {site}?
       </h3>
       <p>
-        Each patient&apos;s phone will show &ldquo;Please head back now&rdquo;. Use this for a surge or a system problem.
+        {`Each patient's phone will show "Please head back now". Use this for a surge or a system problem. `}
         There is no undo: recalled patients stay recalled.
       </p>
       <p className="font-mono tracking-widest">{asked.map((v) => v.code).join(" · ")}</p>
