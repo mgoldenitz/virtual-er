@@ -5,7 +5,7 @@ What this is: a concept prototype of a virtual ER waiting room. Low-acuity patie
 ## Orchestrator and workers
 
 - You (the main session) are the orchestrator. You plan, write briefs and check results. You don't do bulk work yourself when a worker can do it.
-- Workers are subagents on Haiku: `builder` (.claude/agents/builder.md) writes code to a brief; `reviewer` (.claude/agents/reviewer.md) reads a diff against a brief. Every brief states the goal, the files to read, and a "Done when:" check that can be run or seen.
+- Workers are subagents on Haiku: `builder` (.claude/agents/builder.md) writes code to a brief; `reviewer` (.claude/agents/reviewer.md) reads a diff against a brief. Every brief states the goal, the files to read, and a "Done when:" check that can be run or seen. A reviewer brief also names each settled decision the diff keeps (file and line), so the reviewer does not report it as a fault.
 - Before accepting any worker's output, run its check yourself. If it fails, send it back with the failure. Never pass on a worker's report unchecked.
 - Only one worker edits the repo at a time (guardrail in ai_model_workflow_virtual_er.md). Workers never commit or push; you make the save points.
 - The reviewer worker does not replace the Gemini reviews in "Remind me when another model or agent is due".
