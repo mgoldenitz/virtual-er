@@ -10,33 +10,13 @@ import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
 import { LANGUAGES, menuLabel } from "@/lib/text/languages";
 import { Button } from "@/components/Button";
+import { PAUSED_NOT_SAVED, STALE_READ, onSiteOnlyText } from "./checkInText";
 
 const CHECKLIST = [
   { id: "phone", label: "Has a phone with them" },
   { id: "return", label: "Can return within 20 minutes" },
   { id: "agrees", label: "Agrees to wait off-site" },
 ] as const;
-
-// The database refused off-site waiting because the site was paused on another screen.
-const PAUSED_NOT_SAVED = 'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.';
-
-// The last read of the pause switch failed, and no earlier read worked. data/keepFresh.ts tries again every 5 seconds.
-const READ_FAILED = "Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds.";
-
-// A later read failed, but the last good read said "not paused", so off-site waiting stays offered.
-// If the site was paused meanwhile, the database refuses the start (VWR02), so nothing is saved.
-// (If the network is still down, the screen says "could not be reached" in place of "paused".)
-const STALE_READ =
-  "Warning: could not check just now whether off-site waiting is paused. The last check said not paused. " +
-  'The screen checks again every 5 seconds. If off-site waiting was paused since then, nothing is saved: press "Waits on-site" instead.';
-
-/** The red box text while check-in offers on-site waiting only (paused, read failed, or not read yet). */
-function onSiteOnlyText(offsitePaused: boolean | null, pauseReadFailed: boolean): string {
-  // Paused comes first: it is the safer fact, even when a later read failed.
-  if (offsitePaused) return "Off-site waiting is paused at this site: the patient waits on-site.";
-  if (pauseReadFailed) return READ_FAILED;
-  return "Checking whether off-site waiting is paused. The patient can wait on-site.";
-}
 
 type Props = {
   site: Site;
@@ -68,7 +48,9 @@ export function CheckInPanel({
   // Only a read that says "not paused" lets staff offer off-site waiting.
   const onSiteOnly = offsitePaused !== false;
   // Off-site waiting is offered from an older good read, because the last read failed.
-  const staleRead = !onSiteOnly && pauseReadFailed;
+  const staleRead = offsitePaused === false && pauseReadFailed;
+  // The warning shows only while the form can be used (no home visit problem).
+  const showWarning = staleRead && !homeProblem;
 
   const [ctas, setCtas] = useState<4 | 5 | null>(null);
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
@@ -274,19 +256,18 @@ export function CheckInPanel({
 
       {/* Always on the page, so screen readers hear the warning when it comes. It is below the
           buttons, so they do not move when a read fails or works again. */}
-      {!homeProblem && (
+      <div>
         <p
           id="stale-read-warning"
           role="status"
-          className={staleRead ? "rounded-lg border-2 border-amber-800 bg-amber-50 p-3 font-semibold text-amber-950" : ""}
+          className={showWarning ? "mb-4 rounded-lg border-2 border-amber-800 bg-amber-50 p-3 font-semibold text-amber-950" : ""}
         >
-          {staleRead ? STALE_READ : ""}
+          {showWarning ? STALE_READ : ""}
         </p>
-      )}
-
-      <p role="status" className="min-h-6 font-semibold">
-        {message}
-      </p>
+        <p role="status" className="min-h-6 font-semibold">
+          {message}
+        </p>
+      </div>
     </form>
   );
 }

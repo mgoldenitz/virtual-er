@@ -47,7 +47,7 @@ describe("CheckInPanel while the paused switch is not read", () => {
     expect(html).toContain(warning);
     // Screen readers hear the warning when it comes, and again on the button.
     expect(html).toMatch(/<p id="stale-read-warning" role="status"[^>]*>Warning: could not check/);
-    expect(html).toContain('aria-describedby="stale-read-warning"');
+    expect(html).toMatch(/<button[^>]*aria-describedby="stale-read-warning"[^>]*>Start off-site waiting<\/button>/);
     const fresh = render(false, false);
     expect(fresh).not.toContain(warning);
     expect(fresh).not.toContain("aria-describedby");

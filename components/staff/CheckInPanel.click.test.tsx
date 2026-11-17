@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 // Presses the check-in buttons in a test browser (happy-dom): after a failed pause read, off-site
 // waiting is still offered from the last good read, and a start at a site that was paused since
-// then shows the paused message (the database refused it with VWR02).
+// then shows the paused message (the database refused it with VWR02). The fallback button stays
+// enabled, no visit is reported as created, and the paused message stays after a re-render as paused.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -34,12 +35,13 @@ const button = (words: string) => [...container.querySelectorAll("button")].find
 
 describe("CheckInPanel taps after a failed pause read", () => {
   it("a start at a site paused since the last good read shows the paused message", async () => {
+    const onCreated = vi.fn();
     act(() =>
       root.render(
         <CheckInPanel
           site="A"
           onAttempt={() => {}}
-          onCreated={() => {}}
+          onCreated={onCreated}
           homeVisit={null}
           homeProblem={null}
           onHomeDone={() => {}}
@@ -49,8 +51,12 @@ describe("CheckInPanel taps after a failed pause read", () => {
       ),
     );
     // CTAS 4 is the first radio button; then tick all three checklist items.
-    act(() => container.querySelector<HTMLInputElement>('input[type="radio"]')!.click());
-    for (const box of container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')) act(() => box.click());
+    const radio = container.querySelector<HTMLInputElement>('input[type="radio"]');
+    if (!radio) throw new Error("No CTAS radio button");
+    act(() => radio.click());
+    for (const box of container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')) {
+      act(() => box.click());
+    }
 
     const start = button("Start off-site waiting");
     if (!start) throw new Error('No button "Start off-site waiting"');
@@ -58,6 +64,29 @@ describe("CheckInPanel taps after a failed pause read", () => {
 
     expect(createDeskVisit).toHaveBeenCalledTimes(1);
     expect(vi.mocked(createDeskVisit).mock.calls[0][1]).toBe("waiting");
+    expect(container.textContent).toContain(
+      'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.',
+    );
+    // Nothing was saved, so no visit was created, and the fallback button is enabled again.
+    expect(onCreated).not.toHaveBeenCalled();
+    // At offsitePaused={false} the fallback button is labelled "Not eligible".
+    expect(button("Not eligible")?.getAttribute("aria-disabled")).toBe("false");
+
+    // Re-render the same panel as paused (as after reloadSitePauses): the paused message stays.
+    act(() =>
+      root.render(
+        <CheckInPanel
+          site="A"
+          onAttempt={() => {}}
+          onCreated={onCreated}
+          homeVisit={null}
+          homeProblem={null}
+          onHomeDone={() => {}}
+          offsitePaused={true}
+          pauseReadFailed={true}
+        />,
+      ),
+    );
     expect(container.textContent).toContain(
       'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.',
     );
