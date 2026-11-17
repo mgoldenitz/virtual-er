@@ -428,3 +428,13 @@ I read each point against the files at `676d32e`. Gemini did not run the tests o
 - 5 (the paused, read failed, not read yet choice is written twice): right, minor. The box text (`onSiteOnlyText`) and the `finish` text are close but not the same: `finish` adds 'Press "Waits on-site" instead.'. One helper with that ending as a choice would remove the nested choice in `finish`. The file is 277 lines, under 300.
 
 Fixes to offer: 1.1, 2.1, 3.1 (owner picks the form), 5.
+
+## Done (2026-11-17)
+
+- 2.1: `set local` after `begin;`, `reset` removed (`fd24d05`).
+- 1.1: move pairs read from inside the move check (`077df04`). Checked: two mutation tries each failed the test.
+- 5: `finish` uses `onSiteOnlyText` (`fc2c714`).
+- 3.1: amber warning line, button kept (test `3f7717e`, code `98d1d07`).
+- Checked: 315 tests, lint and build pass.
+- Not checked: the check file run after `fd24d05` (owner runs it in the SQL Editor).
+- Not changed: 1.2, 1.3, 1.4, 3.2, 4 (reasons above).
