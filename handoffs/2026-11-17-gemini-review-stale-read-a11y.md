@@ -322,3 +322,15 @@ Gemini Hydrogen 4, High, 2026-11-17. Pasted as received.
 * **What goes wrong:** `container.querySelector<HTMLInputElement>('input[type="radio"]')!.click()` throws an opaque `TypeError: Cannot read properties of null` if the markup changes, and the braceless single-line `for (...) act(() => box.click());` is harder for a beginner to scan than the explicit error guard on line 56.
 * **Concrete case:** A beginner renames or changes the CTAS input type in `CheckInPanel.tsx` and hits an unexplained null-dereference error on line 52 instead of a readable message.
 * **Smallest fix:** Extract a small `tickRequiredFields()` helper in `components/staff/CheckInPanel.click.test.tsx` that checks for the radio and checkboxes and throws a descriptive `Error` if missing, matching line 56.
+
+## My check of the response
+
+Checked against the code on 2026-11-17 (`components/staff/CheckInPanel.tsx` is 292 lines, not about 288).
+
+1. Accept. The warning `<p>` sits inside `{!homeProblem && ...}`, so it mounts already filled when `homeProblem` clears while `staleRead` is true. The form has `space-y-4`, so the empty `<p>` adds a 16px gap. Fix: always mount the region, show the text only when `staleRead && !homeProblem`, and put both status lines in one wrapper so the empty line takes no space.
+2. Reject. `staffActions.ts` calls `void reloadSitePauses()`, so the new pause value comes in a later render, not in the same commit as `message`. Text that a live region removes is not read (default `aria-relevant` is "additions text"). Hiding a true warning while `message` shows would also hide it from sighted staff.
+3. Accept in part. True: when the network is still down, "Waits on-site" also fails ("could not be reached"). Change "nothing is saved" to "nothing will be saved" and add the network-down sentence.
+4. Accept in part. Add `onCreated` as `vi.fn()` and check it was not called, check "Waits on-site" has `aria-disabled="false"` after the refusal, and re-render with `offsitePaused={true}` to check the paused message stays. Reject "ignores `pauseReadFailed`": `CheckInPanel.test.tsx` already checks the warning and `aria-describedby`.
+5. Accept. The check moves onto the "Start off-site waiting" button tag.
+6. Accept in part. With items 1 and 3 the file goes near or over 300 lines, so the check-in text (`PAUSED_NOT_SAVED`, `READ_FAILED`, `STALE_READ`, `onSiteOnlyText`) moves to a new file. `staleRead` becomes `offsitePaused === false && pauseReadFailed`; `onSiteOnly` keeps its name, because 5 other lines use it.
+7. Accept. The radio click gets the same readable error as the start button.
