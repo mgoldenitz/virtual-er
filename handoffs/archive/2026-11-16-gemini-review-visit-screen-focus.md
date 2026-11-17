@@ -431,3 +431,10 @@ Real, owner to decide:
 
 Rejected:
 - 2. Gemini's own answer to Q1 says the two rescues never both act on one change. The fix is a rework of 4 files that the last three reviews made stable, for no change in what the patient sees. `arrived` to `removed` keeps the same heading element (same key, same component, same id), so nothing leaves (point 4.2 of the recall focus review).
+
+### Owner decisions (2026-11-16)
+
+- 3 (two tests): done (`ccd1457`).
+- 1: keep as is. Focus goes to the loading line, then to the new heading.
+- 2: rejected (see my check).
+- Review closed.
