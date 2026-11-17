@@ -530,3 +530,15 @@ Owner choices before the migration runs:
 - A. The 1.1, 1.2 and 1.6 totals (all arrivals, removed as left, still open at deletion). They are not SPEC numbers, but once a visit is deleted they cannot be added back.
 - B. The 3.1 and 3.5 guard (do nothing when no visit is old enough, and skip when another run holds the lock). It needs the function in `plpgsql`.
 - C. A clean-up of `cron.job_run_details` older than 7 days.
+
+## Outcome (2026-11-16)
+
+The owner chose A, B and C. Save points: `fc89253` (check file with asserts, the 3 new totals, the EDT visit, scores 9 and 8, a `left` removal and a second run), `4344542` (migration).
+
+Checked in this session:
+- The owner ran the migration in the SQL Editor (result: `schedule 2`) and then the whole check file. The 5 rows were the same as the expected numbers, and no assert stopped the run.
+- `cron.job` has `delete-old-visits` (`*/15 * * * *`) and `delete-old-cron-logs` (`0 3 * * *`), both active.
+- `delete_old_visits()`: `anon`, `authenticated` and `service_role` cannot run it; `postgres` can.
+- Rights of `anon` and `authenticated` (with `has_table_privilege` and `has_function_privilege`): the same as the expected list in `supabase/checks/permissions.sql`. No public table is without row-level security.
+
+Not checked: a successful run in `cron.job_run_details` (none yet when checked), and a real visit deleted after 24 hours on the live database.
