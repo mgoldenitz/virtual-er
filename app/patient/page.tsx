@@ -14,7 +14,6 @@ import { PatientShell } from "@/components/PatientShell";
 import { OfflineBanner } from "@/components/patient/OfflineBanner";
 import { StatusAndSound } from "@/components/patient/StatusAndSound";
 import { StatusAnnouncer } from "@/components/patient/StatusAnnouncer";
-import { StillHerePrompt } from "@/components/patient/StillHerePrompt";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { isDeadToken } from "@/lib/deadToken";
 import { fill, textFor } from "@/lib/text";
@@ -131,8 +130,7 @@ export default function PatientPage() {
             </bdi>{" "}
             · <bdi>{fill(t.siteName, { site: view.site })}</bdi>
           </p>
-          {token && view.status === "waiting" && <StillHerePrompt view={view} token={token} language={language} />}
-          <StatusAndSound view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} online={online} />
+          <StatusAndSound view={view} token={token ?? null} language={language} onOnMyWay={onOnMyWay} sending={sending} online={online} />
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {p.notSaved}

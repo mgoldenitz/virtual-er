@@ -4,7 +4,7 @@
 // last tap, while waiting off-site (lib/stillHere.ts). The tap only tells staff the patient is
 // still following the visit; the screen says it is not a health check.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { recordStillHere } from "@/data/patientVisit";
 import type { PatientView } from "@/lib/patientView";
 import { stillHereState } from "@/lib/stillHere";
@@ -16,7 +16,15 @@ import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
 /** How long the thank-you stays after a tap. */
 const THANKS_MS = 5 * 60_000;
 
-export function StillHerePrompt({ view, token, language }: { view: PatientView; token: string; language: string }) {
+type Props = {
+  view: PatientView;
+  token: string;
+  language: string;
+  /** The flag shared with the status screen, which stays on the page when this prompt leaves on a recall. */
+  lostFocus?: RefObject<boolean>;
+};
+
+export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
   const now = useNow();
   const [sending, setSending] = useState(false);
   const [notSaved, setNotSaved] = useState(false);
@@ -25,8 +33,9 @@ export function StillHerePrompt({ view, token, language }: { view: PatientView; 
   const state = now ? stillHereState(view, now) : "not_due";
   const showing = state !== "not_due";
   // If the prompt leaves with focus inside it (after the tap), focus goes to the status heading.
-  const lostFocus = useRef(false);
-  const markLost = useRescueFocus("status-heading", lostFocus);
+  // With the shared flag, the status screen also does this when the whole prompt leaves on a recall.
+  const ownFlag = useRef(false);
+  const markLost = useRescueFocus("status-heading", lostFocus ?? ownFlag);
 
   // Tell screen readers once each time the prompt appears (politely; it is not urgent).
   useEffect(() => {

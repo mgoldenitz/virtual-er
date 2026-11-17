@@ -37,7 +37,7 @@ const view: PatientView = {
 
 /** The status screen and the sound box, as the patient page shows them. */
 function Page({ status, online = true }: { status: VisitStatus; online?: boolean }) {
-  return <StatusAndSound view={{ ...view, status }} language="en" onOnMyWay={() => {}} sending={false} online={online} />;
+  return <StatusAndSound view={{ ...view, status }} token={null} language="en" onOnMyWay={() => {}} sending={false} online={online} />;
 }
 
 let container: HTMLDivElement;
