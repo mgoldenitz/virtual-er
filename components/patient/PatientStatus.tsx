@@ -4,12 +4,13 @@
 // Waiting, Please head back now, Ready at the desk, and the states before and after those.
 
 import Link from "next/link";
-import { useRef, type ReactNode, type RefObject } from "react";
+import { useRef, type RefObject } from "react";
 import type { PatientView } from "@/lib/patientView";
 import { textFor, type PatientText } from "@/lib/text";
 import { formatWaitRange } from "@/lib/waitText";
 import { Button } from "@/components/Button";
 import { CallReminder } from "./CallReminder";
+import { FocusBox } from "./FocusBox";
 import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
 
 type Props = {
@@ -152,15 +153,16 @@ export function PatientStatus({ view, language, onOnMyWay, sending, lostFocus }:
   // A focused part that left with this change (for example "I'm on my way"): focus goes to the heading.
   const markLost = useRescueFocus("status-heading", lostFocus ?? ownFlag);
   const kind = viewKind(view);
+  // A new screen gets a new box (the key), so the old box leaves and tells this screen if it held focus.
   return (
-    <ViewBox key={kind} onFocusLost={markLost}>
+    <FocusBox key={kind} onFocusLost={markLost}>
       {kind === "expired" && <Expired t={t} />}
       {kind === "waiting" && <Waiting view={view} language={language} t={t} />}
       {kind === "called" && (
         <Called view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} t={t} onFocusLost={markLost} />
       )}
       {kind === "other" && <OtherStatus view={view} t={t} />}
-    </ViewBox>
+    </FocusBox>
   );
 }
 
@@ -170,14 +172,4 @@ function viewKind(view: PatientView): "expired" | "waiting" | "called" | "other"
   if (view.status === "waiting") return "waiting";
   if (view.status === "called" || view.status === "on_the_way") return "called";
   return "other";
-}
-
-/**
- * Holds one screen. A new screen gets a new box (the key above), so the old box leaves the page.
- * If focus was inside it (for example on the old heading), it tells the status screen.
- */
-function ViewBox({ onFocusLost, children }: { onFocusLost: () => void; children: ReactNode }) {
-  const box = useRef<HTMLDivElement>(null);
-  useReportFocusOnLeave(box, onFocusLost);
-  return <div ref={box}>{children}</div>;
 }
