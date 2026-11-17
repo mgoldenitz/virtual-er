@@ -156,4 +156,20 @@ Gemini Hydrogen 4, High, 2026-11-16 (pasted by the owner, unchanged):
 
 ## Claude's check
 
-(Being written.)
+Checked against the code on 2026-11-16 (head 2abca74).
+
+1. Minor, not should fix. `status` is `text not null` with a check on the list (20261110060756_tables_and_security.sql line 36). A NULL status is refused by the column with code 23502, so it cannot be saved. Only the error code differs.
+2. Accept. Nothing in the trigger stops a change of `site`. No screen changes the site, so a guard costs one line.
+5. Accept, the same fix as 2. If the site cannot change, this path is closed.
+3. Reject for now. This is a time and field rule. The owner chose "status moves only" on 2026-11-16. The Undo rules in lib/visitActions.ts restore the earlier status from the closure.
+4. Minor. The order is written in the migration comment and in docs/decisions.md. No action.
+6. Minor. `site` has a check `site in ('A', 'B')` and both rows are made in the first migration. Fail closed (`is distinct from false`) is cheap, so it can go in with 2.
+7. Minor. Only staff (`authenticated`, which has SELECT on site_settings through is_staff) and security definer functions write visits. grep of app/, data/ and lib/ found no other writer.
+8. Accept, but the suggested fix is wrong. A non-key UPDATE takes FOR NO KEY UPDATE. That lock conflicts with FOR SHARE, but not with FOR KEY SHARE. So `for key share` does not wait for the pause. The fix is `for share`.
+9 and 16. Accept. A separate code for the pause (VWR02) lets changeVisit and createDeskVisit show "Off-site waiting is paused" and reload the pause state. VWR01 stays for a bad move, with its own message.
+10. Not applicable. Every changeVisit write has `.eq("version", ...)`, and recallAll filters on `status = 'waiting'`. There is no unversioned write.
+11. Reject. Recall all moves waiting to called, which is always in the list and has no pause check, so one row cannot raise VWR01. A deadlock is possible in theory but the current text ("not saved, try again") is a safe answer.
+12. Accept. Loop all 22 pairs, and add arrived to waiting while paused.
+13. Partly covered: the owner's browser check on 2026-11-16 ran real staff writes while paused. A `set local role authenticated` run is possible but needs a staff JWT claim in the check. Optional.
+14. Accept 1 and 2 (a final assert, a still-here update while paused, site B while A is paused). Point 3 (ACCESS EXCLUSIVE lock) is true, but the check runs in one short transaction that rolls back, on a demo database. No action.
+15. Accept 1 and 3 (strip SQL comments before the regex; also check the pause-source list and the start list). Point 2 is minor. Point 4 is real: a note in the migration and a test that no later migration redefines visits_check_step.
