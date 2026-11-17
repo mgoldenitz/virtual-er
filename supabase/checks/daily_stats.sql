@@ -2,39 +2,49 @@
 -- Run the whole file at once in the Supabase SQL Editor, after that migration. It saves nothing:
 -- everything happens inside "begin ... rollback", so the synthetic visits, the paused trigger,
 -- the real visits that the clean-up deletes and the daily_stats rows all come back as they were.
+-- If a number is wrong, the run stops with an error that names the row, what it got and what
+-- it expected (and still saves nothing). If all is right, it shows the 5 rows below.
 --
 -- Why the trigger is paused: visits_before_write sets every new time to now(), so this check
 -- could not make visits that are more than 24 hours old.
--- Why January 2000: no real visit can count on those dates, and Toronto is on EST (UTC-5) then.
--- D1 = 2000-01-01 and D2 = 2000-01-02, both Toronto dates.
+-- Why the year 2000: no real visit can count on those dates. Toronto is on EST (UTC-5) in
+-- January and on EDT (UTC-4) in July.
+-- D1 = 2000-01-01, D2 = 2000-01-02, D3 = 2000-07-01, D4 = 2000-07-02, all Toronto dates.
 --
--- The synthetic visits (all site A and not demo, unless the line says so):
+-- The synthetic visits (all site A and not demo, unless the line says so). As in the app, every
+-- visit triaged as not eligible has a CTAS level, and Mark arrived sets closed_at = arrived_at:
 --   5A  desk, CTAS 4, triaged and offered D1, called 12:00, arrived 12:30 D1 (1800 s)
 --   5B  desk, CTAS 5, triaged and offered D1 23:30, arrived D2 00:30 (2400 s): the midnight case
 --   5C  desk, CTAS 4, triaged and offered D1, declined
---   5D  desk, not eligible (no CTAS), triaged D1
+--   5D  desk, CTAS 5, not eligible, triaged D1
 --   5E  desk, CTAS 4, triaged and offered D1, no-show closed D2 01:00
 --   5F  desk, CTAS 5, triaged and offered D2, unable to reach closed D2
---   5G  home, created D1 22:00, triaged and offered D2, arrived 20 min after the call (1200 s),
---       closed D2, survey 10
+--   5G  home, created D1 22:00, triaged and offered D2, arrived 20 min after the call (1200 s), survey 10
 --   5H  home, created D2, never triaged (pre_arrival)
---   5J  desk, CTAS 5, triaged and offered D2, came to the desk without a call, closed D2, survey 6
---   5K  site B, demo, CTAS 4, triaged D2, still waiting
---   5P  24 hours 5 minutes old: deleted (it counts on a real date, so it is not in the rows)
+--   5J  desk, CTAS 5, triaged and offered D2, came to the desk without a call, survey 6
+--   5K  site B, demo, CTAS 4, triaged and offered D2, still waiting when deleted
+--   5M  desk, CTAS 4, triaged and offered D2, removed as left
+--   5Q  desk, CTAS 4, triaged and offered D1, arrived 10 min after the call (600 s), survey 9
+--   5R  desk, CTAS 5, triaged and offered D2, arrived 30 min after the call (1800 s), survey 8
+--   5S  desk, CTAS 4, triaged and offered D3 23:00 EDT, called 23:45, arrived D4 00:30 EDT (2700 s).
+--       In UTC its triage is already D4; with a fixed UTC-5 its arrival would still be D3.
+--   5P  24 hours 5 minutes old, CTAS 4, not eligible: deleted. It counts on a real date, so the
+--       check reads that day's row before and after, and compares with a recount.
 --   5N  23 hours old: must stay
 -- A daily_stats row is already there for (D2, A, not demo): 100 triaged, 5 surveys, score sum 40.
--- The clean-up must add to it, not replace it.
+-- The clean-up must add to it, not replace it. A second run must change nothing.
 --
--- Expected result (3 rows, visits_left = 1 on each row, the 23-hour visit 5N):
---   D1 A false  triaged 4  not_eligible 1  offered 4  declined 1  called_and_arrived 1
---               call_to_arrival_seconds 1800  no_shows 0  unable_to_reach 0
---               started_from_home 1  home_reached_triage 1  surveys 0  score_sum 0  9_or_10 0
---   D2 A false  triaged 103  not_eligible 0  offered 3  declined 0  called_and_arrived 2
---               call_to_arrival_seconds 3600  no_shows 1  unable_to_reach 1
---               started_from_home 1  home_reached_triage 0  surveys 7  score_sum 56  9_or_10 1
---   D2 B true   triaged 1, every other number 0
+-- Expected numbers, in this order: triaged, not_eligible, offered, declined,
+-- called_and_arrived, call_to_arrival_seconds, arrived, no_shows, removed_left, unable_to_reach,
+-- open_at_deletion, started_from_home, home_reached_triage, surveys, score_sum, 9_or_10
+--   D1 A false  6 1 5 1 2 2400 2 0 0 0 0 1 1 1 9 1
+--   D2 A false  105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1
+--   D2 B true   1 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0
+--   D3 A false  1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+--   D4 A false  0 0 0 0 1 2700 1 0 0 0 0 0 0 0 0 0
 -- Notes: 5B counts as triaged on D1 but as arrived on D2. 5G counts as started from home on D1
--- (its created date) but as triaged on D2. 5J has no call time, so it is not in called_and_arrived.
+-- (its created date) but as triaged on D2. 5J has no call time, so it is in arrived but not in
+-- called_and_arrived. 5K counts as open at deletion on its triaged date.
 
 begin;
 
@@ -49,16 +59,16 @@ insert into public.visits
 values
   ('ZZZZ5A', 'ZZZZZZZZZZZZZZZZZZZZZZZZD0', 'A', 'desk', 4, 'arrived', null, false,
    '2000-01-01 10:00 America/Toronto', '2000-01-01 10:00 America/Toronto', '2000-01-01 10:05 America/Toronto',
-   '2000-01-01 12:00 America/Toronto', '2000-01-01 12:30 America/Toronto', null, null),
+   '2000-01-01 12:00 America/Toronto', '2000-01-01 12:30 America/Toronto', '2000-01-01 12:30 America/Toronto', null),
   ('ZZZZ5B', 'ZZZZZZZZZZZZZZZZZZZZZZZZD1', 'A', 'desk', 5, 'arrived', null, false,
    '2000-01-01 23:30 America/Toronto', '2000-01-01 23:30 America/Toronto', '2000-01-01 23:35 America/Toronto',
-   '2000-01-01 23:50 America/Toronto', '2000-01-02 00:30 America/Toronto', null, null),
+   '2000-01-01 23:50 America/Toronto', '2000-01-02 00:30 America/Toronto', '2000-01-02 00:30 America/Toronto', null),
   ('ZZZZ5C', 'ZZZZZZZZZZZZZZZZZZZZZZZZD2', 'A', 'desk', 4, 'declined', null, false,
    '2000-01-01 09:00 America/Toronto', '2000-01-01 09:00 America/Toronto', '2000-01-01 09:05 America/Toronto',
-   null, null, null, null),
-  ('ZZZZ5D', 'ZZZZZZZZZZZZZZZZZZZZZZZZD3', 'A', 'desk', null, 'not_eligible', null, false,
+   null, null, '2000-01-01 09:05 America/Toronto', null),
+  ('ZZZZ5D', 'ZZZZZZZZZZZZZZZZZZZZZZZZD3', 'A', 'desk', 5, 'not_eligible', null, false,
    '2000-01-01 08:00 America/Toronto', '2000-01-01 08:00 America/Toronto', null,
-   null, null, null, null),
+   null, null, '2000-01-01 08:00 America/Toronto', null),
   ('ZZZZ5E', 'ZZZZZZZZZZZZZZZZZZZZZZZZD4', 'A', 'desk', 4, 'removed', 'no_show', false,
    '2000-01-01 14:00 America/Toronto', '2000-01-01 14:00 America/Toronto', '2000-01-01 14:05 America/Toronto',
    '2000-01-01 20:00 America/Toronto', null, '2000-01-02 01:00 America/Toronto', null),
@@ -67,31 +77,111 @@ values
    '2000-01-02 09:00 America/Toronto', null, '2000-01-02 10:00 America/Toronto', null),
   ('ZZZZ5G', 'ZZZZZZZZZZZZZZZZZZZZZZZZD6', 'A', 'home', 4, 'arrived', null, false,
    '2000-01-01 22:00 America/Toronto', '2000-01-02 01:00 America/Toronto', '2000-01-02 01:05 America/Toronto',
-   '2000-01-02 03:00 America/Toronto', '2000-01-02 03:20 America/Toronto', '2000-01-02 05:00 America/Toronto', 10),
+   '2000-01-02 03:00 America/Toronto', '2000-01-02 03:20 America/Toronto', '2000-01-02 03:20 America/Toronto', 10),
   ('ZZZZ5H', 'ZZZZZZZZZZZZZZZZZZZZZZZZD7', 'A', 'home', null, 'pre_arrival', null, false,
    '2000-01-02 06:00 America/Toronto', null, null,
    null, null, null, null),
   ('ZZZZ5J', 'ZZZZZZZZZZZZZZZZZZZZZZZZD8', 'A', 'desk', 5, 'arrived', null, false,
    '2000-01-02 11:00 America/Toronto', '2000-01-02 11:00 America/Toronto', '2000-01-02 11:05 America/Toronto',
-   null, '2000-01-02 12:00 America/Toronto', '2000-01-02 12:30 America/Toronto', 6),
+   null, '2000-01-02 12:00 America/Toronto', '2000-01-02 12:00 America/Toronto', 6),
   ('ZZZZ5K', 'ZZZZZZZZZZZZZZZZZZZZZZZZD9', 'B', 'desk', 4, 'waiting', null, true,
-   '2000-01-02 07:00 America/Toronto', '2000-01-02 07:00 America/Toronto', null,
+   '2000-01-02 07:00 America/Toronto', '2000-01-02 07:00 America/Toronto', '2000-01-02 07:05 America/Toronto',
    null, null, null, null),
-  ('ZZZZ5P', 'ZZZZZZZZZZZZZZZZZZZZZZZZE0', 'A', 'desk', null, 'not_eligible', null, false,
+  ('ZZZZ5M', 'ZZZZZZZZZZZZZZZZZZZZZZZZE2', 'A', 'desk', 4, 'removed', 'left', false,
+   '2000-01-02 13:00 America/Toronto', '2000-01-02 13:00 America/Toronto', '2000-01-02 13:05 America/Toronto',
+   null, null, '2000-01-02 14:00 America/Toronto', null),
+  ('ZZZZ5Q', 'ZZZZZZZZZZZZZZZZZZZZZZZZE3', 'A', 'desk', 4, 'arrived', null, false,
+   '2000-01-01 09:30 America/Toronto', '2000-01-01 09:30 America/Toronto', '2000-01-01 09:35 America/Toronto',
+   '2000-01-01 10:00 America/Toronto', '2000-01-01 10:10 America/Toronto', '2000-01-01 10:10 America/Toronto', 9),
+  ('ZZZZ5R', 'ZZZZZZZZZZZZZZZZZZZZZZZZE4', 'A', 'desk', 5, 'arrived', null, false,
+   '2000-01-02 14:00 America/Toronto', '2000-01-02 14:00 America/Toronto', '2000-01-02 14:05 America/Toronto',
+   '2000-01-02 15:00 America/Toronto', '2000-01-02 15:30 America/Toronto', '2000-01-02 15:30 America/Toronto', 8),
+  ('ZZZZ5S', 'ZZZZZZZZZZZZZZZZZZZZZZZZE5', 'A', 'desk', 4, 'arrived', null, false,
+   '2000-07-01 23:00 America/Toronto', '2000-07-01 23:00 America/Toronto', '2000-07-01 23:00 America/Toronto',
+   '2000-07-01 23:45 America/Toronto', '2000-07-02 00:30 America/Toronto', '2000-07-02 00:30 America/Toronto', null),
+  ('ZZZZ5P', 'ZZZZZZZZZZZZZZZZZZZZZZZZE0', 'A', 'desk', 4, 'not_eligible', null, false,
    now() - interval '24 hours 5 minutes', now() - interval '24 hours 5 minutes', null,
-   null, null, null, null),
+   null, null, now() - interval '24 hours 5 minutes', null),
   ('ZZZZ5N', 'ZZZZZZZZZZZZZZZZZZZZZZZZE1', 'A', 'desk', 4, 'waiting', null, false,
-   now() - interval '23 hours', now() - interval '23 hours', null,
+   now() - interval '23 hours', now() - interval '23 hours', now() - interval '23 hours',
    null, null, null, null);
+
+-- 5P's real day: its not_eligible total now, and a recount of the old not-eligible visits that
+-- the clean-up must add to it (5P and any real ones). now() is the same all through one transaction.
+create temp table real_day as
+select d.day,
+       coalesce((select s.not_eligible from public.daily_stats s
+                 where s.day = d.day and s.site = 'A' and not s.is_demo), 0) as before,
+       (select count(*) from public.visits v
+        where v.created_at < now() - interval '24 hours' and v.status = 'not_eligible'
+          and v.triaged_at is not null and v.site = 'A' and not v.is_demo
+          and (v.triaged_at at time zone 'America/Toronto')::date = d.day) as to_add
+from (select ((now() - interval '24 hours 5 minutes') at time zone 'America/Toronto')::date as day) d;
 
 select public.delete_old_visits();
 
-select s.day, s.site, s.is_demo,
-       s.triaged_ctas_4_5, s.not_eligible, s.offered, s.declined,
-       s.called_and_arrived, s.call_to_arrival_seconds, s.no_shows, s.unable_to_reach,
-       s.started_from_home, s.home_reached_triage,
-       s.survey_responses, s.survey_score_sum, s.survey_9_or_10,
-       (select count(*) from public.visits where code like 'ZZZZ5%') as visits_left
+-- A second run must change nothing.
+create temp table after_first as select * from public.daily_stats;
+select public.delete_old_visits();
+
+-- One daily_stats row as one line of numbers, in the order of the expected list above.
+create function pg_temp.stats_line(d date, s text, demo boolean) returns text language sql as $$
+  select concat_ws(' ', triaged_ctas_4_5, not_eligible, offered, declined,
+    called_and_arrived, call_to_arrival_seconds, arrived, no_shows, removed_left, unable_to_reach,
+    open_at_deletion, started_from_home, home_reached_triage,
+    survey_responses, survey_score_sum, survey_9_or_10)
+  from public.daily_stats where day = d and site = s and is_demo = demo
+$$;
+
+do $$
+declare
+  want record;
+  got text;
+  r real_day%rowtype;
+  now_ne integer;
+begin
+  for want in
+    select * from (values
+      ('2000-01-01'::date, 'A', false, '6 1 5 1 2 2400 2 0 0 0 0 1 1 1 9 1'),
+      ('2000-01-02'::date, 'A', false, '105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1'),
+      ('2000-01-02'::date, 'B', true,  '1 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0'),
+      ('2000-07-01'::date, 'A', false, '1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0'),
+      ('2000-07-02'::date, 'A', false, '0 0 0 0 1 2700 1 0 0 0 0 0 0 0 0 0')
+    ) as w(day, site, is_demo, line)
+  loop
+    got := pg_temp.stats_line(want.day, want.site, want.is_demo);
+    if got is distinct from want.line then
+      raise exception '% % %: got "%", expected "%"', want.day, want.site, want.is_demo, got, want.line;
+    end if;
+  end loop;
+
+  if (select count(*) from public.daily_stats where day < '2001-01-01') <> 5 then
+    raise exception 'expected 5 rows in the year 2000, got %',
+      (select count(*) from public.daily_stats where day < '2001-01-01');
+  end if;
+
+  select * into r from real_day;
+  select coalesce(max(not_eligible), 0) into now_ne from public.daily_stats
+    where day = r.day and site = 'A' and not is_demo;
+  if r.to_add < 1 or now_ne <> r.before + r.to_add then
+    raise exception '5P day %: not_eligible was %, is %, expected % (recount %)',
+      r.day, r.before, now_ne, r.before + r.to_add, r.to_add;
+  end if;
+
+  if exists (select * from public.daily_stats except select * from after_first)
+     or exists (select * from after_first except select * from public.daily_stats) then
+    raise exception 'the second run changed daily_stats';
+  end if;
+
+  if (select array_agg(code) from public.visits where code like 'ZZZZ5%') is distinct from array['ZZZZ5N'] then
+    raise exception 'expected only ZZZZ5N left, got %',
+      (select array_agg(code) from public.visits where code like 'ZZZZ5%');
+  end if;
+end;
+$$;
+
+-- All checks passed. The 5 rows, for a last look.
+select s.day, s.site, s.is_demo, pg_temp.stats_line(s.day, s.site, s.is_demo) as numbers
 from public.daily_stats s
 where s.day < '2001-01-01'
 order by s.day, s.site, s.is_demo;
