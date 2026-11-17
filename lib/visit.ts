@@ -44,10 +44,11 @@ export type Visit = {
 
 /**
  * What happened when something tried to change a visit: saved, refused (the step is not
- * allowed now, or someone else changed the visit first), or not_saved (the change could not
- * be stored, for example the database could not be reached).
+ * allowed now, or someone else changed the visit first), paused (it would start off-site
+ * waiting while the site is paused), or not_saved (the change could not be stored, for
+ * example the database could not be reached).
  */
-export type ChangeResult = "saved" | "refused" | "not_saved";
+export type ChangeResult = "saved" | "refused" | "paused" | "not_saved";
 
 /** Statuses that are still in the off-site line (not yet closed). */
 export const ACTIVE_STATUSES: VisitStatus[] = ["waiting", "called", "on_the_way"];
