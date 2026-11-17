@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CheckInPanel } from "./CheckInPanel";
 
-function render(offsitePaused: boolean | null) {
+function render(offsitePaused: boolean | null, pauseReadFailed = false) {
   return renderToStaticMarkup(
     <CheckInPanel
       site="A"
@@ -14,6 +14,7 @@ function render(offsitePaused: boolean | null) {
       homeProblem={null}
       onHomeDone={() => {}}
       offsitePaused={offsitePaused}
+      pauseReadFailed={pauseReadFailed}
     />,
   );
 }
@@ -24,6 +25,14 @@ describe("CheckInPanel while the paused switch is not read", () => {
     expect(html).not.toContain("Start off-site waiting");
     expect(html).not.toContain("Offered, declined");
     expect(html).toContain("Checking whether off-site waiting is paused");
+  });
+
+  it("says the pause switch could not be read when the read failed", () => {
+    const html = render(null, true);
+    expect(html).not.toContain("Start off-site waiting");
+    expect(html).not.toContain("Offered, declined");
+    expect(html).not.toContain("Checking whether off-site waiting is paused");
+    expect(html).toContain("Could not read whether off-site waiting is paused. The patient waits on-site.");
   });
 
   it("offers off-site waiting once the switch is read as not paused", () => {
