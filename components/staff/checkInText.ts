@@ -2,7 +2,7 @@
 
 // The database refused off-site waiting because the site was paused on another screen.
 // The fallback button says "Not eligible" until the pause switch is read again (it may not be,
-// while the network is down), then "Waits on-site". Name both.
+// while the network is down), then "Waits on-site" (also its label while the switch is not read yet). Name both.
 export const PAUSED_NOT_SAVED =
   'Off-site waiting is paused at this site. Nothing was saved. Press "Not eligible" or "Waits on-site" so the patient waits on-site.';
 

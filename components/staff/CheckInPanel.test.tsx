@@ -28,6 +28,8 @@ describe("CheckInPanel while the paused switch is not read", () => {
     expect(html).not.toContain("Start off-site waiting");
     expect(html).not.toContain("Offered, declined");
     expect(html).toContain("Checking whether off-site waiting is paused");
+    // Not read yet: the fallback button has the same label as while paused.
+    expect(html).toMatch(/<button[^>]*>Waits on-site<\/button>/);
   });
 
   it("says the pause switch could not be read when the read failed", () => {

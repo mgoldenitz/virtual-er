@@ -126,7 +126,7 @@ describe("CheckInPanel taps after a failed pause read", () => {
     expect(vi.mocked(createDeskVisit).mock.calls[1][1]).toBe("not_eligible");
     expect(onCreated).toHaveBeenCalledWith(deskVisit);
     expect(container.textContent).not.toContain(PAUSED_NOT_SAVED);
-    expect(resultLine()).toContain("Visit DESK01 recorded as waiting on-site");
+    expect(resultLine()).toContain("Visit DESK01 recorded as waiting on-site (off-site waiting paused)");
   });
 
   it("a home visit refused as paused shows the paused message, then its fallback button saves it", async () => {
