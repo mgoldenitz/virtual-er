@@ -3,16 +3,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CheckInPanel } from "./CheckInPanel";
-import { STALE_READ } from "./checkInText";
+import { READ_FAILED, STALE_READ } from "./checkInText";
 
-function render(offsitePaused: boolean | null, pauseReadFailed = false) {
+function render(offsitePaused: boolean | null, pauseReadFailed = false, homeProblem: string | null = null) {
   return renderToStaticMarkup(
     <CheckInPanel
       site="A"
       onAttempt={() => {}}
       onCreated={() => {}}
       homeVisit={null}
-      homeProblem={null}
+      homeProblem={homeProblem}
       onHomeDone={() => {}}
       offsitePaused={offsitePaused}
       pauseReadFailed={pauseReadFailed}
@@ -46,6 +46,8 @@ describe("CheckInPanel while the paused switch is not read", () => {
     const warning = "Warning: could not check just now whether off-site waiting is paused";
     expect(html).toContain("Start off-site waiting");
     expect(html).toContain(warning);
+    // The whole warning is on the page (static markup writes " as &quot;).
+    expect(html.replaceAll("&quot;", '"')).toContain(STALE_READ);
     // Screen readers hear the warning when it comes, and again on the button.
     expect(html).toMatch(/<p id="stale-read-warning" role="status"[^>]*>Warning: could not check/);
     expect(html).toMatch(/<button[^>]*aria-describedby="stale-read-warning"[^>]*>Start off-site waiting<\/button>/);
@@ -62,7 +64,20 @@ describe("CheckInPanel while the paused switch is not read", () => {
   });
 
   it("the warning says what happens while the network is still down", () => {
-    expect(STALE_READ).toContain("If the network is still down, neither button can save.");
+    expect(STALE_READ).toContain("If the network is still down, no button can save.");
+  });
+
+  it("the read-failed text says what happens while the network is still down", () => {
+    expect(READ_FAILED).toContain("If the network is still down, no button can save.");
+    expect(render(null, true).replaceAll("&quot;", '"')).toContain(READ_FAILED);
+  });
+
+  it("shows no warning while the home visit has a problem", () => {
+    const html = render(false, true, "Visit HOME23 is no longer on this screen.");
+    expect(html).toContain("Visit HOME23 is no longer on this screen.");
+    expect(html).toMatch(/<p id="stale-read-warning" role="status"[^>]*><\/p>/);
+    expect(html).not.toContain("aria-describedby");
+    expect(html).not.toContain("Start off-site waiting");
   });
 });
 
