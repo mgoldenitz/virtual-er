@@ -23,28 +23,28 @@ One dated line per session, newest first.
 
 - 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim merged into main and pushed.
 
-## Where to pick up (updated 2026-11-13: Phase 3 in progress)
+## Where to pick up (updated 2026-11-16: Phase 3 in progress)
 
 Links (share only these two):
 - **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. Last app change pushed: `1ce53a2` (2026-11-13).
 - **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. Pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
-State on 2026-11-13:
+State on 2026-11-16:
 - **Phase 2 is closed** (`803fb2b`). **Phase 3 is in progress**; details in the Phase 3 section below.
 - Phase 3 done so far: package update; patient wording; all patient text in `lib/text/`; five languages with draft notices and a language switch; "I'm still here"; the no-response steps after "Recall patient"; "Recall all off-site patients"; "Pause off-site waiting" per site; folder-by-folder cleanup; `npm run dev` with the Norton fix. All are pushed and live.
-- 171 unit tests, type check, lint and build pass (2026-11-14, branch `phase3-patient-extras`). axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
+- 301 unit tests, lint and build pass (2026-11-16, branch `phase3-review-fixes`, pushed to `34c2c27`). The branch is 114 save points ahead of `main`, so the live app does not have these changes yet; merge at the end of Phase 3. axe-core (WCAG 2.2 AA rules): no failures on the start page in all five languages and the patient screen in Urdu and Arabic.
 - Test visits EZRRSQ and two from the recall-all test may still be in the `visits` table; the owner can delete them.
 - Pause-switch review done (`handoffs/archive/2026-11-12-gemini-review-pause-switch.md`). Still open for the owner: the Vercel firewall rate-limit rule for GET `/api/site-status`.
 - Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
-- The untracked `.codex/` folder is the owner's; leave it.
+- The untracked `.codex/` and `.agents/` files are the owner's Codex copies of the agents, hooks and reflect skill; leave them (owner, 2026-11-16).
 
 **Next: the rest of Phase 3** (SPEC Phase 3 list):
-- Item A on branch `phase3-patient-extras` (not pushed; ask before push or merge):
+- Item A (done; now on branch `phase3-review-fixes`):
   - (a) Offline banner: done (`components/patient/OfflineBanner.tsx`, `data/useOnline.ts`).
   - (b) Text size control: done (`components/patient/TextSizeSwitch.tsx`, `data/savedTextSize.ts`, `lib/textSize.ts`). Checked at 390 px with Extra large in all five languages (no sideways scroll).
   - (c) Sound and vibration on the called screen: done (`lib/calledAlert.ts`, `components/patient/SoundSwitch.tsx`, `components/patient/alertSound.ts`). Still to do: the owner's test on a real iPhone (Wi-Fi address of the computer on port 3000, or a deployment after an approved push).
   - (d) Staff "Issue a new link" (lost or stolen phone): done (`lib/visitActions.ts` issueNewLink, `data/staffActions.ts` issueNewVisitLink, `components/staff/VisitRow.tsx`). Checked in the browser with the owner.
-  - Next: the combined Gemini Hydrogen 4 review, `handoffs/archive/2026-11-14-gemini-review-patient-extras.md` (ready to send). Its open points include no words when sound fails, "vibrates" on iPhone, no "Turn off sound", and two "demo limits" lines on the called screen.
+  - Combined Gemini review done: `handoffs/archive/2026-11-14-gemini-review-patient-extras.md`. Its fixes and the later reviews are in the session log (2026-11-15 and 2026-11-16).
 - Push notifications in the demo (owner wants them, 2026-11-14): a later item, after item A. Needs its own plan, a SPEC change (SPEC says the alerts work only while the page is open), a service worker, stored subscriptions, VAPID keys in a settings page (never in chat), and a Gemini review. iPhone shows web push only for a site added to the Home Screen (iOS 16.4 or later).
 - 24-hour deletion with the `daily_stats` table (SPEC hard rule 4).
 - Database decisions already made: `confirm_on_my_way` fills `seen_at` itself when empty; move the allowed-step checks into the database.
