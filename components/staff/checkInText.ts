@@ -24,7 +24,11 @@ export const STALE_READ =
 /** The red box text while check-in offers on-site waiting only (paused, read failed, or not read yet). */
 export function onSiteOnlyText(offsitePaused: boolean | null, pauseReadFailed: boolean): string {
   // Paused comes first: it is the safer fact, even when a later read failed.
-  if (offsitePaused) return "Off-site waiting is paused at this site: the patient waits on-site.";
+  if (offsitePaused) {
+    const paused = "Off-site waiting is paused at this site: the patient waits on-site.";
+    // A later read failed, so the network may be down, and then the save fails too.
+    return pauseReadFailed ? `${paused} If the network is still down, no button can save.` : paused;
+  }
   if (pauseReadFailed) return READ_FAILED;
   return "Checking whether off-site waiting is paused. The patient can wait on-site.";
 }

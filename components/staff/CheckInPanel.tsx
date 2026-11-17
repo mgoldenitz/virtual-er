@@ -126,7 +126,8 @@ export function CheckInPanel({
       return;
     }
     if (outcome === "waiting" && onSiteOnly) {
-      setMessage(`${onSiteOnlyText(offsitePaused, pauseReadFailed)} Nothing was saved. Press "Waits on-site" instead.`);
+      // What happened and what to do come first; the red-box text follows.
+      setMessage(`Nothing was saved. Press "Waits on-site" instead. ${onSiteOnlyText(offsitePaused, pauseReadFailed)}`);
       return;
     }
     if (outcome === "waiting" && !CHECKLIST.every((item) => ticked[item.id])) {
