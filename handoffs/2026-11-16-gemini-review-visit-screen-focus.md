@@ -411,3 +411,23 @@ index 0000000..03057d3
 +  );
 +}
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-16 (summary; the owner pasted the full answer in the session).
+
+1. Focus on the "Loading…" paragraph on a new link in the same tab: visit to loading moves focus to `<p id="status-heading">`, then loading to visit moves it again to the new heading; a screen reader can be cut off mid-phrase, and the paragraph is not a heading. Fix: remove the id and `tabIndex` from the loading line, and change `useRescueFocus` to keep the flag true while `#status-heading` is not on the page. Warning: removing the id alone would clear the flag during loading and leave focus on the body.
+2. Two flags and three `useRescueFocus` calls on one page. Fix: one flag and one rescue in `VisitScreen`, a key of `visit-${expired}-${status}`, pass `markLost` down, and remove the inner `FocusBox` and rescues from `PatientStatus`, `StatusAndSound` and `StillHerePrompt`. Says this also misses `arrived` to `removed` inside "other".
+3. The test can pass with the bug: it focuses the heading, not a button; no test goes visit, loading, visit; no test renders the page. Fix: a test with focus on "I'm on my way" then the broken-link screen, and a test for visit, loading, visit.
+Answers: Q1 the two rescues do not both act on one change (the inner one leaves in the same commit); no flag stays true. Q2 layout, page order and reading order do not change. Q3 yes, see 1. Q4 yes, see 3. Q5 see 2.
+
+### My check (Claude, 2026-11-16)
+
+Accepted:
+- 3, first two tests: focus on "I'm on my way" of a `called` visit, then the broken-link screen; and visit, loading, visit with focus on the heading at the end. Test-only, cheap. The page-render test is the same as point 3.1 of the recall focus review, which the owner skipped.
+
+Real, owner to decide:
+- 1. True: `usePatientView` gives `undefined` for a new token (`data/patientVisit.ts`, `entries.get(token)` is empty), so a new link in the same tab goes visit, loading, visit, and focus moves twice. But the end state is correct (focus on the new heading), and the first move tells the patient the page is loading. Before this fix, focus went to the body here. Gemini's fix makes the flag wait while the heading is missing, which reverses the decision of 2026-11-16 that a report is used in the same change and never waits (`docs/decisions.md`). A smaller choice: keep focus on the loading line as now.
+
+Rejected:
+- 2. Gemini's own answer to Q1 says the two rescues never both act on one change. The fix is a rework of 4 files that the last three reviews made stable, for no change in what the patient sees. `arrived` to `removed` keeps the same heading element (same key, same component, same id), so nothing leaves (point 4.2 of the recall focus review).

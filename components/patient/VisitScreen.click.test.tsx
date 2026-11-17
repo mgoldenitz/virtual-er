@@ -41,11 +41,11 @@ const waiting: PatientView = {
 let container: HTMLDivElement;
 let root: Root;
 
-const show = (result: PatientView | null | "unavailable", linkFailed = false) =>
+const show = (result: PatientView | null | "unavailable" | undefined, linkFailed = false, loading = false) =>
   act(() =>
     root.render(
       <VisitScreen
-        loading={false}
+        loading={loading}
         result={result}
         linkFailed={linkFailed}
         token="t"
@@ -95,6 +95,26 @@ describe("VisitScreen when the whole screen changes", () => {
     show("unavailable");
     const heading = container.querySelector("#status-heading");
     expect(heading?.textContent).toBe(p.unavailableHeading);
+    expect(document.activeElement).toBe(heading);
+  });
+
+  it("moves focus to the broken-link heading when focus was on I'm on my way", () => {
+    show({ ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" });
+    const onMyWay = [...container.querySelectorAll("button")].find((b) => b.textContent === p.onMyWay);
+    expect(onMyWay).toBeDefined();
+    onMyWay?.focus();
+    show(null, true);
+    const heading = container.querySelector("#status-heading");
+    expect(heading?.textContent).toBe(p.brokenLinkHeading);
+    expect(document.activeElement).toBe(heading);
+  });
+
+  it("ends with focus on the visit heading after a new link in the same tab (visit, loading, visit)", () => {
+    focusOnWaitingHeading();
+    show(undefined, false, true);
+    show(waiting);
+    const heading = container.querySelector("#status-heading");
+    expect(heading?.textContent).toBe(p.waitingHeading);
     expect(document.activeElement).toBe(heading);
   });
 });
