@@ -39,6 +39,13 @@ describe("CheckInPanel while the paused switch is not read", () => {
     const html = render(false);
     expect(html).toContain("Start off-site waiting");
   });
+
+  it("warns that the last read failed but still offers off-site waiting", () => {
+    const html = render(false, true);
+    expect(html).toContain("Start off-site waiting");
+    expect(html).toContain("Could not read the pause switch just now");
+    expect(render(false, false)).not.toContain("Could not read the pause switch just now");
+  });
 });
 
 describe("CheckInPanel while off-site waiting is paused", () => {
