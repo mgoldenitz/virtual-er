@@ -121,9 +121,12 @@ describe("allowed status moves", () => {
     // The site check refuses with the step code.
     const siteRefusal = /if\s+new\.site\s+is\s+distinct\s+from\s+old\.site\s+then\s+raise\s+exception\s+'[^']*'[^;]*?using\s+errcode\s*=\s*'(\w+)'/i;
     expect(code.match(siteRefusal)?.[1]).toBe(STEP_REFUSED);
-    // The move check is "not in (" a list, and its refusal uses the step code.
-    const moveRefusal = /if\s*\(\s*old\.status\s*,\s*new\.status\s*\)\s+not\s+in\s*\([\s\S]*?\)\s*then\s+raise\s+exception\s+'A visit cannot move[^']*'[^;]*?using\s+errcode\s*=\s*'(\w+)'/i;
-    expect(code.match(moveRefusal)?.[1]).toBe(STEP_REFUSED);
+    // The move check is "not in (" a list, its list is the same as lib (read from the check itself,
+    // not from the markers), and its refusal uses the step code.
+    const moveRefusal = /if\s*\(\s*old\.status\s*,\s*new\.status\s*\)\s+not\s+in\s*\(([\s\S]*?)\)\s*then\s+raise\s+exception\s+'A visit cannot move[^']*'[^;]*?using\s+errcode\s*=\s*'(\w+)'/i;
+    const move = code.match(moveRefusal);
+    expect([...(move?.[1] ?? "").matchAll(PAIR)].map((m) => `${m[1]}>${m[2]}`).sort()).toEqual(inLib);
+    expect(move?.[2]).toBe(STEP_REFUSED);
     // The pause check: a new off-site wait, or a triage into one, reads the pause "for share" and refuses with the pause code.
     const pauseCheck = /if\s+new\.status\s*=\s*'waiting'\s+and\s*\(\s*tg_op\s*=\s*'INSERT'\s+or\s+old\.status\s+in\s*\(([^)]*)\)\s*\)\s*then\s+select\s+offsite_paused\s+into\s+site_paused\s+from\s+public\.site_settings\s+where\s+site\s*=\s*new\.site\s+for\s+share\s*;\s*if\s+site_paused\s+is\s+distinct\s+from\s+false\s+then\s+raise\s+exception\s+'[^']*'\s*,\s*new\.site\s+using\s+errcode\s*=\s*'(\w+)'/i;
     const pause = code.match(pauseCheck);
