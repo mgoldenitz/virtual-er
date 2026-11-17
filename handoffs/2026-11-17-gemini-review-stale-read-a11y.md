@@ -256,3 +256,69 @@ index 159e97e..4783cd7 100644
 ## Not checked
 
 - How NVDA or VoiceOver read the warning in a real browser.
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-17. Pasted as received.
+
+### 1. Screen readers, empty `role="status"`, and two `role="status"` lines on one form
+
+1. **Conditional mounting of `#stale-read-warning` behind `{!homeProblem && ...}` and extra layout gap from an empty `<p>` — Severity: `should fix**`
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 270–278
+* **What goes wrong:**
+* When `staleRead` flips from `false` to `true` while the form is already shown, NVDA and VoiceOver announce the text added to `<p id="stale-read-warning" role="status">`, and tabbing to `"Start off-site waiting"` reads the warning via `aria-describedby`. However, if the panel mounts with `offsitePaused={false}` and `pauseReadFailed={true}` already set—or if `homeProblem` clears while `staleRead` is already `true`—the `<p role="status">` mounts *already populated*, which VoiceOver and NVDA do not announce on mount (it is only read later if focus lands on the submit button).
+* Leaving an unhidden empty `<p>` inside a vertical `space-y-*` form stack inserts an extra block sibling above `<p role="status" className="min-h-6">`, doubling the blank vertical gap below the buttons whenever `staleRead` is `false`.
+* **Concrete case:** A triage clerk opens or switches to a site whose last good read was "not paused" and whose latest 5-second read already failed (`offsitePaused={false}`, `pauseReadFailed={true}`): screen readers stay silent until focus reaches `"Start off-site waiting"`, and during normal operation (`staleRead === false`) the empty `<p>` adds extra whitespace above the status message line.
+* **Smallest fix:** Render an unconditional `<div id="stale-read-warning" role="status">` outside `{!homeProblem && ...}` so the live region is always mounted, and render the styled `<p>{STALE_READ}</p>` inside it only when `staleRead` is `true`.
+
+2. **Two `role="status"` live regions on the same form can cut each other off — Severity: `should fix**`
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 271–282
+* **What goes wrong:** Both `#stale-read-warning` (line 273) and the save-result paragraph (line 280) use `role="status"` (`aria-live="polite"`). When both update in the same commit—for example, submitting `"Start off-site waiting"` returns `"paused"` (`message` updates to `PAUSED_NOT_SAVED`) in the same render that `offsitePaused` refreshes to `true` and clears `#stale-read-warning`, or a 5-second read fails on the same tick `"Waits on-site"` saves—iOS VoiceOver and Android TalkBack cancel the first polite announcement with the second.
+* **Concrete case:** While `staleRead` is `true`, another nurse pauses the site; the clerk presses `"Start off-site waiting"`, updating `message` on line 280 while clearing `#stale-read-warning` on line 276, causing mobile screen readers to drop or clip the refusal message.
+* **Smallest fix:** Keep `aria-describedby={staleRead ? "stale-read-warning" : undefined}` on the submit button, and suppress `STALE_READ` inside `#stale-read-warning` once `message` is non-empty so both `role="status"` regions never fire in the same update.
+
+### 2. Clarity and truth of the warning text in all cases
+
+3. **`STALE_READ` omits what happens when the network is still down at save and uses clipped wording — Severity: `should fix**`
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 30–32
+* **What goes wrong:**
+* When a 5-second read fails (`pauseReadFailed === true`), the usual cause is a lost network or database connection. If that connection is still down when staff click `"Start off-site waiting"`, Postgres never returns `VWR02`—instead the save fails with `"could not be reached"`, and pressing `"Waits on-site"` will also fail until the connection recovers. Telling staff only `'If off-site waiting was paused since then, nothing is saved: press "Waits on-site" instead.'` omits the network-down case that line 29's comment explicitly acknowledges.
+* `"The last check said not paused."` drops the subject (`"it was not paused"`), and present-tense `"nothing is saved"` before clicking can sound like current checklist selections are not saved rather than `"nothing will be saved"`.
+* **Concrete case:** Triage desk Wi-Fi drops: the 5-second check fails (`STALE_READ` shows), and the clerk clicks `"Start off-site waiting"` while still offline. The screen says the database could not be reached rather than paused, and pressing `"Waits on-site"` as instructed also fails.
+* **Smallest fix:** Update `STALE_READ` in `components/staff/CheckInPanel.tsx` (lines 30–32) to:
+`'Warning: could not check just now whether off-site waiting is paused. The last check said it was not paused. The screen checks again every 5 seconds. If it was paused since then, nothing will be saved and you can press "Waits on-site" instead. If the connection is still down, neither button can save yet.'`
+
+### 3. Does the click test prove what its name says, and can it pass while the panel is wrong?
+
+4. **`CheckInPanel.click.test.tsx` can pass even if the stale warning is missing, `onCreated` fires on `"paused"`, or `"Waits on-site"` stays disabled — Severity: `must fix**`
+* **File and line:** `components/staff/CheckInPanel.click.test.tsx`, lines 36–64
+* **What goes wrong:** The test passes `offsitePaused={false}` and `pauseReadFailed={true}`, clicks `"Start off-site waiting"`, and checks only `createDeskVisit` call count/status and `PAUSED_NOT_SAVED` text. It still passes if `CheckInPanel` is broken in four ways:
+* **Ignores `pauseReadFailed` completely:** Deleting `staleRead`, `#stale-read-warning`, `role="status"`, and `aria-describedby` from `CheckInPanel.tsx` leaves this test passing.
+* **Fires `onCreated` on `"paused"`:** `onCreated={() => {}}` (line 42) is never asserted `not.toHaveBeenCalled()`, even though `"Nothing was saved."` requires no visit creation callback to run.
+* **Leaves `"Waits on-site"` disabled after `"paused"`:** The test never verifies that `"Waits on-site"` has `aria-disabled="false"` after the refusal so staff can complete the fallback step.
+* **Swallows `PAUSED_NOT_SAVED` when `offsitePaused` updates to `true`:** It never re-renders with `offsitePaused={true}` (simulating `reloadSitePauses()` after `"paused"`) to verify that `PAUSED_NOT_SAVED` remains visible once `"Start off-site waiting"` unmounts.
+* **Concrete case:** A bug in `CheckInPanel.tsx` invokes `onCreated()` on `"paused"`, leaves `saving` stuck at `true` (`aria-disabled="true"` on `"Waits on-site"`), or removes `staleRead` from the component: `CheckInPanel.click.test.tsx` still passes.
+* **Smallest fix:** Pass `const onCreated = vi.fn();` in `components/staff/CheckInPanel.click.test.tsx`, assert `STALE_READ` and `start.getAttribute("aria-describedby") === "stale-read-warning"` before clicking, assert `expect(onCreated).not.toHaveBeenCalled()` and `button("Waits on-site")?.getAttribute("aria-disabled") === "false"` after `"paused"`, and re-render with `offsitePaused={true}` to confirm `PAUSED_NOT_SAVED` stays on screen.
+
+5. **`CheckInPanel.test.tsx` checks `aria-describedby` anywhere in the HTML rather than on the submit button — Severity: `minor**`
+* **File and line:** `components/staff/CheckInPanel.test.tsx`, line 51
+* **What goes wrong:** `expect(html).toContain('aria-describedby="stale-read-warning"')` passes even if the attribute is placed on `"Waits on-site"` or another element instead of `"Start off-site waiting"`.
+* **Concrete case:** Moving `aria-describedby` onto `"Waits on-site"` passes `CheckInPanel.test.tsx` while leaving `"Start off-site waiting"` without an accessible description.
+* **Smallest fix:** Match the attribute on the submit button tag itself: `expect(html).toMatch(/<button[^>]*aria-describedby="stale-read-warning"[^>]*>Start off-site waiting<\/button>/)`.
+
+### 4. Codebase rules (one job per file, <= 300 lines, straight quotes, beginner readability)
+
+6. **`CheckInPanel.tsx` is ~288 lines (near the 300-line ceiling) and uses double-negation logic — Severity: `minor**`
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 69–71 and 270–282
+* **What goes wrong:**
+* All quotes across the four files in the diff are straight quotes, `supabase/checks/allowed_steps.sql` (lines 26–31) accurately explains Postgres aborted-transaction lock behavior, and each file has a clear single purpose.
+* However, adding 12 net lines brings `components/staff/CheckInPanel.tsx` to ~288 lines (line 282 is right before the closing `</form>` and function brace), leaving almost no margin under the 300-line limit.
+* Lines 69–71 compute `const onSiteOnly = offsitePaused !== false;` and then negate it (`const staleRead = !onSiteOnly && pauseReadFailed;`), which is harder for a beginner to read than a positive boolean.
+* **Concrete case:** Any follow-up edit that adds a few lines to `CheckInPanel.tsx` (such as expanding `STALE_READ`) pushes the file over 300 lines.
+* **Smallest fix:** Replace lines 69–71 with `const canOfferOffsite = offsitePaused === false; const staleRead = canOfferOffsite && pauseReadFailed;`, and move the check-in text constants and `onSiteOnlyText` helper into a small helper module if any further lines are added to `CheckInPanel.tsx`.
+
+7. **Unchecked non-null `!` assertion and single-line loop in `CheckInPanel.click.test.tsx` — Severity: `minor**`
+* **File and line:** `components/staff/CheckInPanel.click.test.tsx`, lines 52–53
+* **What goes wrong:** `container.querySelector<HTMLInputElement>('input[type="radio"]')!.click()` throws an opaque `TypeError: Cannot read properties of null` if the markup changes, and the braceless single-line `for (...) act(() => box.click());` is harder for a beginner to scan than the explicit error guard on line 56.
+* **Concrete case:** A beginner renames or changes the CTAS input type in `CheckInPanel.tsx` and hits an unexplained null-dereference error on line 52 instead of a readable message.
+* **Smallest fix:** Extract a small `tickRequiredFields()` helper in `components/staff/CheckInPanel.click.test.tsx` that checks for the radio and checkboxes and throws a descriptive `Error` if missing, matching line 56.
