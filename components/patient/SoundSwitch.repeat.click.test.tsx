@@ -111,6 +111,8 @@ describe("SoundSwitch repeat beep", () => {
     await act(async () => second.finish(false));
     expect(button(t.turnOn)).toBeDefined();
     expect(container.querySelector("[data-testid='sound-on']")).toBeNull();
+    // The screen reader hears that the sound went off while called.
+    expect(container.querySelector("[data-testid='sound-off-called']")?.textContent).toBe(t.offWhileCalled);
     expect(document.activeElement).toBe(button(t.turnOn));
   });
 });
