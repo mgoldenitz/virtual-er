@@ -22,6 +22,11 @@
 --   7N  desk, waiting at site B after site B's settings row is deleted: counts as paused
 --   8x  one visit for each of the 22 allowed moves (rows 101 to 122)
 
+-- If the last block stops with an error, the "rollback" line does not run and the transaction
+-- stays open with locks on site_settings and visits. This timeout makes Postgres end such a
+-- session after 10 seconds, which undoes everything and frees the locks.
+set idle_in_transaction_session_timeout = '10s';
+
 begin;
 
 -- Tries one change. Any other error stops the whole run (and still saves nothing).
@@ -210,3 +215,4 @@ end;
 $$;
 
 rollback;
+reset idle_in_transaction_session_timeout;
