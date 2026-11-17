@@ -1,6 +1,6 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ALLOWED_MOVES, START_STATUSES, isAllowedMove } from "./allowedSteps";
+import { ALLOWED_MOVES, START_STATUSES, TRIAGE_STATUSES, isAllowedMove } from "./allowedSteps";
 import { CALL_REVIEW_MINUTES } from "./demoTimes";
 import type { Visit } from "./visit";
 import {
@@ -18,6 +18,19 @@ import {
   startFromHome,
   undoClose,
 } from "./visitActions";
+
+// The newest migration that makes the trigger function: that is the one the database runs.
+function newestTriggerSql(): string {
+  const dir = "supabase/migrations";
+  const files = readdirSync(dir)
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+    .filter((name) => /function\s+public\.visits_check_step\s*\(/i.test(readFileSync(`${dir}/${name}`, "utf8")));
+  return readFileSync(`${dir}/${files[files.length - 1]}`, "utf8");
+}
+
+// Removes "--" comments, so a move that is commented out does not count.
+const withoutComments = (sql: string) => sql.replace(/--.*$/gm, "");
 
 const t0 = new Date("2026-11-09T20:00:00Z");
 const at = (min: number) => new Date(t0.getTime() + min * 60_000);
@@ -76,13 +89,21 @@ describe("allowed status moves", () => {
   });
 
   it("is the same list as the database trigger", () => {
-    const sql = readFileSync("supabase/migrations/20261117000000_allowed_steps.sql", "utf8");
-    const block = sql.split("-- allowed moves")[1].split("-- end of allowed moves")[0];
-    const inSql = [...block.matchAll(/\('(\w+)', '(\w+)'\)/g)].map((m) => `${m[1]}>${m[2]}`).sort();
+    const sql = newestTriggerSql();
+    const block = withoutComments(sql.split("-- allowed moves")[1].split("-- end of allowed moves")[0]);
+    const inSql = [...block.matchAll(/\(\s*'(\w+)'\s*,\s*'(\w+)'\s*\)/g)].map((m) => `${m[1]}>${m[2]}`).sort();
     const inLib = Object.entries(ALLOWED_MOVES).flatMap(([from, tos]) => tos!.map((to) => `${from}>${to}`)).sort();
     expect(inSql).toEqual(inLib);
-    const starts = sql.match(/new\.status not in \(([^)]*)\)/)![1].match(/\w+/g)!.sort();
+    const code = withoutComments(sql);
+    const starts = code.match(/new\.status\s+not\s+in\s*\(([^)]*)\)/i)![1].match(/\w+/g)!.sort();
     expect(starts).toEqual([...START_STATUSES].sort());
+    const triage = code.match(/old\.status\s+in\s*\(([^)]*)\)/i)![1].match(/\w+/g)!.sort();
+    expect(triage).toEqual([...TRIAGE_STATUSES].sort());
+  });
+
+  it("triage puts a visit in the line only from a triage status", () => {
+    const from = everyStatus.filter((v) => checkInHomeVisit(v, triage, "waiting", t0)?.status === "waiting");
+    expect(from.map((v) => v.status).sort()).toEqual([...TRIAGE_STATUSES].sort());
   });
 
   it("has no move to the same status", () => {

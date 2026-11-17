@@ -25,6 +25,12 @@ export const ALLOWED_MOVES: Partial<Record<VisitStatus, VisitStatus[]>> = {
 /** The statuses a new visit may start in (desk check-in, or start from home). */
 export const START_STATUSES: VisitStatus[] = ["pre_arrival", "waiting", "declined", "not_eligible"];
 
+/**
+ * The statuses a triage starts from. A move from one of these to waiting starts off-site
+ * waiting, so the database refuses it while the site is paused. Undo back to waiting does not.
+ */
+export const TRIAGE_STATUSES: VisitStatus[] = ["pre_arrival", "needs_reassessment"];
+
 /** True if a visit may move from one status to another. Staying in the same status is always allowed. */
 export function isAllowedMove(from: VisitStatus, to: VisitStatus): boolean {
   return from === to || (ALLOWED_MOVES[from] ?? []).includes(to);
