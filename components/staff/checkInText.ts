@@ -1,7 +1,10 @@
 // Staff text for the check-in panel (CheckInPanel.tsx).
 
 // The database refused off-site waiting because the site was paused on another screen.
-export const PAUSED_NOT_SAVED = 'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.';
+// The fallback button says "Not eligible" until the pause switch is read again (it may not be,
+// while the network is down), then "Waits on-site (off-site waiting paused)". Name both.
+export const PAUSED_NOT_SAVED =
+  'Off-site waiting is paused at this site. Nothing was saved. Press "Not eligible" or "Waits on-site" so the patient waits on-site.';
 
 // The last read of the pause switch failed, and no earlier read worked. data/keepFresh.ts tries again every 5 seconds.
 export const READ_FAILED = "Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds.";
