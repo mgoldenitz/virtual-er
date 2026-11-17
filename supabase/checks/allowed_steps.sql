@@ -24,10 +24,11 @@
 
 begin;
 
--- If the last block stops with an error, the "rollback" line does not run and the transaction
--- can stay open with locks on site_settings and visits. This timeout makes Postgres end such a
--- session after 10 seconds, which undoes everything and frees the locks. "set local" ends with
--- this transaction (on rollback or on an error), so no setting stays on a shared connection.
+-- If a statement stops with an error, the "rollback" line does not run. The transaction then
+-- stays open (aborted) with locks on site_settings and visits, until "rollback" runs or this
+-- timeout ends the session after 10 seconds, which undoes everything and frees the locks.
+-- "set local" ends with this transaction, so no setting stays on a shared connection.
+-- "set local" works only inside "begin", so run the whole file, from "begin" to "rollback".
 set local idle_in_transaction_session_timeout = '10s';
 
 -- Tries one change. Any other error stops the whole run (and still saves nothing).
