@@ -232,3 +232,24 @@ Gemini did not get the 7 files, so it guessed at the code. I checked each point 
 Fixes to offer: the missing settings row (6), and the two sync test changes (8).
 
 Owner chose all of them on 2026-11-17, and a Haiku `reviewer` worker reads the 7 files in place of a second Gemini review. Done: check file row 27 (`7N`, no settings row for site B, expected `paused`); the sync test finds only a `create (or replace) function` file and removes `/* ... */` comments, with a new test for the comments.
+
+## Reviewer worker (Haiku) read of the 7 files (2026-11-17)
+
+The worker returned 14 points. It did not run `npm test`, lint or build. My check of each point, against the files:
+
+- 1 (check file, should fix): right. The final `do` block raises before `rollback;` (`supabase/checks/allowed_steps.sql:198-210`), so on a failed run the `rollback;` line does not run. Whether the SQL Editor ends that session is not checked.
+- 2 (direct calls outside `try_step`): right, minor. An error stops the run with no row, which is loud, not silent.
+- 3 (`not_eligible` during a pause): not a bug. During a pause nobody can be offered off-site waiting, so leaving these patients out of the "offered" percentage (SPEC.md:107) is by design (`components/staff/CheckInPanel.tsx:232-234`). The Phase 4 metric review can look at it again.
+- 4 (a failed pause read shows "Checking..." with no end): right, minor. The safe side holds (no off-site start is offered).
+- 5 (a 0-row resume when the settings row is missing): right, minor. Only a manual delete makes this state.
+- 6 (insert errors other than `VWR02` show "could not be reached"; `error ||!Array` spacing): right, minor. My own read found the same.
+- 7 (site mismatch shows "changed or is already checked in"): not checked; the expected-arrivals list was not read.
+- 8 (focus lost when a button goes away): right, minor.
+- 9 (sync test does not read `not in (`, the guards, `for share` or `is distinct from false`): right. Only the check file would find these changes.
+- 10 (the 22 pairs in the check file are not compared with `lib/allowedSteps.ts`): right. My own read found the same.
+- 11 (`VWR01` and `VWR02` are not compared between the migration and `lib/saveResult.ts`): right.
+- 12 (newest file by name sort): not a bug. Migration names start with a date and time, and Supabase runs them in that order.
+- 13 (curly quotes at `CheckInPanel.tsx:114-115`, the "..." character at line 124): right. Older text, but against CLAUDE.md.
+- 14 (one job per file): not a bug; the worker says itself that neither is a clear breach.
+
+My own read added two minor points: `lib/allowedSteps.ts:2` names the old migration, and `start_home_visit` (`supabase/migrations/20261110061049_patient_functions.sql:124`) fails open when the settings row is missing, while the trigger fails closed. The trigger still refuses the later triage to `waiting`, so no patient waits off-site at a paused site.
