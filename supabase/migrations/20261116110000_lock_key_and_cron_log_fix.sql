@@ -1,5 +1,5 @@
 -- Two small fixes after the Gemini review of 20261116100000_daily_stats_and_cleanup.sql
--- (handoffs/2026-11-16-gemini-review-daily-stats-fixes.md). That migration has already run, so
+-- (handoffs/archive/2026-11-16-gemini-review-daily-stats-fixes.md). That migration has already run, so
 -- this one changes the function and the log job in place; it does not edit the old file.
 -- Check: supabase/checks/daily_stats.sql (run the whole file after this migration).
 

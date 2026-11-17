@@ -516,3 +516,7 @@ I numbered the points 1.1 to 4.3 in the order of the answer.
 4.2 delete the log rows of these jobs only: reject. The database has only these 2 jobs.
 
 4.3 `grant all` on schema `cron`: reject. It is the Supabase documented setup, and it goes to `postgres` only, not to patients or staff.
+
+## Outcome (2026-11-16)
+
+The owner chose 3.1 to 3.4, 4.1 and 2.1. The check file changes are in `7347880`. The new migration `20261116110000_lock_key_and_cron_log_fix.sql` is in `4d25fde`. The owner ran the migration (job id 2 again) and the whole check file in the SQL Editor: all 5 rows were as expected, and no assert stopped the run. Through the read-only connection: both cron jobs are active with the new command, the function has the two-key lock, only `postgres` can run it, and `cron.job_run_details` has 1 succeeded run of each job (2026-11-17 03:00 UTC). 301 tests, lint and build pass. The other points are rejected, with the reasons in "Claude's check of the response".
