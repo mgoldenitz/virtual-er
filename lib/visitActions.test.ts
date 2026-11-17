@@ -67,6 +67,13 @@ describe("core loop", () => {
     expect(arrived.closed_at).toBe(later(45).toISOString());
   });
 
+  it("I'm on my way fills seen_at when the seen step was missed, and keeps a set one", () => {
+    const called = callBack(checkInAtDesk(input, "waiting", t0), later(30))!;
+    expect(confirmOnMyWay(called, later(33))!.seen_at).toBe(later(33).toISOString());
+    const seen = markSeen(called, later(31))!;
+    expect(confirmOnMyWay(seen, later(33))!.seen_at).toBe(later(31).toISOString());
+  });
+
   it("refuses steps that are out of order", () => {
     const waiting = checkInAtDesk(input, "waiting", t0);
     expect(markSeen(waiting, t0)).toBeNull();
