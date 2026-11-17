@@ -332,3 +332,80 @@ index 8da6904..8633841 100644
  - 2026-11-17: The sync test in `lib/allowedSteps.test.ts` also compares the error codes with `lib/saveResult.ts`, the whole pause check, and the 22 moves in the check file (between the "-- allowed moves" marker lines) with `ALLOWED_MOVES`. Owner (Haiku reviewer read, points 9 to 11).
  - 2026-11-17: The sync test reads the move list from inside the `not in (` move check as well as from the marker lines, so a second check or moved markers fail it. Owner (Gemini review, point 1.1).
 ```
+
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-17. Pasted as received.
+
+### Fallback Button Label (`"Waits on-site"` vs `"Waits on-site (off-site waiting paused)"`)
+
+1. **Quoted button name does not match the full button label while `offsitePaused === true**`
+* **Severity:** minor
+* **File and line:** `components/staff/CheckInPanel.tsx`, line 129 and the fallback `<Button>` in the `{!homeProblem && ( ... )}` block; `components/staff/checkInText.ts`, lines 6–7
+* **What goes wrong:** When `offsitePaused === true`, both `PAUSED_NOT_SAVED` (`Press "Not eligible" or "Waits on-site"`) and the Enter message (`Press "Waits on-site" instead.`) put `"Waits on-site"` in quotation marks, while the only button on screen reads `Waits on-site (off-site waiting paused)`. The red box directly above that button already says `Off-site waiting is paused at this site.`, so the parenthetical repeats the banner and makes busy triage staff scan twice for an exact label match (and breaks exact-name voice commands).
+* **Concrete case:** Site A is paused (`offsitePaused === true`). Staff press Enter in the check-in form, read `Press "Waits on-site" instead.`, and look at a single button labelled `Waits on-site (off-site waiting paused)`.
+* **Smallest fix:** Shorten the `offsitePaused === true` button label in `components/staff/CheckInPanel.tsx` to `"Waits on-site"` (matching `offsitePaused === null`, since the red box right above it already states that off-site waiting is paused).
+
+---
+
+### 1. Truth of Changed Messages Across States and Visit Types, and Offline Saving
+
+1. **Enter message while `offsitePaused === true && pauseReadFailed === true` omits that the network is down**
+* **Severity:** minor
+* **File and line:** `components/staff/CheckInPanel.tsx`, line 129; `components/staff/checkInText.ts`, lines 25–29
+* **What goes wrong:** Every changed message (`STALE_READ`, `READ_FAILED`, and the Enter message in all reachable `onSiteOnly` states for both desk and home visits) is factually true, and no save path in `CheckInPanel.tsx` queues writes offline (`createDeskVisit` and `checkInVisitFromHome` both call Supabase directly and fail when offline). However, when a site was confirmed paused (`offsitePaused === true`) and the network then drops (`pauseReadFailed === true`), `onSiteOnlyText` returns the paused string without the network-down sentence, so pressing Enter tells staff `Press "Waits on-site" instead.` without warning that the save will also fail while offline.
+* **Concrete case:** Staff open check-in while Site A is paused (`offsitePaused === true`), lose Wi-Fi (`pauseReadFailed === true`), press Enter, and see `Off-site waiting is paused at this site. The patient waits on-site. Nothing was saved. Press "Waits on-site" instead.` with no warning that `"Waits on-site"` cannot save while the network is down.
+* **Smallest fix:** In `onSiteOnlyText` (`components/staff/checkInText.ts`, line 26), append `" If the network is still down, no button can save."` when `offsitePaused === true && pauseReadFailed === true`.
+
+---
+
+### 2. Clarity and Order of the Enter Message
+
+1. **`"Nothing was saved."` is buried after `"The patient waits on-site."` and the network caveat**
+* **Severity:** should fix
+* **File and line:** `components/staff/CheckInPanel.tsx`, line 129
+* **What goes wrong:** When `offsitePaused === null && pauseReadFailed === true`, pressing Enter sets the status line to:
+`Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds. If the network is still down, no button can save. Nothing was saved. Press "Waits on-site" instead.`
+`"The patient waits on-site."` (sentence 2) reads like a completed action, and `"Nothing was saved."` is buried at sentence 5—after polling details and `"no button can save."`, which immediately precedes `'Press "Waits on-site" instead.'` In addition, the red box above the buttons already renders the full `onSiteOnlyText`, so repeating all four sentences before `"Nothing was saved."` duplicates the block visually and makes screen readers read four sentences before announcing that nothing happened.
+* **Concrete case:** Initial pause read fails on a slow/down connection (`offsitePaused === null, pauseReadFailed === true`). Staff press Enter, read `The patient waits on-site.` at the start of the status line, and move on to the next patient without reaching sentence 5 (`Nothing was saved.`).
+* **Smallest fix:** Put `"Nothing was saved."` and the action first in `components/staff/CheckInPanel.tsx` line 129:
+
+```tsx
+setMessage(`Nothing was saved. Press "Waits on-site" instead. ${onSiteOnlyText(offsitePaused, pauseReadFailed)}`);
+```
+
+---
+
+### 3. New Tests Passing While the Panel Is Wrong
+
+1. **`CheckInPanel.test.tsx` misses `STALE_READ` on home visits, element placement of `READ_FAILED`, and leftover buttons when `homeProblem` is set**
+* **Severity:** should fix
+* **File and line:** `components/staff/CheckInPanel.test.tsx`, lines 49–50, 70–73, and 75–81
+* **What goes wrong:**
+* **Home visit `STALE_READ`:** `render()` always passes `homeVisit={null}`. Changing `staleRead` in `CheckInPanel.tsx` to `offsitePaused === false && pauseReadFailed && !homeVisit` would hide the warning on every home visit while all tests still pass.
+* **`READ_FAILED` placement:** Line 72 checks `expect(render(null, true)...).toContain(READ_FAILED)` against the whole HTML string. Moving `READ_FAILED` out of the red box into `#stale-read-warning` (or plain unstyled text) would still pass.
+* **`homeProblem` button hiding:** Line 80 checks only `expect(html).not.toContain("Start off-site waiting")`. Moving only `"Start off-site waiting"` inside `{!homeProblem && ...}` while leaving `"Offered, declined"` and `"Not eligible"` rendered on a broken home visit would still pass.
+* **Concrete case:** Someone edits `CheckInPanel.tsx` so `{!homeProblem && ...}` wraps only `"Start off-site waiting"` instead of the whole button group; `npm test` remains green even though `"Offered, declined"` and `"Not eligible"` appear for a missing home visit.
+* **Smallest fix:** In `components/staff/CheckInPanel.test.tsx`, assert `expect(html).not.toContain("Not eligible")` and `expect(html).not.toContain("Offered, declined")` in the `homeProblem` test (lines 75–81), assert `READ_FAILED` is inside the red-box `<p>` (lines 70–73), and add a `render` check with a non-null `homeVisit` for `STALE_READ`.
+
+2. **`CheckInPanel.click.test.tsx` never verifies a successful fallback save, Enter while `offsitePaused === true`, or message ordering**
+* **Severity:** should fix
+* **File and line:** `components/staff/CheckInPanel.click.test.tsx`, lines 28, 106–112, 115–143, and 166–170
+* **What goes wrong:**
+* **Fallback click still mocks `"paused"`:** Line 28 sets `createDeskVisit` to resolve to `"paused"`, and lines 106–112 never override that mock before clicking `"Waits on-site (off-site waiting paused)"`. The second call returns `"paused"` again, so the test never verifies that a successful `"not_eligible"` save clears `PAUSED_NOT_SAVED`, resets the form, or calls `onCreated`.
+* **Home visit fallback untested:** Lines 115–143 never click the fallback button on a home visit; if clicking it called `createDeskVisit` instead of `checkInVisitFromHome`, the test would still pass.
+* **Enter while `offsitePaused === true` and message order untested:** Lines 166–170 use unordered `.toContain(...)` assertions and only test `offsitePaused === null`. Changing `if (outcome === "waiting" && onSiteOnly)` to `if (outcome === "waiting" && offsitePaused === null)` (allowing Enter to submit `waiting` while `offsitePaused === true`) or putting `'Press "Waits on-site" instead.'` before `"Nothing was saved."` would still pass.
+* **Concrete case:** A refactor changes line 128 of `CheckInPanel.tsx` to `if (outcome === "waiting" && offsitePaused === null)`; all 322 tests pass while pressing Enter on a paused site (`offsitePaused === true`) attempts an off-site save.
+* **Smallest fix:** In `components/staff/CheckInPanel.click.test.tsx`, mock `createDeskVisit.mockResolvedValueOnce(fakeVisit)` before `fallback.click()` and assert `onCreated` was called and `PAUSED_NOT_SAVED` cleared; add a second test case for Enter when `offsitePaused === true`; and assert `"Nothing was saved."` appears before `'Press "Waits on-site" instead.'`.
+
+---
+
+### 4. Codebase Rules (One Job per File, <= 300 Lines, Straight Quotes, Beginner Readability)
+
+1. **Test comment and mock mismatch in `CheckInPanel.click.test.tsx` can mislead a beginner**
+* **Severity:** minor
+* **File and line:** `components/staff/CheckInPanel.click.test.tsx`, lines 106–112 and line 164
+* **What goes wrong:** One job per file, file length (`checkInText.ts` 30, `CheckInPanel.tsx` 273, `CheckInPanel.test.tsx` 92, `CheckInPanel.click.test.tsx` 172), and straight ASCII quotes all pass. However, in `CheckInPanel.click.test.tsx` line 106, the comment says `"it saves the patient as waiting on-site (not_eligible)"` while `createDeskVisit` is still mocked to return `"paused"` (so the save is actually refused in the test), and line 164 dispatches a synthetic `"submit"` event on `<form>` without noting that real-browser Enter submission when the submit button is hidden relies on the form having at most one text input.
+* **Concrete case:** A beginner copies the fallback click test expecting `onCreated` to fire or adds a second text `<input>` to `CheckInPanel`, breaking real-browser Enter submission while the synthetic `dispatchEvent(new Event("submit"))` test still passes.
+* **Smallest fix:** Update the mock in `CheckInPanel.click.test.tsx` line 109 to return a `Visit` so the comment and behavior match, and add a one-line comment on line 164 noting the single-text-input HTML implicit-submit rule.
