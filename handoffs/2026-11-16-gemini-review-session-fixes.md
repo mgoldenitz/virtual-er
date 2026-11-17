@@ -405,3 +405,58 @@ Paste the full answer into Claude Code. Claude adds it below under "Response", w
 - The SQL check file has not been run in the Supabase SQL Editor. The migration is not run yet either.
 - A real screen reader or a real phone.
 - The patient page in a browser after the `StatusAndSound` move (no Playwright run this session).
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-16. The answer as pasted:
+
+### 1. Focus guard (`useRescueFocus` running after every render)
+
+- Can an effect that runs after every render move focus when it should not? No, when nothing left with focus inside it. `useEffect` runs after every commit, but `if (!lostRef.current) return;` exits unless a reporter set the flag in that commit's layout-effect cleanup. Even when the flag is true, `if (!focusIsOnNobody() && document.activeElement?.isConnected) return;` keeps focus on another connected control.
+- Bug: focus rescue fails when `StillHerePrompt` leaves on recall.
+  1. `view.status` is `waiting` and the prompt is due, so `StillHerePrompt` shows (`app/patient/page.tsx` line 134).
+  2. The patient focuses "I'm still here".
+  3. Before the tap, staff recall the patient (`waiting` to `called`).
+  4. Line 134 takes `StillHerePrompt` off the page.
+  5. The `useReportFocusOnLeave` cleanup sets the prompt's own `lostFocus.current = true`, but the prompt itself left, so its `useRescueFocus` effect never runs. Focus drops to `document.body` instead of `#status-heading`.
+  - Smallest fix: one `lostFocus` ref shared by `StillHerePrompt` and `StatusAndSound` (own it in the page, or pass the `StatusAndSound` ref), so `PatientStatus`, which stays on the page from `waiting` to `called`, does the rescue.
+- Can `StillHerePrompt` and `PatientStatus` take one report twice or fight? No. Today they read separate flags. With one shared flag, the first effect to run clears it, and the second exits.
+
+### 2. SQL check file
+
+- The 4 expected numbers follow from `get_patient_visit`: 25, null, 16, null (worked out as in the file header).
+- Problem 1: the check passes if the function sends a gap to `called` or `on_the_way` patients (for example `me.status in ('waiting', 'called', 'on_the_way')` or `me.called_at is null`), because case 4 uses `arrived` with `called_at` null. Fix: make case 4 `called` with a `called_at`, or add a 5th row for `called`.
+- Problem 2: the check passes if `distinct` is applied after `limit 6`. Fix: add 4 more rows at 20 minutes ago at site B, so a wrong query gives 10, not 16.
+
+### 3. New beep test
+
+- Can it pass while the bug is still there? Yes, in two ways.
+  1. `hidePage(true)` does not blur `sound-on`. On a real phone, a lock blurs it to `document.body`, so the test passes even if `SoundSwitch` restores focus only when focus is inside the box.
+  2. `hidePage(false)` comes before `second.finish(false)`, so the test passes even if `&& wanted()` is removed.
+  - Fix: blur the active element after `hidePage(true)`, and expect the `role="status"` text to contain `t.offWhileCalled` after `second.finish(false)`.
+
+### 4. `StatusAndSound` and the page
+
+- `StatusAndSound` does not change what the page shows, the order, or what a screen reader reads.
+- `StillHerePrompt` (or the shared `lostFocus` ref) is left in the page with its own flag. Same bug as in part 1. Fix: own `lostFocus` in the page and pass it to both, or move `StillHerePrompt` into `StatusAndSound`.
+
+### 5. Simpler ways
+
+1. Keep one `useRescueFocus` in `PatientStatus` (which stays on the page in all states) and pass `markLost` or the flag to `StillHerePrompt` and `SoundSwitch`.
+2. Add a `do $$ ... raise exception ... $$` block at the end of the SQL check, for an automatic pass or fail.
+3. A helper `unlockAfterFailedHiddenBeep()` in the beep test file, to share the setup.
+4. `StatusAndSound` is small; sharing `lostFocus` needs no extra wrapper.
+
+### My check (Claude, 2026-11-16)
+
+- Part 1 bug: correct. `StillHerePrompt` holds both its reporter (`PromptCard`) and its own `useRescueFocus` (`StillHerePrompt.tsx` lines 28-29). The page shows it only while `waiting` (`page.tsx` line 134), so on a recall both leave in the same commit and nothing moves focus. `PatientStatus` stays and could do it, but reads another flag (`StatusAndSound.tsx` line 23). No test covers this. It needs a fix (test first). The fix touches `app/` and `components/`, so it needs a plan.
+- Part 1 "no fight": correct. The first effect to run clears the shared flag.
+- Part 2 numbers: correct.
+- Part 2 problem 1 (`called` case): correct. Case 4 cannot tell `status = 'waiting'` from "not `arrived`". A `called` row with a `called_at` is a cheap, real addition.
+- Part 2 problem 2 (`distinct` after `limit 6`): wrong. The 2 rows at 30 minutes from case 2 are still there in case 3 (one transaction). Site B then has 20, 30, 30, 40, 60, 80, 100 and 170. A query with `limit 6` before `distinct` keeps 20, 30, 30, 40, 60, 80: 5 moments, round((80 - 20) / 4) = 15, not 16. Case 3 already fails such a query. No change.
+- Part 3 point 1 (blur on lock): wrong for this code. A hidden page does not change `document.activeElement` in a browser; the page loses window focus, but the element stays focused (not tried on a real phone). Also, `mayTakeFocusInBackground` returns false on purpose when focus is on the page body (a phone tap elsewhere), and the first test in the file checks that. A blur in this test would test a case the design says must not take focus. No change.
+- Part 3 point 2 (`&& wanted()`): partly right. If `&& wanted()` is removed, the test "tries the beep again when the phone is unlocked" fails, because the first failed beep while hidden would turn the sound off and the second `playAlert` call would not come (not run; worked out from `SoundSwitch.tsx` lines 133-143). A check of the `offWhileCalled` line after the second failure is a cheap addition, so the test also proves what the screen reader hears.
+- Part 4: same bug as part 1.
+- Part 5.1: the same fix as part 1. Moving `StillHerePrompt` into `StatusAndSound` keeps the page order (visit code, prompt, status, sound box) and keeps the shared flag in one file.
+- Part 5.2 (`raise exception`): possible, but the owner reads 4 numbers now; not needed.
+- Part 5.3: one shared setup in two tests; not needed.
