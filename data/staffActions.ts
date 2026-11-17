@@ -7,6 +7,7 @@
 import { changedFields } from "@/lib/changedFields";
 import { makeAccessToken, makeUniqueDisplayCode, normalizeDisplayCode } from "@/lib/codes";
 import type { RecallAllResult } from "@/lib/recallAll";
+import { PAUSE_REFUSED, resultForError } from "@/lib/saveResult";
 import type { ChangeResult, Site, Visit } from "@/lib/visit";
 import {
   callBack,
@@ -23,6 +24,7 @@ import {
   type DeskOutcome,
 } from "@/lib/visitActions";
 import { serverNow } from "./serverClock";
+import { reloadSitePauses } from "./sitePauses";
 import { supabaseBrowser } from "./supabaseBrowser";
 import { cachedVisit, loadVisits, putVisit, readVisitList, type StoredVisit } from "./visitCache";
 
@@ -30,7 +32,6 @@ export type CheckInForm = { site: Site; ctas_level: 4 | 5; language: string };
 
 const CODE_TRIES = 3;
 const ALREADY_USED = "23505"; // the database's error code for "this code or token is already used"
-const STEP_REFUSED = "VWR01"; // the step check (visits_check_step) refused the change
 
 /** Apply one rule to one visit and save it. */
 async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Promise<ChangeResult> {
@@ -49,12 +50,15 @@ async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Pr
       .eq("id", id)
       .eq("version", before.version)
       .select();
-    if (error?.code === STEP_REFUSED) {
-      // The database does not allow this step now (for example, the site was paused on another screen).
-      void loadVisits();
-      return "refused";
+    if (error) {
+      // "refused": the step check does not allow this move. "paused": the site was paused on
+      // another screen. Either way, read the list (and the pause switch) again.
+      const result = resultForError(error.code);
+      if (result === "paused") void reloadSitePauses();
+      if (result !== "not_saved") void loadVisits();
+      return result;
     }
-    if (error || !Array.isArray(data)) return "not_saved";
+    if (!Array.isArray(data)) return "not_saved";
     if (data.length === 0) {
       // Someone else (another staff screen, or the patient) changed this visit first.
       void loadVisits();
@@ -69,9 +73,9 @@ async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Pr
 
 /**
  * Create a desk visit after triage. Returns the new visit so the slip can be shown,
- * or null if it could not be saved.
+ * "paused" if the site was paused on another screen, or null if it could not be saved.
  */
-export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Promise<Visit | null> {
+export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): Promise<Visit | "paused" | null> {
   try {
     for (let attempt = 0; attempt < CODE_TRIES; attempt++) {
       const taken = new Set((readVisitList().visits ?? []).map((v) => v.code));
@@ -82,7 +86,11 @@ export async function createDeskVisit(form: CheckInForm, outcome: DeskOutcome): 
       );
       const { data, error } = await supabaseBrowser().from("visits").insert(visit).select();
       if (error?.code === ALREADY_USED) continue; // an older visit not on this screen has the code
-      if (error || !Array.isArray(data) || data.length === 0) return null;
+      if (error?.code === PAUSE_REFUSED) {
+        void reloadSitePauses();
+        return "paused";
+      }
+      if (error ||!Array.isArray(data) || data.length === 0) return null;
       putVisit(data[0] as StoredVisit);
       return data[0] as StoredVisit;
     }

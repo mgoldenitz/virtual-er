@@ -34,6 +34,11 @@ async function load(): Promise<void> {
   }
 }
 
+/** Read the pause switch again now, for example after the database refused a save because of a pause. */
+export function reloadSitePauses(): Promise<void> {
+  return load();
+}
+
 /** The last known state; for tests and code outside React. */
 export function pauseStateNow(): PauseState {
   return state;

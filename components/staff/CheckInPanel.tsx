@@ -17,6 +17,9 @@ const CHECKLIST = [
   { id: "agrees", label: "Agrees to wait off-site" },
 ] as const;
 
+// The database refused off-site waiting because the site was paused on another screen.
+const PAUSED_NOT_SAVED = 'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.';
+
 type Props = {
   site: Site;
   /** Called when staff try a new check-in, before saving, so the last patient's slip is hidden. */
@@ -74,13 +77,19 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
         return homeVisit.code;
       }
       setMessage(
-        result === "not_saved"
-          ? "Not saved: the database could not be reached. Nothing was recorded. Try again."
-          : `Visit ${homeVisit.code} changed or is already checked in. No check-in was saved.`,
+        result === "paused"
+          ? PAUSED_NOT_SAVED
+          : result === "not_saved"
+            ? "Not saved: the database could not be reached. Nothing was recorded. Try again."
+            : `Visit ${homeVisit.code} changed or is already checked in. No check-in was saved.`,
       );
       return null;
     }
     const visit = await createDeskVisit(form, outcome);
+    if (visit === "paused") {
+      setMessage(PAUSED_NOT_SAVED);
+      return null;
+    }
     if (!visit) {
       setMessage("Not saved: the database could not be reached. Nothing was recorded. Try again.");
       return null;
