@@ -2,16 +2,18 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { startFromHome } from "@/lib/visitActions";
+import type { Visit } from "@/lib/visit";
 import { CheckInPanel } from "./CheckInPanel";
 import { READ_FAILED, STALE_READ } from "./checkInText";
 
-function render(offsitePaused: boolean | null, pauseReadFailed = false, homeProblem: string | null = null) {
+function render(offsitePaused: boolean | null, pauseReadFailed = false, homeProblem: string | null = null, homeVisit: Visit | null = null) {
   return renderToStaticMarkup(
     <CheckInPanel
       site="A"
       onAttempt={() => {}}
       onCreated={() => {}}
-      homeVisit={null}
+      homeVisit={homeVisit}
       homeProblem={homeProblem}
       onHomeDone={() => {}}
       offsitePaused={offsitePaused}
@@ -69,7 +71,8 @@ describe("CheckInPanel while the paused switch is not read", () => {
 
   it("the read-failed text says what happens while the network is still down", () => {
     expect(READ_FAILED).toContain("If the network is still down, no button can save.");
-    expect(render(null, true).replaceAll("&quot;", '"')).toContain(READ_FAILED);
+    // In the red box, not somewhere else on the page.
+    expect(render(null, true)).toContain(`text-red-900">${READ_FAILED}</p>`);
   });
 
   it("shows no warning while the home visit has a problem", () => {
@@ -77,7 +80,19 @@ describe("CheckInPanel while the paused switch is not read", () => {
     expect(html).toContain("Visit HOME23 is no longer on this screen.");
     expect(html).toMatch(/<p id="stale-read-warning" role="status"[^>]*><\/p>/);
     expect(html).not.toContain("aria-describedby");
+    // No action button at all: the visit can no longer be checked in.
     expect(html).not.toContain("Start off-site waiting");
+    expect(html).not.toContain("Offered, declined");
+    expect(html).not.toContain("Not eligible");
+    expect(html).not.toContain("Waits on-site");
+  });
+
+  it("warns on a home visit too", () => {
+    const home = startFromHome({ id: "h", code: "HOME23", access_token: "tok", site: "A", language: "en" }, new Date());
+    const html = render(false, true, null, home);
+    expect(html).toContain("Check in visit HOME23 after triage");
+    expect(html.replaceAll("&quot;", '"')).toContain(STALE_READ);
+    expect(html).toMatch(/<button[^>]*aria-describedby="stale-read-warning"[^>]*>Start off-site waiting<\/button>/);
   });
 });
 
@@ -88,5 +103,12 @@ describe("CheckInPanel while off-site waiting is paused", () => {
     expect(html).not.toContain("Start off-site waiting");
     expect(html).not.toContain("Offered, declined");
     expect(html).toContain("Waits on-site");
+  });
+
+  it("says no button can save when the last read failed too", () => {
+    expect(render(true, true)).toContain(
+      "Off-site waiting is paused at this site: the patient waits on-site. If the network is still down, no button can save.",
+    );
+    expect(render(true, false)).not.toContain("If the network is still down");
   });
 });

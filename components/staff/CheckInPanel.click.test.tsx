@@ -2,14 +2,15 @@
 // Presses the check-in buttons in a test browser (happy-dom): after a failed pause read, off-site
 // waiting is still offered from the last good read, and a start at a site that was paused since
 // then shows the paused message (the database refused it with VWR02). The fallback button stays
-// enabled, no visit is reported as created, and the paused message stays after a re-render as paused.
-// The paused message must name a button that is on the screen, before and after the new read.
+// enabled and saves the patient as waiting on-site, no visit is reported as created before that,
+// and the paused message names a button that is on the screen. Enter (form submit) while only
+// on-site waiting is offered saves nothing and says so first.
 
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
-import { startFromHome } from "@/lib/visitActions";
+import { checkInAtDesk, startFromHome } from "@/lib/visitActions";
 import { CheckInPanel } from "./CheckInPanel";
 import { PAUSED_NOT_SAVED } from "./checkInText";
 
@@ -34,14 +35,43 @@ afterEach(() => {
   container.remove();
 });
 
+/** Show the panel: a desk visit after a failed read whose last good read said "not paused", unless `props` say otherwise. */
+function showPanel(props: Partial<ComponentProps<typeof CheckInPanel>> = {}) {
+  act(() =>
+    root.render(
+      <CheckInPanel
+        site="A"
+        onAttempt={() => {}}
+        onCreated={() => {}}
+        homeVisit={null}
+        homeProblem={null}
+        onHomeDone={() => {}}
+        offsitePaused={false}
+        pauseReadFailed={true}
+        {...props}
+      />,
+    ),
+  );
+}
+
 /** The button whose words start with `words`. */
 const button = (words: string) => [...container.querySelectorAll("button")].find((b) => b.textContent?.startsWith(words));
+
+/** Press the button whose words start with `words`, and wait for its save. */
+async function press(words: string) {
+  const found = button(words);
+  if (!found) throw new Error(`No button "${words}"`);
+  await act(async () => found.click());
+}
 
 /** true when one of the button names in "quotes" in `text` is the start of a button on the screen. */
 function namesAButtonOnScreen(text: string): boolean {
   const names = [...text.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
   return names.some((name) => button(name) !== undefined);
 }
+
+/** The save-result line (the second status line, below the stale-read warning). */
+const resultLine = () => container.querySelectorAll('p[role="status"]')[1]?.textContent ?? "";
 
 /** Choose CTAS 4 (the first radio button) and tick all three checklist items. */
 function fillForm() {
@@ -53,28 +83,26 @@ function fillForm() {
   }
 }
 
+/** Submit the form, as Enter in a form field can. This test does not show whether a real browser submits it. */
+async function submitForm() {
+  const form = container.querySelector("form");
+  if (!form) throw new Error("No form");
+  await act(async () => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+}
+
+const deskVisit = checkInAtDesk(
+  { id: "d", code: "DESK01", access_token: "tok", site: "A", ctas_level: 4, language: "en" },
+  "not_eligible",
+  new Date(),
+);
+const homeVisit = startFromHome({ id: "h", code: "HOME23", access_token: "tok", site: "A", language: "en" }, new Date());
+
 describe("CheckInPanel taps after a failed pause read", () => {
   it("a start at a site paused since the last good read shows the paused message", async () => {
     const onCreated = vi.fn();
-    act(() =>
-      root.render(
-        <CheckInPanel
-          site="A"
-          onAttempt={() => {}}
-          onCreated={onCreated}
-          homeVisit={null}
-          homeProblem={null}
-          onHomeDone={() => {}}
-          offsitePaused={false}
-          pauseReadFailed={true}
-        />,
-      ),
-    );
+    showPanel({ onCreated });
     fillForm();
-
-    const start = button("Start off-site waiting");
-    if (!start) throw new Error('No button "Start off-site waiting"');
-    await act(async () => start.click());
+    await press("Start off-site waiting");
 
     expect(createDeskVisit).toHaveBeenCalledTimes(1);
     expect(vi.mocked(createDeskVisit).mock.calls[0][1]).toBe("waiting");
@@ -85,88 +113,65 @@ describe("CheckInPanel taps after a failed pause read", () => {
     // At offsitePaused={false} the fallback button is labelled "Not eligible".
     expect(button("Not eligible")?.getAttribute("aria-disabled")).toBe("false");
 
-    // Re-render the same panel as paused (as after reloadSitePauses): the paused message stays.
-    act(() =>
-      root.render(
-        <CheckInPanel
-          site="A"
-          onAttempt={() => {}}
-          onCreated={onCreated}
-          homeVisit={null}
-          homeProblem={null}
-          onHomeDone={() => {}}
-          offsitePaused={true}
-          pauseReadFailed={true}
-        />,
-      ),
-    );
+    // Show the same panel as paused (as after reloadSitePauses): the paused message stays.
+    showPanel({ onCreated, offsitePaused: true });
     expect(container.textContent).toContain(PAUSED_NOT_SAVED);
     expect(namesAButtonOnScreen(PAUSED_NOT_SAVED)).toBe(true);
 
-    // The paused fallback button works: it saves the patient as waiting on-site (not_eligible).
-    const fallback = button("Waits on-site (off-site waiting paused)");
-    if (!fallback) throw new Error('No button "Waits on-site (off-site waiting paused)"');
-    expect(fallback.getAttribute("aria-disabled")).toBe("false");
-    await act(async () => fallback.click());
+    // The paused fallback button works: this time the database saves the visit as not_eligible.
+    expect(button("Waits on-site")?.getAttribute("aria-disabled")).toBe("false");
+    vi.mocked(createDeskVisit).mockResolvedValueOnce(deskVisit);
+    await press("Waits on-site");
     expect(createDeskVisit).toHaveBeenCalledTimes(2);
     expect(vi.mocked(createDeskVisit).mock.calls[1][1]).toBe("not_eligible");
+    expect(onCreated).toHaveBeenCalledWith(deskVisit);
+    expect(container.textContent).not.toContain(PAUSED_NOT_SAVED);
+    expect(resultLine()).toContain("Visit DESK01 recorded as waiting on-site");
   });
 
-  it("a home visit refused as paused shows the paused message and creates nothing", async () => {
-    const home = startFromHome({ id: "h", code: "HOME23", access_token: "tok", site: "A", language: "en" }, new Date());
+  it("a home visit refused as paused shows the paused message, then its fallback button saves it", async () => {
     const onHomeDone = vi.fn();
-    act(() =>
-      root.render(
-        <CheckInPanel
-          site="A"
-          onAttempt={() => {}}
-          onCreated={() => {}}
-          homeVisit={home}
-          homeProblem={null}
-          onHomeDone={onHomeDone}
-          offsitePaused={false}
-          pauseReadFailed={true}
-        />,
-      ),
-    );
+    showPanel({ homeVisit, onHomeDone });
     fillForm();
-    const start = button("Start off-site waiting");
-    if (!start) throw new Error('No button "Start off-site waiting"');
-    await act(async () => start.click());
+    await press("Start off-site waiting");
 
     expect(checkInVisitFromHome).toHaveBeenCalledTimes(1);
     expect(vi.mocked(checkInVisitFromHome).mock.calls[0][2]).toBe("waiting");
-    expect(createDeskVisit).not.toHaveBeenCalled();
     expect(container.textContent).toContain(PAUSED_NOT_SAVED);
     expect(namesAButtonOnScreen(PAUSED_NOT_SAVED)).toBe(true);
     expect(onHomeDone).not.toHaveBeenCalled();
-  });
 
-  it("Enter while the pause switch could not be read saves nothing and says so", async () => {
-    act(() =>
-      root.render(
-        <CheckInPanel
-          site="A"
-          onAttempt={() => {}}
-          onCreated={() => {}}
-          homeVisit={null}
-          homeProblem={null}
-          onHomeDone={() => {}}
-          offsitePaused={null}
-          pauseReadFailed={true}
-        />,
-      ),
-    );
+    vi.mocked(checkInVisitFromHome).mockResolvedValueOnce("saved");
+    await press("Not eligible");
+    expect(checkInVisitFromHome).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(checkInVisitFromHome).mock.calls[1][2]).toBe("not_eligible");
+    expect(onHomeDone).toHaveBeenCalledTimes(1);
+    expect(createDeskVisit).not.toHaveBeenCalled();
+  });
+});
+
+describe("CheckInPanel on Enter while only on-site waiting is offered", () => {
+  it("saves nothing and says so first while the pause switch could not be read", async () => {
+    showPanel({ offsitePaused: null });
     fillForm();
-    const form = container.querySelector("form");
-    if (!form) throw new Error("No form");
-    // Enter in a form field submits the form, which asks for off-site waiting.
-    await act(async () => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await submitForm();
 
     expect(createDeskVisit).not.toHaveBeenCalled();
-    const line = [...container.querySelectorAll('p[role="status"]')].map((p) => p.textContent).join(" ");
-    expect(line).toContain("Nothing was saved.");
-    expect(line).toContain("If the network is still down, no button can save.");
-    expect(namesAButtonOnScreen(line)).toBe(true);
+    expect(resultLine().startsWith('Nothing was saved. Press "Waits on-site" instead.')).toBe(true);
+    expect(resultLine()).toContain("If the network is still down, no button can save.");
+    expect(namesAButtonOnScreen(resultLine())).toBe(true);
+  });
+
+  it("saves nothing and says so first while off-site waiting is paused", async () => {
+    showPanel({ offsitePaused: true });
+    fillForm();
+    await submitForm();
+
+    expect(createDeskVisit).not.toHaveBeenCalled();
+    expect(resultLine().startsWith('Nothing was saved. Press "Waits on-site" instead.')).toBe(true);
+    expect(resultLine()).toContain("Off-site waiting is paused at this site");
+    // The last read failed too, so the network may be down.
+    expect(resultLine()).toContain("If the network is still down, no button can save.");
+    expect(namesAButtonOnScreen(resultLine())).toBe(true);
   });
 });
