@@ -301,3 +301,50 @@ index 730a042..e8ea578 100644
  select check_case, average_gap_minutes from wait_gap_rows order by check_case;
  
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-16 (pasted by the owner):
+
+### 1. Problems with the Shared Flag (`lostFocus`)
+
+* **Duplicate `useRescueFocus` effects run on the same shared ref, and `StillHerePrompt` triggers the rescue check on every `useNow()` tick:** File: `components/patient/StillHerePrompt.tsx` and `components/patient/StatusAndSound.tsx`. Both `StillHerePrompt` and `PatientStatus` call `useRescueFocus` on the same `lostFocus` ref. They will not both move focus on a single report, because `StillHerePrompt`'s effect runs first and sets `lostRef.current = false`. But because `StillHerePrompt` calls `useNow()`, its effect runs after every clock tick even though `PatientStatus` already handles rescues. Smallest fix: give `StillHerePrompt` an optional `onFocusLost` prop, so `StatusAndSound` passes `onFocusLost={() => { lostFocus.current = true; }}`, keeping `useRescueFocus` only inside `PatientStatus`.
+* **Stale `lostFocus.current = true` if `StillHerePrompt` unmounts without `PatientStatus` re-rendering:** If `PatientStatus` is ever wrapped in `React.memo` and `token` changes from "t" to null while `view` is unchanged, the prompt unmounts and sets the flag while `PatientStatus` skips rendering. The flag stays true until a later render, which would move focus late if focus was on the body. Smallest fix: keep `PatientStatus` unmemoized, or pass an incrementing counter instead of a mutable ref.
+
+### 2. Problems with Page Order, Tab Order, Screen Readers, and `token={token ?? null}`
+
+* Moving `StillHerePrompt` into `StatusAndSound` does not change DOM order, tab order, screen-reader reading order, or when the prompt shows. `token={token ?? null}` keeps the same behavior.
+* **`StillHerePrompt` stays mounted above the `Expired` screen when `view.expired` is true and `view.status === "waiting"`.** Smallest fix: `{token && !view.expired && view.status === "waiting" && (`.
+* **`StillHerePrompt` sits outside `data-testid="status-frame"` when the patient goes offline.** Smallest fix: pass `online` to `StillHerePrompt`, or put it inside the frame when offline.
+
+### 3. Problems with the New Test (`StatusAndSound.click.test.tsx`)
+
+* **Hardcodes `token="t"` on `<StatusAndSound>`, so `app/patient/page.tsx` passing `token={null}` would still pass.** Smallest fix: add a test that renders `PatientPage` (with mocked visit data) through a `waiting` to `called` change.
+* **Never tests the prompt unmounting when `token` clears ("t" to null) or after the "I'm still here" tap (thank-you state).** Smallest fix: a second test that focuses the button under `waiting` with `token="t"`, renders `waiting` with `token={null}`, and expects focus on `#status-heading`.
+* **In `SoundSwitch.repeat.click.test.tsx`, the `offWhileCalled` assertion does not check that the element is inside `[role="status"]`.** Smallest fix: query `[role='status'] [data-testid='sound-off-called']`.
+
+### 4. Other Parts on the Patient Screen That Leave With Focus Without Telling `lostFocus`
+
+* **`PatientStatus` itself when `app/patient/page.tsx` switches to the dead-token or "unavailable" screen.** Staff issue a new link, or the visit read returns "unavailable". The page unmounts `StatusAndSound` completely, with `#status-heading` and the rescue hook, so focus drops to the body. Smallest fix: lift `lostFocus` and `useRescueFocus` to `app/patient/page.tsx`, and give the dead-token and unavailable screens an `<h2 id="status-heading" tabIndex={-1}>`.
+* **Status changes within "other" in `PatientStatus.tsx` (for example `arrived` to `removed`).** `ViewBox` is keyed by `viewKind(view)`, so it stays mounted. Smallest fix: key `ViewBox` by `${view.expired}-${view.status}`.
+* **Any post-visit control (such as a survey panel) in `app/patient/page.tsx` outside `StatusAndSound`.** Smallest fix: wrap any conditional interactive block in a `useReportFocusOnLeave` box wired to a page-level flag.
+
+(Gemini's `[cite: n]` marks and line numbers are left out here; the text is otherwise as pasted, shortened where it repeated itself.)
+
+### My check (Claude, 2026-11-16)
+
+Accepted:
+- 3.3 (`role="status"` in the query). True: the test passes today if the line moves out of the live region. One-line test change.
+
+Real, owner to decide:
+- 4.1 (whole status leaves on the dead-token or "unavailable" screen). True. `lib/failedRead.ts` turns a shown visit into "unavailable" after `FAILED_READS_BEFORE_UNAVAILABLE` failed reads in a row, and `isDeadToken` turns it into the broken-link screen after "Issue a new link". In both cases `StatusAndSound` leaves and focus goes to the body. This was so before this fix too. A fix touches `app/patient/page.tsx` and the patient components, so it needs plan mode.
+- 3.1 (a test that renders the page). True that no test checks the `token` prop on the page. There is no page-level click test now; one would need mocks for `usePatientView`, `useChosenLanguage`, `useOnline` and the link reader.
+
+Rejected:
+- 1.1. Two rescue effects on one ref are safe (Gemini says so too: the first clears the flag). The cost is one ref read per clock tick. The suggested fix removes the prompt's own rescue, which `StillHerePrompt.click.test.tsx` needs when the prompt is used alone.
+- 1.2. `PatientStatus` is not memoized. The token cannot go from a string to null while a view shows: the view comes from `usePatientView(token)`, so a null token gives no view and the whole part leaves.
+- 2.2. `expired` is true only for `pre_arrival` with no triage (`20261116000000_wait_gap_distinct_moments.sql` line 68). It is never true while `waiting`, and `stillHereState` gives `not_due` with no `triagedAt`.
+- 2.3. The prompt was outside the frame before this change too. The frame marks the status as possibly old; the prompt is an action, and a tap while offline shows the not-saved line.
+- 3.2. Token to null while `waiting` cannot happen (see 1.2). After the tap, focus goes to the status heading (`f679e2c`), so a recall then is the heading case that `PatientStatus.sound.click.test.tsx` and the `PatientStatus` click tests cover.
+- 4.2. `OtherStatus` has no focusable part except the heading, and the heading stays the same element (same key, same component, same id) when the status changes inside "other". Nothing leaves.
+- 4.3. The page has no survey or other control outside `StatusAndSound` that leaves on a status change. The not-saved line is not focusable.
