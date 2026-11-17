@@ -3,6 +3,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CheckInPanel } from "./CheckInPanel";
+import { STALE_READ } from "./checkInText";
 
 function render(offsitePaused: boolean | null, pauseReadFailed = false) {
   return renderToStaticMarkup(
@@ -51,6 +52,17 @@ describe("CheckInPanel while the paused switch is not read", () => {
     const fresh = render(false, false);
     expect(fresh).not.toContain(warning);
     expect(fresh).not.toContain("aria-describedby");
+  });
+
+  it("the warning names the fallback button that is on the screen", () => {
+    const html = render(false, true);
+    expect(html).toMatch(/<button[^>]*>Not eligible<\/button>/);
+    expect(STALE_READ).toContain('press "Not eligible"');
+    expect(STALE_READ).not.toContain('"Waits on-site"');
+  });
+
+  it("the warning says what happens while the network is still down", () => {
+    expect(STALE_READ).toContain("If the network is still down, neither button can save.");
   });
 });
 
