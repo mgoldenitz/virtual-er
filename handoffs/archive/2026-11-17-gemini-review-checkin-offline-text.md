@@ -420,3 +420,9 @@ Checked against `components/staff/CheckInPanel.tsx` (273 lines) and `components/
 - 3.1: accepted, all three: the `homeProblem` test checks that no action button is on the page; `READ_FAILED` is checked inside the red box `<p>`; a home visit render checks `STALE_READ`.
 - 3.2: accepted, all three: the fallback press after a refusal now gets a saved visit (`checkInAtDesk` from `lib/visitActions.ts`) and checks `onCreated`, that the paused message is gone, and the record message; a home visit fallback press checks `checkInVisitFromHome` gets `not_eligible`; a new Enter test at `offsitePaused` `true`; both Enter tests check the order.
 - 4.1: accepted. The mock mismatch is fixed by 3.2. The comment on the submit event says that the test does not show what a real browser does on Enter. The form has no text field (radio buttons, checkboxes and one select), and the Start button is not on the page while only on-site waiting is offered, so a real browser may or may not submit. The guard in `finish` is there for the case that it does. Not checked in a real browser.
+
+## Result
+
+- Tests first (save point 88d2f36, 3 failed), then the fix (d85226c): 1.1, 2.1, 3.1, 3.2 and 4.1 done. 57 test files, 325 tests passed, lint clean, build passed.
+- Label point: the owner chose to shorten it. Test first (bed3a08, failed), then the fix (8b86450): the paused fallback button says "Waits on-site". The saved-result line keeps "(off-site waiting paused)". 57 test files, 326 tests passed, lint clean, build passed.
+- Next review: the owner chose the Haiku reviewer worker for these changes, not a fourth Gemini loop.

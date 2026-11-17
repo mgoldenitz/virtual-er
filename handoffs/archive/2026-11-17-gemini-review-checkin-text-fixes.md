@@ -456,4 +456,4 @@ Checked against `components/staff/CheckInPanel.tsx` (273 lines) on 2026-11-17.
 
 ## Result
 
-Fixed: tests `f19df78` (3 failed before the fix), code `a62dd0f`. 57 test files, 322 tests pass; lint clean; build passes. 1.2 is open for the owner. Review done; the fixes go to `handoffs/2026-11-17-gemini-review-checkin-offline-text.md`.
+Fixed: tests `f19df78` (3 failed before the fix), code `a62dd0f`. 57 test files, 322 tests pass; lint clean; build passes. 1.2 is open for the owner. Review done; the fixes go to `handoffs/archive/2026-11-17-gemini-review-checkin-offline-text.md`.
