@@ -111,4 +111,9 @@ describe("CheckInPanel while off-site waiting is paused", () => {
     );
     expect(render(true, false)).not.toContain("If the network is still down");
   });
+
+  it("labels the fallback button exactly as the messages name it", () => {
+    // The red box already says it is paused, so the button label does not repeat it.
+    expect(render(true)).toMatch(/<button[^>]*>Waits on-site<\/button>/);
+  });
 });
