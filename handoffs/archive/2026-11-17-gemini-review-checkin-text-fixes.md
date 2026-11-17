@@ -453,3 +453,7 @@ Checked against `components/staff/CheckInPanel.tsx` (273 lines) on 2026-11-17.
 - 1.3 (Enter guard): accepted. The guard message gets "Nothing was saved." `READ_FAILED` gets "If the network is still down, no button can save."
 - 3.1: accepted. The test checks the full `STALE_READ` in the rendered html (with `&quot;` decoded), and a new test renders a non-null `homeProblem` and checks that the warning `<p>` is empty and no `aria-describedby` is on the page. While `homeProblem` is set, no action buttons render (`{!homeProblem && ...}`), so the test checks that the Start button is not there.
 - 3.2: accepted. After the re-render with `offsitePaused={true}`, the test checks that "Waits on-site (off-site waiting paused)" is enabled, presses it, and checks a second `createDeskVisit` call with `not_eligible`. A new test covers a home visit that `checkInVisitFromHome` refuses with `paused`.
+
+## Result
+
+Fixed: tests `f19df78` (3 failed before the fix), code `a62dd0f`. 57 test files, 322 tests pass; lint clean; build passes. 1.2 is open for the owner. Review done; the fixes go to `handoffs/2026-11-17-gemini-review-checkin-offline-text.md`.
