@@ -9,7 +9,7 @@
 -- check could not put call-backs at different times. Why real call-back times are cleared:
 -- real call-backs at the same site would change the average.
 --
--- Expected result (4 rows):
+-- Expected result (5 rows):
 --   1 site A  average_gap_minutes = 25
 --     Moments 60, 40 and 10 minutes ago count. The "Recall all" of 3 visits 60 minutes ago is
 --     one moment, and the call-back 4 hours ago is too old. 3 moments give 2 gaps: (60 - 10) / 2 = 25.
@@ -22,6 +22,9 @@
 --     (170 - 30) / 5 = 28, and no limit would give (170 - 20) / 6 = 25.
 --   4 site A, not waiting  average_gap_minutes = null
 --     A patient who already arrived gets no wait gap, even with call-backs at the site.
+--   5 site A, called  average_gap_minutes = null
+--     A patient who is called (not waiting any more) gets no wait gap either. Without this row,
+--     a function that checks "not arrived" instead of "waiting" would still pass case 4.
 
 begin;
 
@@ -59,14 +62,19 @@ insert into public.visits (code, access_token, site, source, status, triaged_at,
   ('ZZZZ3H', 'ZZZZZZZZZZZZZZZZZZZZZZZZB7', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '100 minutes'),
   ('ZZZZ3J', 'ZZZZZZZZZZZZZZZZZZZZZZZZB8', 'B', 'desk', 'arrived', now() - interval '3 hours', now() - interval '170 minutes'),
   -- Site A: a patient who already arrived and was never called (row 4).
-  ('ZZZZ4A', 'ZZZZZZZZZZZZZZZZZZZZZZZZC0', 'A', 'desk', 'arrived', now() - interval '30 minutes', null);
+  ('ZZZZ4A', 'ZZZZZZZZZZZZZZZZZZZZZZZZC0', 'A', 'desk', 'arrived', now() - interval '30 minutes', null),
+  -- Site A: a patient who is called now (row 5).
+  ('ZZZZ4B', 'ZZZZZZZZZZZZZZZZZZZZZZZZC1', 'A', 'desk', 'called', now() - interval '30 minutes', now() - interval '5 minutes');
 
 insert into wait_gap_rows
 select '3 site B, 7 moments', v.average_gap_minutes
 from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZB0') v
 union all
 select '4 site A, not waiting', v.average_gap_minutes
-from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZC0') v;
+from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZC0') v
+union all
+select '5 site A, called', v.average_gap_minutes
+from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZC1') v;
 
 select check_case, average_gap_minutes from wait_gap_rows order by check_case;
 
