@@ -14,10 +14,14 @@ create table public.daily_stats (
   not_eligible integer not null default 0,         -- status not_eligible, on the triaged_at date
   offered integer not null default 0,              -- offered_at set, on the offered_at date
   declined integer not null default 0,             -- status declined, on the offered_at date
-  called_and_arrived integer not null default 0,   -- called_at and arrived_at set, on the arrived_at date
+  called_and_arrived integer not null default 0,   -- status arrived with called_at set, on the arrived_at date
   call_to_arrival_seconds bigint not null default 0, -- sum for those visits; divide by called_and_arrived
+  arrived integer not null default 0,              -- status arrived (with or without a call), on the arrived_at date
   no_shows integer not null default 0,             -- removed as no_show, on the closed_at date
+  removed_left integer not null default 0,         -- removed as left, on the closed_at date
   unable_to_reach integer not null default 0,      -- status unable_to_reach, on the closed_at date
+  open_at_deletion integer not null default 0,     -- still open when deleted (waiting, called, on_the_way or
+                                                   -- needs_reassessment), on the triaged_at date
   started_from_home integer not null default 0,    -- source home, on the created_at date
   home_reached_triage integer not null default 0,  -- source home and triaged, on the created_at date
   survey_responses integer not null default 0,     -- survey_score set, on the closed_at date
@@ -31,12 +35,23 @@ alter table public.daily_stats enable row level security;
 revoke all on public.daily_stats from anon, authenticated;
 
 -- 2. The clean-up. One statement, so the delete and the totals succeed or fail together.
+-- Two guards come first: if another run is busy (a slow run when the next 15 minutes start), or
+-- if no visit is old enough, it stops without a write. Without the second guard, the statement
+-- trigger visits_changed would fire every 15 minutes and wake every open screen for nothing.
 create function public.delete_old_visits()
 returns void
-language sql
+language plpgsql
 security definer
 set search_path = ''
 as $$
+begin
+  if not pg_try_advisory_xact_lock(hashtext('delete_old_visits')) then
+    return;
+  end if;
+  if not exists (select 1 from public.visits where created_at < now() - interval '24 hours') then
+    return;
+  end if;
+
   with gone as (
     delete from public.visits
     where created_at < now() - interval '24 hours'
@@ -57,11 +72,20 @@ as $$
       where status = 'declined' and offered_at is not null
     union all
     select site, is_demo, arrived_at, 'called_and_arrived', 1 from gone
-      where called_at is not null and arrived_at is not null
+      where status = 'arrived' and called_at is not null and arrived_at is not null
     union all
     select site, is_demo, arrived_at, 'call_to_arrival_seconds',
            round(extract(epoch from arrived_at - called_at))::bigint from gone
-      where called_at is not null and arrived_at is not null
+      where status = 'arrived' and called_at is not null and arrived_at is not null
+    union all
+    select site, is_demo, arrived_at, 'arrived', 1 from gone
+      where status = 'arrived' and arrived_at is not null
+    union all
+    select site, is_demo, closed_at, 'removed_left', 1 from gone
+      where status = 'removed' and removed_reason = 'left' and closed_at is not null
+    union all
+    select site, is_demo, triaged_at, 'open_at_deletion', 1 from gone
+      where status in ('waiting', 'called', 'on_the_way', 'needs_reassessment') and triaged_at is not null
     union all
     select site, is_demo, closed_at, 'no_shows', 1 from gone
       where status = 'removed' and removed_reason = 'no_show' and closed_at is not null
@@ -93,8 +117,11 @@ as $$
       coalesce(sum(amount) filter (where metric = 'declined'), 0) as declined,
       coalesce(sum(amount) filter (where metric = 'called_and_arrived'), 0) as called_and_arrived,
       coalesce(sum(amount) filter (where metric = 'call_to_arrival_seconds'), 0) as call_to_arrival_seconds,
+      coalesce(sum(amount) filter (where metric = 'arrived'), 0) as arrived,
       coalesce(sum(amount) filter (where metric = 'no_shows'), 0) as no_shows,
+      coalesce(sum(amount) filter (where metric = 'removed_left'), 0) as removed_left,
       coalesce(sum(amount) filter (where metric = 'unable_to_reach'), 0) as unable_to_reach,
+      coalesce(sum(amount) filter (where metric = 'open_at_deletion'), 0) as open_at_deletion,
       coalesce(sum(amount) filter (where metric = 'started_from_home'), 0) as started_from_home,
       coalesce(sum(amount) filter (where metric = 'home_reached_triage'), 0) as home_reached_triage,
       coalesce(sum(amount) filter (where metric = 'survey_responses'), 0) as survey_responses,
@@ -106,11 +133,13 @@ as $$
   -- A day already in daily_stats gets the new numbers added to it, never replaced.
   insert into public.daily_stats as s (
     day, site, is_demo, triaged_ctas_4_5, not_eligible, offered, declined,
-    called_and_arrived, call_to_arrival_seconds, no_shows, unable_to_reach,
+    called_and_arrived, call_to_arrival_seconds, arrived, no_shows, removed_left, unable_to_reach,
+    open_at_deletion,
     started_from_home, home_reached_triage, survey_responses, survey_score_sum, survey_9_or_10
   )
   select day, site, is_demo, triaged_ctas_4_5, not_eligible, offered, declined,
-    called_and_arrived, call_to_arrival_seconds, no_shows, unable_to_reach,
+    called_and_arrived, call_to_arrival_seconds, arrived, no_shows, removed_left, unable_to_reach,
+    open_at_deletion,
     started_from_home, home_reached_triage, survey_responses, survey_score_sum, survey_9_or_10
   from totals
   on conflict (day, site, is_demo) do update set
@@ -120,17 +149,22 @@ as $$
     declined = s.declined + excluded.declined,
     called_and_arrived = s.called_and_arrived + excluded.called_and_arrived,
     call_to_arrival_seconds = s.call_to_arrival_seconds + excluded.call_to_arrival_seconds,
+    arrived = s.arrived + excluded.arrived,
     no_shows = s.no_shows + excluded.no_shows,
+    removed_left = s.removed_left + excluded.removed_left,
     unable_to_reach = s.unable_to_reach + excluded.unable_to_reach,
+    open_at_deletion = s.open_at_deletion + excluded.open_at_deletion,
     started_from_home = s.started_from_home + excluded.started_from_home,
     home_reached_triage = s.home_reached_triage + excluded.home_reached_triage,
     survey_responses = s.survey_responses + excluded.survey_responses,
     survey_score_sum = s.survey_score_sum + excluded.survey_score_sum,
     survey_9_or_10 = s.survey_9_or_10 + excluded.survey_9_or_10;
+end;
 $$;
 
--- Only the cron job (and the owner in the SQL Editor) runs it; patients and staff cannot.
-revoke execute on function public.delete_old_visits() from public, anon, authenticated;
+-- Only the cron job (and the owner in the SQL Editor) runs it; patients, staff and the
+-- service key cannot.
+revoke execute on function public.delete_old_visits() from public, anon, authenticated, service_role;
 
 -- 3. The schedule: pg_cron inside the database, every 15 minutes. A visit is gone at most
 -- 24 hours and 15 minutes after it was created. A later schedule with the same name changes
@@ -140,3 +174,8 @@ grant usage on schema cron to postgres;
 grant all privileges on all tables in schema cron to postgres;
 
 select cron.schedule('delete-old-visits', '*/15 * * * *', 'select public.delete_old_visits()');
+
+-- 4. pg_cron keeps one log row per run (96 a day). Once a day at 03:00 UTC, delete the rows
+-- older than 7 days, so the log does not grow without end.
+select cron.schedule('delete-old-cron-logs', '0 3 * * *',
+  $$delete from cron.job_run_details where end_time < now() - interval '7 days'$$);
