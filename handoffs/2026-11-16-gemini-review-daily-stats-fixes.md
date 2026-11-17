@@ -377,3 +377,142 @@ index fa3a0b0..a4b0bbc 100644
 ## Not checked
 - A real run in `cron.job_run_details`.
 - A real visit deleted after 24 hours on the live database.
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-16. Pasted by the owner, word for word:
+### 1. `events` CTE vs. column comments (double-counting or missed visits)
+
+No single visit is counted twice within the same metric (`gone` deletes each row once, and each metric has one `UNION ALL` branch; overlaps like `called_and_arrived` $\subset$ `arrived` and `not_eligible` $\subset$ `triaged_ctas_4_5` are intentional subsets). However, four cases can silently miss visits or corrupt totals:
+
+* **`open_at_deletion` misses open visits with `status = 'pre_arrival'` (or `triaged_at is null`)**
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, lines 23–24 and 87–88 (`where status in ('waiting', 'called', 'on_the_way', 'needs_reassessment') and triaged_at is not null`).
+* **Concrete case:** A home-started visit that never reached triage (`status = 'pre_arrival'`, like `5H` in `daily_stats.sql` line 82) is still open when deleted after 24 hours, yet it is excluded from `open_at_deletion`—and even if `'pre_arrival'` were added to the list, `triaged_at is not null` would still drop it because `triaged_at` is `NULL`. Similarly, any row in those four open statuses with a `NULL` `triaged_at` is silently dropped.
+* **Smallest fix:** Use `coalesce(triaged_at, created_at)` as the event timestamp so open rows cannot be dropped on `NULL` `triaged_at` (and add `'pre_arrival'` if `open_at_deletion` is meant to cover all unclosed visits rather than only triaged ones).
+
+
+* **`removed_left` and `no_shows` miss `status = 'removed'` rows whose `removed_reason` is `NULL` or unexpected**
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, lines 84–85 and 90–91 (`where status = 'removed' and removed_reason = 'left'` / `'no_show'`).
+* **Concrete case:** If a row is updated to `status = 'removed'` with `removed_reason is null` (or any string other than `'left'` / `'no_show'`), neither `removed_left` nor `no_shows` increments, so the closed visit disappears from all outcome counts.
+* **Smallest fix:** Enforce `check (status <> 'removed' or removed_reason in ('no_show', 'left'))` on `public.visits`, or count `status = 'removed' and removed_reason is distinct from 'no_show'` in `removed_left`.
+
+
+* **`arrived`, `called_and_arrived`, and `declined` miss rows if `arrived_at` or `offered_at` is `NULL**`
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, lines 71–72, 74–75, and 81–82 (`and offered_at is not null` / `and arrived_at is not null`).
+* **Concrete case:** If a visit is marked `status = 'arrived'` with `closed_at` populated but `arrived_at is null` (or `status = 'declined'` with `closed_at` populated but `offered_at is null`), `triaged_ctas_4_5` counts it on `triaged_at`, while `arrived` / `declined` drops it completely.
+* **Smallest fix:** Use `coalesce(arrived_at, closed_at)` for `arrived` and `coalesce(offered_at, closed_at)` for `declined` (filtering `where coalesce(...) is not null`).
+
+
+* **`call_to_arrival_seconds` can emit negative durations**
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, lines 77–79 (`round(extract(epoch from arrived_at - called_at))::bigint`).
+* **Concrete case:** If `called_at` is `12:05` and `arrived_at` is `12:00` (clock skew or manual data correction), `arrived_at - called_at` produces `-300`, subtracting 300 seconds from that day's `call_to_arrival_seconds`.
+* **Smallest fix:** Wrap the expression in `greatest(0, round(extract(epoch from arrived_at - called_at))::bigint)`.
+
+
+
+---
+
+### 2. Concurrency and `exists` guard
+
+Two concurrent runs **cannot** both delete: `pg_try_advisory_xact_lock` holds an exclusive transaction-level lock until `COMMIT`/`ROLLBACK`, so an overlapping run gets `false` and returns immediately, and any run starting after `COMMIT` sees the rows already deleted. However, two cases can stop a run that should delete:
+
+* **32-bit `hashtext` lock collision across the database-wide advisory lock namespace**
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, line 47 (`if not pg_try_advisory_xact_lock(hashtext('delete_old_visits')) then`).
+* **Concrete case:** `hashtext(text)` returns a 32-bit `int4` (widened to `bigint`), sharing the single-argument advisory lock keyspace with every other single-argument advisory lock in the database (including `start_home_visit` if a site string ever hashes to the same 32-bit integer). While that colliding lock is held, `delete_old_visits()` gets `false` and silently skips deleting overdue visits.
+* **Smallest fix:** Switch to the two-argument 64-bit namespace `pg_try_advisory_xact_lock(hashtext('vwr'), hashtext('delete_old_visits'))` (or `hashtextextended('delete_old_visits', 0)`).
+
+
+* **Transaction-frozen `now()` skips visits that cross the 24-hour mark inside an outer transaction**
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, lines 50 and 55 (`where created_at < now() - interval '24 hours'`).
+* **Concrete case:** In PostgreSQL, `now()` returns `transaction_timestamp()`. For standalone `pg_cron` calls this is fine, but if an admin script or maintenance batch opens `BEGIN;`, runs other statements for 10 minutes, and then calls `select public.delete_old_visits();`, visits that became 24 hours old during those 10 minutes fail the `exists` test because `now()` is still pinned to the outer `BEGIN`.
+* **Smallest fix:** Compute one local cutoff variable `cutoff timestamptz := clock_timestamp() - interval '24 hours';` at the start of `delete_old_visits()` and use `cutoff` in both `exists` and `delete`.
+
+
+
+---
+
+### 3. Ways `supabase/checks/daily_stats.sql` can pass while the migration is wrong
+
+* **`closed_at = arrived_at` and `closed_at = triaged_at` on every synthetic row masks wrong date grouping**
+* **Line:** `supabase/checks/daily_stats.sql`, lines 60–65, 79, 86, 92, 95, 98, and 101.
+* **Concrete case:** Every synthetic `arrived` row sets `closed_at = arrived_at`, and `5D` (`not_eligible`) sets `closed_at = triaged_at`. If the migration grouped `arrived`, `called_and_arrived`, or `call_to_arrival_seconds` by `closed_at` instead of `arrived_at` (or `not_eligible` by `closed_at` instead of `triaged_at`), every assertion in lines 146–155 still passes.
+* **Smallest fix:** Set `closed_at` on one arrived row (e.g., `5J`) and on `5D` to the following Toronto day (`2000-01-03` and `2000-01-02`) while keeping `arrived_at` / `triaged_at` on their original days.
+
+
+* **`real_day` check for `5P` asserts only `not_eligible`, never `triaged_ctas_4_5**`
+* **Line:** `supabase/checks/daily_stats.sql`, lines 102–104, 111–118, and 164–170.
+* **Concrete case:** `5P` has `ctas_level = 4` and `status = 'not_eligible'`, so it must increment both `triaged_ctas_4_5` and `not_eligible` on its real Toronto day. Because `real_day` only snapshots and asserts `not_eligible`, a bug that fails to increment `triaged_ctas_4_5` on real dates passes line 167.
+* **Smallest fix:** Also record `before_triaged` and `to_add_triaged` (`ctas_level in (4, 5)`) in `real_day` and assert both columns on `r.day`.
+
+
+* **The second-run assertion never tests re-execution when old visits exist or when the advisory lock is held**
+* **Line:** `supabase/checks/daily_stats.sql`, lines 124–125 and 172–175.
+* **Concrete case:** `after_first` is captured *after* the first `delete_old_visits()` already deleted every old row, so the second `delete_old_visits()` exits immediately at `if not exists (...) return;`. Even if the advisory lock guard were missing or broken, lines 172–175 pass.
+* **Smallest fix:** Acquire `pg_try_advisory_xact_lock(...)` in a separate check or assert that `delete_old_visits()` returns early without deleting an old row when the lock is already held, and explicitly assert `not exists (select 1 from public.visits where created_at < now() - interval '24 hours')` after the first run.
+
+
+* **Three open statuses (`called`, `on_the_way`, `needs_reassessment`) and non-`arrived` rows with `arrived_at` set are untested**
+* **Line:** `supabase/checks/daily_stats.sql`, lines 72–73 and 87–88.
+* **Concrete case:** Only `5K` (`waiting`) tests `open_at_deletion`, and neither `5E` (`no_show`) nor `5F` (`unable_to_reach`) has `arrived_at` populated. If the migration misspelled `'on_the_way'` or `'needs_reassessment'`, or omitted `status = 'arrived'` on `called_and_arrived`, the check file still passes.
+* **Smallest fix:** Add one synthetic visit in `needs_reassessment` (or `on_the_way`) for `open_at_deletion`, and populate `arrived_at` on `5E` (`removed` / `no_show`) to prove `called_and_arrived` ignores non-`arrived` statuses.
+
+
+* **`day < '2001-01-01'` row-count check ignores spurious rows written to dates $\ge$ `2001-01-01**`
+* **Line:** `supabase/checks/daily_stats.sql`, line 159 (`where day < '2001-01-01'`).
+* **Concrete case:** If a date-conversion bug wrote a synthetic visit onto a date in `2001` or `2026` (while another synthetic visit still created the expected year-2000 row), the count of rows `< '2001-01-01'` remains `5` and the check passes.
+* **Smallest fix:** Record total `count(*)` of `public.daily_stats` before the first `delete_old_visits()` call and assert the exact total row count across all dates afterward.
+
+
+
+---
+
+### 4. Cron log clean-up safety
+
+* **`end_time < now() - interval '7 days'` never deletes crashed or orphaned job runs where `end_time IS NULL**`
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, line 180 (`where end_time < now() - interval '7 days'`).
+* **Concrete case:** `pg_cron` inserts a row into `cron.job_run_details` with `start_time = now()` and `end_time = NULL` when a job starts. If the worker crashes or the database restarts before completion, `end_time` stays `NULL` forever; `NULL < now() - interval '7 days'` evaluates to `UNKNOWN`, so crashed rows are never pruned.
+* **Smallest fix:** Change the predicate to `where coalesce(end_time, start_time) < now() - interval '7 days'`.
+
+
+* **Unscoped `DELETE` wipes >7-day history for all `pg_cron` jobs in the database, including failed runs**
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, line 180.
+* **Concrete case:** Because `cron.job_run_details` is shared across every scheduled job in the database and the `DELETE` has no `jobid` or `status` filter, adding another `pg_cron` job later—or needing to inspect a failure older than 7 days—loses those log rows automatically.
+* **Smallest fix:** Scope the deletion to this feature's jobs (`and jobid in (select jobid from cron.job where jobname in ('delete-old-visits', 'delete-old-cron-logs'))`) or retain `'failed'` rows longer (e.g., 30 days).
+
+
+* **Overly broad `ALL PRIVILEGES` grant on all tables in schema `cron**`
+* **Line:** `20261116100000_daily_stats_and_cleanup.sql`, line 174 (`grant all privileges on all tables in schema cron to postgres;`).
+* **Concrete case:** Granting `ALL PRIVILEGES` on every table in `cron` grants `TRUNCATE` and direct writes on `cron.job` when log cleanup only needs `SELECT` and `DELETE` on `cron.job_run_details`.
+* **Smallest fix:** Replace line 174 with `grant select, delete on table cron.job_run_details to postgres;` (plus `grant select on table cron.job to postgres;` if filtering by `jobname`).
+
+## Claude's check of the response
+
+I numbered the points 1.1 to 4.3 in the order of the answer.
+
+1.1 `open_at_deletion` misses `pre_arrival` and null `triaged_at`: reject. The four open statuses come only after triage (`applyTriage` in `lib/visitActions.ts` sets `triaged_at` for every outcome), so `triaged_at` is never null on them. The column means "triaged and still open", by design. A `pre_arrival` visit that never got triage is already countable: `started_from_home` minus `home_reached_triage`.
+
+1.2 `removed` with no reason: reject. It cannot happen. `removed_reason` has `check (removed_reason in ('left', 'no_show'))`, and `removed_has_reason` is `check ((status = 'removed') = (removed_reason is not null))` (`20261110060756_tables_and_security.sql`, lines 39 and 56).
+
+1.3 `arrived` with no `arrived_at`, or `declined` with no `offered_at`: reject. `markArrived` always sets `arrived_at`, and `applyTriage` sets `offered_at` for `declined`. A `coalesce` to `closed_at` would hide a bug in place of showing it.
+
+1.4 negative seconds: reject. The `visits_before_write` trigger sets each time to `now()` when it is set, so a later step always has a later time. `greatest(0, ...)` would hide a bug.
+
+2.1 `hashtext` collision: optional. Checked through the read-only connection on 2026-11-16: `hashtext('delete_old_visits')` = -799087885, `hashtext('start_home_visit:A')` = -1205423538, `hashtext('start_home_visit:B')` = 490688594. They are all different, and these are the only advisory locks in the project. If a collision came, the cost is one skipped run (15 minutes). The two-argument form is cheap, but the risk is zero now.
+
+2.2 `now()` frozen in an outer transaction: reject. Only pg_cron (one statement per run) or the owner calls the function.
+
+3.1 `closed_at` the same as `arrived_at` or `triaged_at` in the check: accept. Move `closed_at` of 5A and 5D to D2. 5A has no survey, so no expected number changes. Not 5J, as Gemini says: its survey counts on `closed_at`.
+
+3.2 5P `triaged_ctas_4_5` not asserted: accept. Add `before_triaged` and `to_add_triaged` to `real_day` and assert them.
+
+3.3 second run: accept in part. Add an assert that no visit older than 24 hours is left after the first run. Reject the held-lock test: the same session takes its own advisory lock again, so a test in one SQL Editor run cannot show the guard. The second run tests that a run with nothing to do changes nothing.
+
+3.4 the other open statuses and the status filter: accept. Add visits in `called`, `on_the_way` and `needs_reassessment`, and give 5E an `arrived_at`, to prove the status filter on `called_and_arrived` and `arrived`.
+
+3.5 rows on dates after 2000: reject. Each year-2000 row is checked to the exact numbers, so an event on a wrong date makes a number in its right row too low.
+
+4.1 `end_time` null: accept. `coalesce(end_time, start_time)` is cheap. The first migration has already run, so this needs a new migration that schedules the job again with the same name.
+
+4.2 delete the log rows of these jobs only: reject. The database has only these 2 jobs.
+
+4.3 `grant all` on schema `cron`: reject. It is the Supabase documented setup, and it goes to `postgres` only, not to patients or staff.
