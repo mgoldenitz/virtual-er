@@ -135,13 +135,7 @@ export function CheckInPanel({
       return;
     }
     if (outcome === "waiting" && onSiteOnly) {
-      setMessage(
-        offsitePaused === true
-          ? 'Off-site waiting is paused at this site. Press "Waits on-site" instead.'
-          : pauseReadFailed
-            ? `${READ_FAILED} Press "Waits on-site" instead.`
-            : 'Checking whether off-site waiting is paused. Press "Waits on-site" instead.',
-      );
+      setMessage(`${onSiteOnlyText(offsitePaused, pauseReadFailed)} Press "Waits on-site" instead.`);
       return;
     }
     if (outcome === "waiting" && !CHECKLIST.every((item) => ticked[item.id])) {
