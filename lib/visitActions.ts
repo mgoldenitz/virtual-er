@@ -127,12 +127,14 @@ export function markSeen(visit: Visit, now: Date): Visit | null {
 }
 
 /**
- * The patient taps "I'm on my way". Only while called.
+ * The patient taps "I'm on my way". Only while called. The tap needs the called screen, so it
+ * also fills seen_at if the seen step did not reach the database (a set seen_at is kept).
  * In the app the database function confirm_on_my_way does this; this copy is used by the tests.
  */
 export function confirmOnMyWay(visit: Visit, now: Date): Visit | null {
   if (visit.status !== "called") return null;
-  return { ...visit, status: "on_the_way", confirmed_at: now.toISOString() };
+  const nowIso = now.toISOString();
+  return { ...visit, status: "on_the_way", confirmed_at: nowIso, seen_at: visit.seen_at ?? nowIso };
 }
 
 /**
