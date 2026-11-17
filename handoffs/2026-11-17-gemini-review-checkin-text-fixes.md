@@ -367,3 +367,78 @@ index 234bec4..8da6904 100644
  - 2026-11-17: The pause read in `visits_check_step` uses `for share`, so it waits for a pause that is being saved; `for key share` would not wait, because a pause is a non-key update. A missing settings row or an empty value counts as paused. Owner (Gemini step check review, points 6 and 8). Not checked: a run as a signed-in staff user (`for share` needs UPDATE on `site_settings`, which staff have).
  - 2026-11-17: Not changed after the Gemini step check review: time rules in the database (point 3, owner chose status moves only), and `waiting` to `called` while paused (point 11, recall must always work). Reasons in handoffs/archive/2026-11-16-gemini-review-allowed-steps.md.
 ```
+
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-17. Pasted as received.
+
+### Reasoning on Not Suppressing `STALE_READ` While the Save-Result Line Has Text
+
+Your decision **not** to suppress `STALE_READ` when `message` has text is right: hiding `STALE_READ` while a save error is showing would hide an active warning from sighted staff, and clearing `STALE_READ` when `reloadSitePauses()` sets `offsitePaused = true` sets the node's text to `""`, which screen readers do not announce.
+
+One part of the explanation is slightly incomplete, though not a reason to hide the warning:
+
+* **Severity:** minor
+* **File and line:** `components/staff/CheckInPanel.tsx`, lines 51–53 and 259–270
+* **What goes wrong:** While `VWR02` triggers `reloadSitePauses()` asynchronously in a later render, two `role="status"` (`aria-live="polite"`) elements inside the shared `<div>` *can* still mutate in the same commit in other paths—for example, if a save fails (`setMessage(...)`) in the same render batch where `homeProblem` clears or `pauseReadFailed` flips to `true`. On iOS VoiceOver and Android TalkBack, mutating two polite live regions in one commit can cause the second update to cut off the first.
+* **Concrete case:** A save fails with `"Not saved: the database could not be reached..."` in the same React render batch as a parent state update that sets `pauseReadFailed={true}` (or clears `homeProblem` while `staleRead` is already `true`); both `<p role="status">` nodes change text simultaneously.
+* **Smallest fix:** Keep `showWarning` visible to sighted staff (do not suppress it with `!message`), and only suppress duplicate announcements if a future change ever updates `pauseReadFailed` and `message` in the same handler.
+
+---
+
+### 1. Truth of Messages and Button Names Across All States and Visit Types
+
+1. **`STALE_READ` says `"neither button can save"` on a desk visit where three buttons are on the screen**
+* **Severity:** minor
+* **File and line:** `components/staff/checkInText.ts`, line 19
+* **What goes wrong:** `STALE_READ` shows when `offsitePaused === false && pauseReadFailed === true`. For a home visit (`homeVisit !== null`), two buttons are rendered (`"Start off-site waiting"` and `"Not eligible"`), so `"neither button can save"` is true. For a desk visit (`homeVisit === null`), three buttons are rendered (`"Start off-site waiting"`, `"Offered, declined"`, and `"Not eligible"`), making `"neither button"` inaccurate.
+* **Concrete case:** Triage staff check in a walk-in patient (`homeVisit === null`) while `offsitePaused === false` and `pauseReadFailed === true`, look at three action buttons, and read `"If the network is still down, neither button can save."`
+* **Smallest fix:** Change `"neither button can save."` to `"no button can save."` in `components/staff/checkInText.ts` line 19.
+
+2. **`PAUSED_NOT_SAVED` says `"Press \"Not eligible\" or \"Waits on-site\""`, which omits the rest of the paused button label (`"Waits on-site (off-site waiting paused)"`)**
+* **Severity:** minor
+* **File and line:** `components/staff/checkInText.ts`, lines 6–7; `components/staff/CheckInPanel.tsx`, fallback button (`offsitePaused === true ? "Waits on-site (off-site waiting paused)" : ...`)
+* **What goes wrong:** Before `reloadSitePauses()` completes (or if it fails while offline), the fallback button is `"Not eligible"`. Once `reloadSitePauses()` completes (`offsitePaused === true`), the button text is `"Waits on-site (off-site waiting paused)"`, not `"Waits on-site"`. While `"Waits on-site"` is the prefix of that label, staff scanning for an exact button match see parenthetical text that the message omits.
+* **Concrete case:** Staff submit a desk or home visit (`VWR02`), `reloadSitePauses()` resolves `offsitePaused = true`, and staff see `Press "Not eligible" or "Waits on-site"` next to a button labelled `"Waits on-site (off-site waiting paused)"`.
+* **Smallest fix:** Shorten the paused button text in `CheckInPanel.tsx` to `"Waits on-site"` (both `PAUSED_NOT_SAVED` and the red pause banner already state that off-site waiting is paused), or match the full label in `PAUSED_NOT_SAVED`.
+
+3. **Enter-submit guard (`onSiteOnlyText` + `"Press \"Waits on-site\" instead."`) omits `"Nothing was saved."`, omits the network-down caveat when `offsitePaused === null && pauseReadFailed === true`, and omits `(off-site waiting paused)` when `offsitePaused === true**`
+* **Severity:** minor
+* **File and line:** `components/staff/checkInText.ts`, lines 10 and 22–27; `components/staff/CheckInPanel.tsx`, `if (outcome === "waiting" && onSiteOnly)` submit guard
+* **What goes wrong:** When `onSiteOnly` is `true` (`offsitePaused === true` or `offsitePaused === null`) and staff trigger a `"waiting"` submit (e.g., by pressing Enter in the form), `CheckInPanel.tsx` sets `message` to ``${onSiteOnlyText(offsitePaused, pauseReadFailed)} Press "Waits on-site" instead.``. Unlike `PAUSED_NOT_SAVED`, none of the three `onSiteOnlyText` branches says `"Nothing was saved."`—so `"the patient waits on-site"` / `"the patient can wait on-site"` reads as if the check-in was already recorded. In addition, when `offsitePaused === null && pauseReadFailed === true` because the network is down, `READ_FAILED` does not warn that pressing `"Waits on-site"` will also fail to reach the database.
+* **Concrete case:** Initial pause read fails (`offsitePaused === null`, `pauseReadFailed === true`) because Wi-Fi is down; staff press Enter in the form, see `"Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds. Press \"Waits on-site\" instead."`, and believe the visit is already saved or do not realize the network outage will also block `"Waits on-site"`.
+* **Smallest fix:** Append `" Nothing was saved."` in the `if (outcome === "waiting" && onSiteOnly)` branch in `CheckInPanel.tsx`, and add `" If the network is still down, it cannot save either."` to `READ_FAILED` in `components/staff/checkInText.ts` line 10.
+
+---
+
+### 2. Screen-Reader Announcement of the Always-Mounted Warning and Shared `<div>` Layout
+
+**None found** for the always-mounted `<p id="stale-read-warning" role="status">` or the shared `<div>` layout: keeping `<p id="stale-read-warning" role="status">` mounted in the DOM (including while `homeProblem` is set) ensures screen readers register the live region before `STALE_READ` appears, grouping both `<p role="status">` elements inside one plain `<div>` is transparent to assistive technology, and Tailwind's Preflight `margin: 0` on `<p>` ensures the empty `<p>` collapses to `0px` height and removes the extra `space-y-4` gap above `message`.
+
+---
+
+### 3. Tests That Can Pass While the Panel Is Wrong
+
+1. **`CheckInPanel.test.tsx` never checks `homeProblem` suppression of `STALE_READ` and tests `STALE_READ` text on the constant rather than the rendered HTML**
+* **Severity:** should fix
+* **File and line:** `components/staff/CheckInPanel.test.tsx`, lines 48–66
+* **What goes wrong:** `render()` always passes `homeProblem={null}` (presumably), so `showWarning = staleRead && !homeProblem` is never tested when `homeProblem` is non-null. In addition, lines 59–65 assert against the imported `STALE_READ` constant instead of `html`, so if `CheckInPanel.tsx` rendered a partial string instead of `{showWarning ? STALE_READ : ""}`, the new tests would still pass.
+* **Concrete case:** Change `const showWarning = staleRead && !homeProblem;` in `components/staff/CheckInPanel.tsx` line 53 to `const showWarning = staleRead;` (showing the warning over a broken home-visit error), or change line 265 to `{showWarning ? "Warning: could not check" : ""}`: all tests in `CheckInPanel.test.tsx` still pass.
+* **Smallest fix:** Assert `expect(html).toContain(STALE_READ)` on the rendered output of `render(false, true)`, and add a test rendering `CheckInPanel` with `offsitePaused={false}`, `pauseReadFailed={true}`, and a non-null `homeProblem` verifying that `<p id="stale-read-warning" role="status">` is empty while `aria-describedby` is absent.
+
+2. **`CheckInPanel.click.test.tsx` passes even if the fallback button saves the wrong outcome, stays disabled after re-render, or renders an altered `"Waits on-site..."` label**
+* **Severity:** should fix
+* **File and line:** `components/staff/CheckInPanel.click.test.tsx`, lines 36, 39–42, and 75–98
+* **What goes wrong:**
+* `namesAButtonOnScreen(PAUSED_NOT_SAVED)` checks the imported constant `PAUSED_NOT_SAVED` (not the rendered live region) using `button(name)`, which matches by `.startsWith(name)`.
+* The test never checks `aria-disabled` on the paused fallback button after re-rendering with `offsitePaused={true}`, and never clicks the fallback button after a `VWR02` refusal to verify it calls `createDeskVisit(form, "not_eligible")`.
+* `checkInVisitFromHome` is mocked on line 15, but the `homeVisit` `"paused"` branch in `CheckInPanel.tsx` is never exercised.
+* **Concrete case:** In `components/staff/CheckInPanel.tsx`, change the fallback button's `onClick={() => finish("not_eligible")}` to `onClick={() => finish("waiting")}`, or change its paused label to `"Waits on-site (broken)"`: `CheckInPanel.click.test.tsx` still passes completely.
+* **Smallest fix:** After re-rendering with `offsitePaused={true}` in `CheckInPanel.click.test.tsx`, assert `expect(button("Waits on-site (off-site waiting paused)")?.getAttribute("aria-disabled")).toBe("false")`, click it, and verify `createDeskVisit` is called a second time with `"not_eligible"`.
+
+---
+
+### 4. Codebase Rules (One Job per File, <= 300 Lines, Straight Quotes, Beginner Readability)
+
+**None found** in the diff: all quotes and apostrophes in `checkInText.ts`, `CheckInPanel.tsx`, `CheckInPanel.test.tsx`, `CheckInPanel.click.test.tsx`, and `docs/decisions.md` are straight ASCII quotes (`"` / `'`), every file has a single clear responsibility, `CheckInPanel.tsx` is 273 lines (under the 300-line cap, with 27 lines remaining), and the logic is straightforward for a beginner.
