@@ -42,9 +42,15 @@ describe("CheckInPanel while the paused switch is not read", () => {
 
   it("warns that the last read failed but still offers off-site waiting", () => {
     const html = render(false, true);
+    const warning = "Warning: could not check just now whether off-site waiting is paused";
     expect(html).toContain("Start off-site waiting");
-    expect(html).toContain("Could not read the pause switch just now");
-    expect(render(false, false)).not.toContain("Could not read the pause switch just now");
+    expect(html).toContain(warning);
+    // Screen readers hear the warning when it comes, and again on the button.
+    expect(html).toMatch(/<p id="stale-read-warning" role="status"[^>]*>Warning: could not check/);
+    expect(html).toContain('aria-describedby="stale-read-warning"');
+    const fresh = render(false, false);
+    expect(fresh).not.toContain(warning);
+    expect(fresh).not.toContain("aria-describedby");
   });
 });
 
