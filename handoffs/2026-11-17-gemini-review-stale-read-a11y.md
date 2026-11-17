@@ -22,6 +22,50 @@ Questions:
 3. Does the click test prove what its name says? Can it pass while the panel is wrong?
 4. Does any file break the rules: one job per file, no file over 300 lines, straight quotes, readable for a beginner?
 
+Line counts after the change: `components/staff/CheckInPanel.tsx` 292, `components/staff/CheckInPanel.test.tsx` 65, `components/staff/CheckInPanel.click.test.tsx` 65, `supabase/checks/allowed_steps.sql` 219.
+
+Two-tab browser check done by the owner on 2026-11-17: tab B blocked `*api/site-status*` in DevTools, tab A paused site A. The amber warning showed with "Start off-site waiting"; the start showed the paused message and saved nothing; after unblocking, the red paused box came and the start button went away.
+
+The `save` helper in `CheckInPanel.tsx` (not in the diff; the click test reaches it through the start button):
+
+```tsx
+  async function save(outcome: DeskOutcome, ctasLevel: 4 | 5): Promise<string | null> {
+    const form = { site, ctas_level: ctasLevel, language };
+    if (homeVisit) {
+      const result = await checkInVisitFromHome(homeVisit.id, form, outcome);
+      if (result === "saved") {
+        onHomeDone();
+        return homeVisit.code;
+      }
+      setMessage(
+        result === "paused"
+          ? PAUSED_NOT_SAVED
+          : result === "not_saved"
+            ? "Not saved: the database could not be reached. Nothing was recorded. Try again."
+            : `Visit ${homeVisit.code} changed or is already checked in. No check-in was saved.`,
+      );
+      return null;
+    }
+    const visit = await createDeskVisit(form, outcome);
+    if (visit === "paused") {
+      setMessage(PAUSED_NOT_SAVED);
+      return null;
+    }
+    if (visit === "refused") {
+      setMessage("Not saved: the database refused this check-in. Nothing was recorded.");
+      return null;
+    }
+    if (!visit) {
+      setMessage("Not saved: the database could not be reached. Nothing was recorded. Try again.");
+      return null;
+    }
+    onCreated(visit);
+    return visit.code;
+  }
+
+  async function finish(outcome: DeskOutcome) {
+```
+
 The diff:
 
 ```diff
@@ -207,7 +251,8 @@ index 159e97e..4783cd7 100644
  -- Tries one change. Any other error stops the whole run (and still saves nothing).
 ```
 
+**Two-tab browser check done: the warning showed and the paused start saved nothing.**
+
 ## Not checked
 
 - How NVDA or VoiceOver read the warning in a real browser.
-- The owner's two-tab browser check.
