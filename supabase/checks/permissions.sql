@@ -5,7 +5,9 @@
 --
 -- Expected after Phase 3's 24-hour clean-up (20261116100000_daily_stats_and_cleanup.sql; its
 -- table daily_stats and its function delete_old_visits give anon and authenticated nothing,
--- so the list is the same as after the site pause read, 20261112010000_site_pause_read.sql):
+-- so the list is the same as after the site pause read, 20261112010000_site_pause_read.sql;
+-- the allowed steps, 20261117000000_allowed_steps.sql, add only the trigger function
+-- visits_check_step, which nobody can call, so the list stays the same):
 --   anon           table     change_signal       SELECT
 --   anon           function  confirm_on_my_way   EXECUTE
 --   anon           function  get_patient_visit   EXECUTE

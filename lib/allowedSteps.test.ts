@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ALLOWED_MOVES, START_STATUSES, isAllowedMove } from "./allowedSteps";
 import { CALL_REVIEW_MINUTES } from "./demoTimes";
@@ -72,6 +73,16 @@ describe("allowed status moves", () => {
     expect(isAllowedMove("pre_arrival", "arrived")).toBe(false);
     expect(isAllowedMove("declined", "waiting")).toBe(false);
     expect(isAllowedMove("unable_to_reach", "waiting")).toBe(false);
+  });
+
+  it("is the same list as the database trigger", () => {
+    const sql = readFileSync("supabase/migrations/20261117000000_allowed_steps.sql", "utf8");
+    const block = sql.split("-- allowed moves")[1].split("-- end of allowed moves")[0];
+    const inSql = [...block.matchAll(/\('(\w+)', '(\w+)'\)/g)].map((m) => `${m[1]}>${m[2]}`).sort();
+    const inLib = Object.entries(ALLOWED_MOVES).flatMap(([from, tos]) => tos!.map((to) => `${from}>${to}`)).sort();
+    expect(inSql).toEqual(inLib);
+    const starts = sql.match(/new\.status not in \(([^)]*)\)/)![1].match(/\w+/g)!.sort();
+    expect(starts).toEqual([...START_STATUSES].sort());
   });
 
   it("has no move to the same status", () => {
