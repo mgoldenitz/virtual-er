@@ -348,3 +348,10 @@ Rejected:
 - 3.2. Token to null while `waiting` cannot happen (see 1.2). After the tap, focus goes to the status heading (`f679e2c`), so a recall then is the heading case that `PatientStatus.sound.click.test.tsx` and the `PatientStatus` click tests cover.
 - 4.2. `OtherStatus` has no focusable part except the heading, and the heading stays the same element (same key, same component, same id) when the status changes inside "other". Nothing leaves.
 - 4.3. The page has no survey or other control outside `StatusAndSound` that leaves on a status change. The not-saved line is not focusable.
+
+### Owner decisions (2026-11-16)
+
+- 3.3: done (`dd3c67b`).
+- 4.1: fixed. `components/patient/VisitScreen.tsx` holds the page's screen switch, puts each screen in a keyed `FocusBox` and rescues focus to the new `#status-heading` (move `0772ba8`, test `e1b94e9`, fix `5bc78b7`). Follow-up review: `handoffs/2026-11-16-gemini-review-visit-screen-focus.md`.
+- 3.1: skipped.
+- Review closed.
