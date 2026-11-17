@@ -253,3 +253,5 @@ The worker returned 14 points. It did not run `npm test`, lint or build. My chec
 - 14 (one job per file): not a bug; the worker says itself that neither is a clear breach.
 
 My own read added two minor points: `lib/allowedSteps.ts:2` names the old migration, and `start_home_visit` (`supabase/migrations/20261110061049_patient_functions.sql:124`) fails open when the settings row is missing, while the trigger fails closed. The trigger still refuses the later triage to `waiting`, so no patient waits off-site at a paused site.
+
+Owner chose 4 fixes on 2026-11-17 (points 1, 4, 5 to 6, 9 to 11 and 13, and my two points except `start_home_visit`). Done: stronger sync test (`29e97ac`), session timeout in the check file (`974660d`), straight quotes, "refused" for a refused desk check-in and the migration name in `lib/allowedSteps.ts` (`385e9a4`), failed pause read text (`07f9d07`, `d0b87a3`). Checked: 314 tests, lint and build pass. Not checked: the check file run in the SQL Editor after `974660d` (expected 49 rows, all `ok`), and the two-tab browser check. Not changed: point 5 (0-row resume), 7, 8, and `start_home_visit` failing open.
