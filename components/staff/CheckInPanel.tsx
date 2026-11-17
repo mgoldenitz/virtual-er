@@ -20,6 +20,17 @@ const CHECKLIST = [
 // The database refused off-site waiting because the site was paused on another screen.
 const PAUSED_NOT_SAVED = 'Off-site waiting is paused at this site. Press "Waits on-site" instead. Nothing was saved.';
 
+// The last read of the pause switch failed, and no earlier read worked. data/keepFresh.ts tries again every 5 seconds.
+const READ_FAILED = "Could not read whether off-site waiting is paused. The patient waits on-site. The screen tries again every 5 seconds.";
+
+/** The red box text while check-in offers on-site waiting only (paused, read failed, or not read yet). */
+function onSiteOnlyText(offsitePaused: boolean | null, pauseReadFailed: boolean): string {
+  // Paused comes first: it is the safer fact, even when a later read failed.
+  if (offsitePaused) return "Off-site waiting is paused at this site: the patient waits on-site.";
+  if (pauseReadFailed) return READ_FAILED;
+  return "Checking whether off-site waiting is paused. The patient can wait on-site.";
+}
+
 type Props = {
   site: Site;
   /** Called when staff try a new check-in, before saving, so the last patient's slip is hidden. */
@@ -33,9 +44,20 @@ type Props = {
   onHomeDone: () => void;
   /** true: paused; null: not read yet. Both mean check-in offers on-site waiting only. */
   offsitePaused: boolean | null;
+  /** true when the last read of the pause switch failed (from useSitePauses). */
+  pauseReadFailed: boolean;
 };
 
-export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProblem, onHomeDone, offsitePaused }: Props) {
+export function CheckInPanel({
+  site,
+  onAttempt,
+  onCreated,
+  homeVisit,
+  homeProblem,
+  onHomeDone,
+  offsitePaused,
+  pauseReadFailed,
+}: Props) {
   // Only a read that says "not paused" lets staff offer off-site waiting.
   const onSiteOnly = offsitePaused !== false;
 
@@ -114,9 +136,11 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
     }
     if (outcome === "waiting" && onSiteOnly) {
       setMessage(
-        offsitePaused === null
-          ? 'Checking whether off-site waiting is paused. Press "Waits on-site" instead.'
-          : 'Off-site waiting is paused at this site. Press "Waits on-site" instead.',
+        offsitePaused === true
+          ? 'Off-site waiting is paused at this site. Press "Waits on-site" instead.'
+          : pauseReadFailed
+            ? `${READ_FAILED} Press "Waits on-site" instead.`
+            : 'Checking whether off-site waiting is paused. Press "Waits on-site" instead.',
       );
       return;
     }
@@ -224,9 +248,7 @@ export function CheckInPanel({ site, onAttempt, onCreated, homeVisit, homeProble
         <div className="flex flex-wrap gap-3">
           {onSiteOnly ? (
             <p className="w-full rounded-lg border-2 border-red-800 bg-red-50 p-3 font-semibold text-red-900">
-              {offsitePaused
-                ? "Off-site waiting is paused at this site: the patient waits on-site."
-                : "Checking whether off-site waiting is paused. The patient can wait on-site."}
+              {onSiteOnlyText(offsitePaused, pauseReadFailed)}
             </p>
           ) : (
             <Button type="submit" aria-disabled={saving}>

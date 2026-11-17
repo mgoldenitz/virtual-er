@@ -26,7 +26,7 @@ import { useNow } from "@/components/useNow";
 export default function StaffPage() {
   const { visits, outOfDate } = useVisits();
   const now = useNow();
-  const { pauses } = useSitePauses();
+  const { pauses, failed: pauseReadFailed } = useSitePauses();
   const [site, setSite] = useState<Site>("A");
   const [slip, setSlip] = useState<Visit | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -113,6 +113,7 @@ export default function StaffPage() {
             homeVisit={homeVisit}
             homeProblem={homeProblem}
             offsitePaused={paused}
+            pauseReadFailed={pauseReadFailed}
             onHomeDone={() => setHomeVisit(null)}
           />
           {slip && <VisitSlip code={slip.code} token={slip.access_token} language={slip.language} onClose={() => setSlip(null)} />}
