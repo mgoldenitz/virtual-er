@@ -30,6 +30,7 @@ export type CheckInForm = { site: Site; ctas_level: 4 | 5; language: string };
 
 const CODE_TRIES = 3;
 const ALREADY_USED = "23505"; // the database's error code for "this code or token is already used"
+const STEP_REFUSED = "VWR01"; // the step check (visits_check_step) refused the change
 
 /** Apply one rule to one visit and save it. */
 async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Promise<ChangeResult> {
@@ -48,6 +49,11 @@ async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Pr
       .eq("id", id)
       .eq("version", before.version)
       .select();
+    if (error?.code === STEP_REFUSED) {
+      // The database does not allow this step now (for example, the site was paused on another screen).
+      void loadVisits();
+      return "refused";
+    }
     if (error || !Array.isArray(data)) return "not_saved";
     if (data.length === 0) {
       // Someone else (another staff screen, or the patient) changed this visit first.

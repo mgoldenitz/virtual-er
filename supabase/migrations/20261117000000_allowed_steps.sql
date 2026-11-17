@@ -8,7 +8,8 @@
 --    recall) stay in the app, because their minutes live in lib/demoTimes.ts.
 -- 2. confirm_on_my_way also fills seen_at when it is empty: the tap needs the called screen,
 --    so the screen was shown even if record_seen did not reach the database.
--- A refused change raises error code VWR01; the staff screen treats it as "refused".
+-- A refused change raises error code VWR01. data/staffActions.ts changeVisit treats it as
+-- "refused" and reloads the list; a refused desk check-in (createDeskVisit) shows "not saved".
 -- The 24-hour clean-up only deletes visits, so this trigger does not touch it.
 
 create function public.visits_check_step()
