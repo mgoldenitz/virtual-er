@@ -6,7 +6,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { callBackVisit } from "@/data/staffActions";
-import { callBack, checkInAtDesk } from "@/lib/visitActions";
+import { callBack, checkInAtDesk, confirmOnMyWay } from "@/lib/visitActions";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { VisitRow } from "./VisitRow";
 
@@ -96,11 +96,27 @@ describe("VisitRow recall", () => {
     progressLine().addEventListener("focus", () => (textAtFocus = progressLine().textContent ?? ""));
     await press("Recall patient");
     await press("Yes, recall patient");
+    await nextTick(); // the panel's one-tick focus wait runs while the save is still on its way
     draw(called); // the real save puts the called visit in the list before it returns
     await finish("saved");
     await nextTick();
     expect(document.activeElement).toBe(progressLine());
     expect(textAtFocus).toContain("Called");
+    expect(textAtFocus).not.toContain("Waiting off-site");
+  });
+
+  it("when the next drawn status skips called (the patient tapped I'm on my way), focus still lands on the progress line", async () => {
+    const onTheWay = confirmOnMyWay(called, now);
+    if (!onTheWay) throw new Error("confirmOnMyWay refused the test visit");
+    const finish = slowSave();
+    await press("Recall patient");
+    await press("Yes, recall patient");
+    await finish("saved");
+    await nextTick();
+    draw(onTheWay);
+    await nextTick();
+    expect(document.activeElement).toBe(progressLine());
+    expect(progressLine().textContent).toContain("On the way");
   });
 
   it("when the row shows the called visit after the save says saved, focus waits for the called text", async () => {
