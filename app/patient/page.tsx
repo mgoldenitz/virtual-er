@@ -14,6 +14,7 @@ import { PatientShell } from "@/components/PatientShell";
 import { OfflineBanner } from "@/components/patient/OfflineBanner";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { VisitScreen } from "@/components/patient/VisitScreen";
+import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 import { isDeadToken } from "@/lib/deadToken";
 import { textFor } from "@/lib/text";
 import { languageInfo, patientLanguage } from "@/lib/text/languages";
@@ -56,6 +57,7 @@ export default function PatientPage() {
   // The phone's own choice first, so even "Loading…" and the 911 line are in that language.
   const language = patientLanguage(chosenLanguage, view?.language);
   const t = textFor(language);
+  useDocumentLanguage(language);
 
   // The first time the called screen is actually on screen, record seen_at
   // (shown, not necessarily read). A tab in the background waits until it is brought forward.

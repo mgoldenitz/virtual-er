@@ -13,6 +13,7 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { CareOptions } from "@/components/start/CareOptions";
 import { StartVisit } from "@/components/start/StartVisit";
+import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 
 const linkStyle =
   "inline-block min-h-11 rounded-lg border-2 border-slate-700 px-4 py-2 font-semibold focus-visible:outline-4 focus-visible:outline-slate-950";
@@ -20,6 +21,7 @@ const linkStyle =
 export function StartPageBody() {
   const language = useChosenLanguage() ?? "en";
   const t = textFor(language);
+  useDocumentLanguage(language);
   return (
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-6 px-4 py-6">
       <h1 className="text-2xl font-bold">{t.appName}</h1>
