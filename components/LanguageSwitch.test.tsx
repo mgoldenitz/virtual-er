@@ -46,6 +46,16 @@ describe("LanguageSwitch", () => {
     expect(optionText(html, "en")).toBe("English");
   });
 
+  it("shows the draft notice in normal-size text, not small text, so a patient can read it", () => {
+    for (const language of ["fr", "ur", "ar", "zh"]) {
+      const html = renderToStaticMarkup(<LanguageSwitch language={language} />);
+      const tag = html.match(/<p[^>]*data-testid="draft-notice"[^>]*>/)?.[0] ?? "";
+      const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? "").split(" ");
+      expect(classes).toContain("text-base");
+      expect(classes).not.toContain("text-sm");
+    }
+  });
+
   it("always shows the interpreter line", () => {
     const html = renderToStaticMarkup(<LanguageSwitch language="en" />);
     expect(html).toContain(textFor("en").language.interpreter);
