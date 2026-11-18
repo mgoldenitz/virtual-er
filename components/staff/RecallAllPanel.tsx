@@ -35,7 +35,9 @@ export function RecallAllPanel({ visits, site, onResult }: Props) {
     if (asked) question.current?.focus();
   }, [asked]);
 
+  // Cancel does nothing while a recall runs: aria-disabled does not stop a click.
   const cancel = () => {
+    if (saving) return;
     setAsked(null);
     // Focus goes back to the button once it is shown again.
     window.setTimeout(() => openButton.current?.focus(), 0);

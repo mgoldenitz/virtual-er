@@ -24,10 +24,16 @@ export function ClearDemoData({ onResult }: Props) {
     if (asking) question.current?.focus();
   }, [asking]);
 
-  const cancel = () => {
+  const close = () => {
     setAsking(false);
     // Focus goes back to the button once it is shown again.
     window.setTimeout(() => openButton.current?.focus(), 0);
+  };
+
+  // Cancel does nothing while a clear runs: aria-disabled does not stop a click.
+  const cancel = () => {
+    if (saving) return;
+    close();
   };
 
   const confirm = async () => {
@@ -35,7 +41,7 @@ export function ClearDemoData({ onResult }: Props) {
     setSaving(true);
     const result = await clearDemoData();
     setSaving(false);
-    if (result !== "failed") cancel();
+    if (result !== "failed") close();
     onResult(clearDemoMessage(result));
   };
 
