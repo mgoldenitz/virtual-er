@@ -7,7 +7,10 @@
 -- table daily_stats and its function delete_old_visits give anon and authenticated nothing,
 -- so the list is the same as after the site pause read, 20261112010000_site_pause_read.sql;
 -- the allowed steps, 20261117000000_allowed_steps.sql, add only the trigger function
--- visits_check_step, which nobody can call, so the list stays the same):
+-- visits_check_step, which nobody can call, so the list stays the same). The demo files
+-- (20261118000000_demo_settings.sql and 20261118000100_demo_simulator.sql) give anon and
+-- authenticated nothing either: their table has no rights for them, and their functions are
+-- revoked from them, so the list stays the same:
 --   anon           table     change_signal       SELECT
 --   anon           function  confirm_on_my_way   EXECUTE
 --   anon           function  get_patient_visit   EXECUTE
