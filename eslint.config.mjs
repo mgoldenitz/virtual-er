@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Browser test helpers and logs from the Playwright tool; git ignores this folder too.
+    ".playwright-mcp/**",
   ]),
 ]);
 
