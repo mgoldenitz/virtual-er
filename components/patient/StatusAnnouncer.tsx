@@ -1,7 +1,8 @@
 "use client";
 
 // Tells screen readers about status changes only (never the wait range or countdowns):
-// an assertive message for the call-back, a polite one for everything else.
+// an assertive message for the call-back, a polite one for everything else, including
+// the visit request expiring.
 
 import { useEffect, useRef, useState } from "react";
 import { textFor } from "@/lib/text";
@@ -24,11 +25,18 @@ function messageFor(status: VisitStatus, language: string): string {
   return messages[status] ?? "";
 }
 
-/** One status change waiting to be announced. `round` makes every change new, even a repeat. */
-type Pending = { round: number; status: VisitStatus };
+/**
+ * One change waiting to be announced. `round` makes every change new, even a repeat.
+ * `expired` is true when the change is the visit request expiring, not a new status.
+ */
+type Pending = { round: number; status: VisitStatus; expired: boolean };
 
-export function StatusAnnouncer({ status, language }: { status: VisitStatus; language: string }) {
+type Props = { status: VisitStatus; language: string; expired?: boolean };
+
+export function StatusAnnouncer({ status, language, expired = false }: Props) {
   const [previous, setPrevious] = useState<VisitStatus | null>(null);
+  // An expiry already on screen when the page opens is not announced; only the change is.
+  const [wasExpired, setWasExpired] = useState(expired);
   // A call-back already on screen when the page opens is announced; other opening statuses are not.
   const [pending, setPending] = useState<Pending | null>(null);
   const [polite, setPolite] = useState("");
@@ -46,7 +54,14 @@ export function StatusAnnouncer({ status, language }: { status: VisitStatus; lan
     setPolite("");
     setUrgent("");
     if (previous !== null || status === "called") {
-      setPending((p) => ({ round: (p?.round ?? 0) + 1, status }));
+      setPending((p) => ({ round: (p?.round ?? 0) + 1, status, expired: false }));
+    }
+  }
+  if (expired !== wasExpired) {
+    setWasExpired(expired);
+    if (expired) {
+      setPolite("");
+      setPending((p) => ({ round: (p?.round ?? 0) + 1, status, expired: true }));
     }
   }
 
@@ -54,14 +69,16 @@ export function StatusAnnouncer({ status, language }: { status: VisitStatus; lan
   // forward, then announces the status if it has not changed in the meantime.
   useEffect(() => {
     if (!pending) return;
-    const text = messageFor(pending.status, language);
+    const text = pending.expired ? textFor(language).announce.expired : messageFor(pending.status, language);
     if (!text) return;
     let done = false;
     const announce = () => {
       if (done || document.visibilityState !== "visible" || current.current !== pending.status) return;
       done = true;
-      if (pending.status === "called") setUrgent(text);
+      if (pending.status === "called" && !pending.expired) setUrgent(text);
       else setPolite(text);
+      // Said once: a later language change does not say it again.
+      setPending(null);
     };
     const timer = window.setTimeout(announce, 300);
     document.addEventListener("visibilitychange", announce);

@@ -82,7 +82,7 @@ export function VisitScreen({ loading, result, linkFailed, token, language, onOn
               {p.notSaved}
             </p>
           )}
-          <StatusAnnouncer key={token} status={view.status} language={language} />
+          <StatusAnnouncer key={token} status={view.status} language={language} expired={view.expired} />
         </>
       )}
     </FocusBox>
