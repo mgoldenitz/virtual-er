@@ -63,7 +63,7 @@ describe("the owner's equity lines", () => {
   const t = textFor("en");
 
   it("has the replaced-link message and the interpreter line exactly", () => {
-    expect(t.patient.replacedLinkHeading).toBe("This visit link is no longer active");
+    expect(t.patient.replacedLinkHeading).toBe("This visit link does not work or is no longer active");
     expect(t.patient.replacedLinkText).toBe("Please ask the emergency department desk for help.");
     expect(t.language.interpreter).toBe(
       "Need another language? Ask the emergency department desk for a free interpreter.",

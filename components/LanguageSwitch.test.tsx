@@ -37,7 +37,7 @@ describe("LanguageSwitch", () => {
   it("tags each draft language in the menu, in that language's own words", () => {
     const html = renderToStaticMarkup(<LanguageSwitch language="en" />);
     for (const info of LANGUAGES.filter((l) => !l.approved)) {
-      expect(optionText(html, info.code)).toBe(`${menuLabel(info)} (${textFor(info.code).language.draftTag})`);
+      expect(optionText(html, info.code)).toBe(`${menuLabel(info)} - ${textFor(info.code).language.draftTag}`);
     }
   });
 
