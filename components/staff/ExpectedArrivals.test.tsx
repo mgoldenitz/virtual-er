@@ -15,5 +15,8 @@ describe("ExpectedArrivals on a narrow screen", () => {
     const tag = html.match(/<input[^>]*>/)?.[0] ?? "";
     const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? "").split(" ");
     expect(classes).toContain("max-w-full");
+    // The label around the box is a flex item, so it needs its own limit too.
+    const label = html.match(/<label class="([^"]*)"><span[^>]*>Visit code/)?.[1] ?? "";
+    expect(label.split(" ")).toContain("max-w-full");
   });
 });

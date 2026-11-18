@@ -127,4 +127,18 @@ describe("CheckInPanel on a narrow screen", () => {
     const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? "").split(" ");
     expect(classes).toContain("max-w-full");
   });
+
+  it("lets each fieldset get narrower than its contents (a fieldset has min-width: min-content by default)", () => {
+    const tags = render(false).match(/<fieldset[^>]*>/g) ?? [];
+    expect(tags.length).toBeGreaterThan(0);
+    for (const tag of tags) {
+      expect((tag.match(/class="([^"]*)"/)?.[1] ?? "").split(" ")).toContain("min-w-0");
+    }
+  });
+
+  it("lets the CTAS 4 and CTAS 5 choices go onto two lines", () => {
+    // The row is the element just before the first CTAS radio button.
+    const row = render(false).match(/<div class="([^"]*)"><label[^>]*><input type="radio"/)?.[1] ?? "";
+    expect(row.split(" ")).toContain("flex-wrap");
+  });
 });
