@@ -2005,3 +2005,17 @@ Claude, 2026-11-17. Each point was read against the code on `phase3-review-fixes
 - 1.2: slower polling in a hidden tab. Useful for data, but it changes the realtime rule and needs its own test plan.
 - 5.2: iPhone stops sound after a lock. The notice already says alerts work only while the page is open and the phone is unlocked (SPEC.md line 64). When the beep fails, the box says so (`offWhileCalled`).
 - 6.3, 6.5, 7.5: Low. Note them only.
+
+## Outcome
+
+Claude, 2026-11-18. The owner's plan (C:\Users\mgold\.claude\plans\quizzical-booping-nautilus.md) is done on `phase3-review-fixes`, each step as a test commit, then a fix commit:
+
+- Step 1, new and changed safety lines in 5 languages: `ce022bd`, `e5779a0`.
+- Step 2, text size choice on `/`: `5327def`, `18d985d`.
+- Step 3 (4.1, 4.2), the announcer says an expired visit, and says each change once: `12c9b62`, `f87772d`.
+- Step 4 (3.1, 3.2, 1.10), draft tags, a status region for the draft notice, the interpreter line: `5a9895e`, `7dcffaf`.
+- Step 5 (6.2), `lang` and `dir` on `<html>`: `c07cf36`, `a826021`.
+- Step 6 (1.8, 7.1), the replaced-link message: `91f8263`, `b545f9b`.
+- Step 7 (6.4, 7.4), tap size of the care links, the empty thank-you box: `cd39438`, `da5a6ba`.
+
+The points not in the plan are in docs/known-issues.md. The diff review of these fixes is a new handoff.
