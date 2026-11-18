@@ -18,6 +18,9 @@ let container: HTMLDivElement;
 let root: Root;
 
 const show = (status: VisitStatus) => act(() => root.render(<StatusAnnouncer status={status} language="en" />));
+/** Shows the announcer with a language and the expired flag as well as the status. */
+const draw = (status: VisitStatus, language: string, expired: boolean) =>
+  act(() => root.render(<StatusAnnouncer status={status} language={language} expired={expired} />));
 const polite = () => container.querySelector('[aria-live="polite"]')?.textContent;
 
 /** Shows the first status, changes to the second, and gives back what the polite region says after the pause. */
@@ -58,5 +61,19 @@ describe("StatusAnnouncer", () => {
     show("waiting");
     await act(async () => vi.advanceTimersByTimeAsync(300));
     expect(polite()).toBe("");
+  });
+
+  it("announces when the visit expires", async () => {
+    draw("pre_arrival", "en", false);
+    draw("pre_arrival", "en", true);
+    await act(async () => vi.advanceTimersByTimeAsync(300));
+    expect(polite()).toBe(a.expired);
+  });
+
+  it("does not say the last status again after a language change", async () => {
+    expect(await heardAfter("pre_arrival", "waiting")).toBe(a.waiting);
+    draw("waiting", "fr", false);
+    await act(async () => vi.advanceTimersByTimeAsync(300));
+    expect(polite()).toBe(a.waiting);
   });
 });
