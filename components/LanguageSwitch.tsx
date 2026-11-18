@@ -18,7 +18,7 @@ export function LanguageSwitch({ language }: { language: string }) {
         <select
           value={current.code}
           onChange={(e) => chooseLanguage(e.target.value)}
-          className="min-h-11 rounded-lg border-2 border-control bg-card px-3"
+          className="min-h-11 max-w-full rounded-lg border-2 border-control bg-card px-3"
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code} lang={l.code} dir={l.dir}>
