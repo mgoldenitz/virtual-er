@@ -3,7 +3,7 @@
 // The "Recall patient" button for one waiting visit. Staff must confirm first, because a recall
 // has no undo: the phone shows "Please head back now" at once. This file only asks; the parent saves.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/Button";
 
 type Props = {
@@ -21,6 +21,8 @@ export function RecallPanel({ code, saving, onConfirm }: Props) {
   const [mode, setMode] = useState<Mode>("idle");
   const recallButton = useRef<HTMLButtonElement>(null);
   const yesButton = useRef<HTMLButtonElement>(null);
+  /** A page-wide unique id for the question, so each "Yes" points to its own question. */
+  const questionId = useId();
 
   // When the confirm question opens, focus moves to "Yes" for keyboard and screen-reader users.
   useEffect(() => {
@@ -55,13 +57,13 @@ export function RecallPanel({ code, saving, onConfirm }: Props) {
   return (
     <div className="w-full space-y-2">
       {/* "Yes" points to this question, so a screen reader reads the code and "There is no undo." */}
-      <p id={`recall-question-${code}`} className="font-semibold">
+      <p id={questionId} className="font-semibold">
         {`Recall visit ${code}? The patient's phone will show "Please head back now". There is no undo.`}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button variant="danger" ref={yesButton}
           aria-disabled={saving}
-          aria-describedby={`recall-question-${code}`}
+          aria-describedby={questionId}
           onClick={confirm}
         >
           Yes, recall patient

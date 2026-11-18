@@ -3,7 +3,7 @@
 // One patient in the staff's off-site list: minutes waited, call-back progress and actions.
 // The no-response flags and phone-call buttons are in FollowUpPanel.
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from "@/data/staffActions";
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
@@ -70,10 +70,20 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   };
   /** The progress line, which stays on the page when the "Recall patient" button leaves it. */
   const progressLine = useRef<HTMLParagraphElement>(null);
+  /** True once a recall from this row is saved. */
+  const [recallSaved, setRecallSaved] = useState(false);
+  /** True once focus has moved after that recall, so it moves only once. */
+  const focusDone = useRef(false);
   const recall = async () => {
-    // Wait one tick, so the row shows the called text before a screen reader reads it.
-    if ((await act(() => callBackVisit(visit.id))) === "saved") window.setTimeout(() => progressLine.current?.focus(), 0);
+    if ((await act(() => callBackVisit(visit.id))) === "saved") setRecallSaved(true);
   };
+  // Focus moves only once React has drawn the row as called, so a screen reader reads the called
+  // text. The list can get the called visit before or after the save says "saved"; this works both ways.
+  useEffect(() => {
+    if (!recallSaved || visit.status !== "called" || focusDone.current) return;
+    focusDone.current = true;
+    progressLine.current?.focus();
+  }, [recallSaved, visit.status]);
   /** After "Issue a new link" saves: open the slip with the new QR code and say what happened. */
   const showNewLink = (updated: Visit) => {
     onShowSlip(updated);
