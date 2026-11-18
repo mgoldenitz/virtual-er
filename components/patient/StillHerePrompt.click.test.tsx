@@ -95,14 +95,34 @@ describe("StillHerePrompt tap", () => {
     expect(statusBox()?.className.split(" ")).toContain("sr-only");
   });
 
-  it("keeps the status box hidden after the tap and shows the thank-you in a separate card", async () => {
+  it("keeps the status box hidden after the tap and shows the thank-you in a card screen readers can touch", async () => {
     show(due);
     await act(async () => button()?.click());
     show(tapped);
     expect(statusBox()?.className.split(" ")).toContain("sr-only");
     const card = container.querySelector('[data-testid="still-here-card"]');
-    expect(card?.getAttribute("aria-hidden")).toBe("true");
+    expect(card?.hasAttribute("aria-hidden")).toBe(false);
     expect(card?.textContent).toContain(s.thanks);
+  });
+
+  it("makes screen readers read the thank-you box as one whole message", () => {
+    show(due);
+    expect(statusBox()?.getAttribute("aria-atomic")).toBe("true");
+  });
+
+  it("empties the hidden thank-you box after a few seconds, so a swipe reads the words only on the card", async () => {
+    vi.useFakeTimers();
+    try {
+      show(due);
+      await act(async () => button()?.click());
+      show(tapped);
+      expect(statusBox()?.textContent).toContain(s.thanks);
+      act(() => vi.advanceTimersByTime(5_000));
+      expect(statusBox()?.textContent).toBe("");
+      expect(container.querySelector('[data-testid="still-here-card"]')?.textContent).toContain(s.thanks);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("leaves focus on the page after a phone tap that did not focus the button", async () => {
