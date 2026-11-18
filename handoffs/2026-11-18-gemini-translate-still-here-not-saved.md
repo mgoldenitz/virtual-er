@@ -32,3 +32,22 @@ Give one line per language, then any problems you found.
 ## Bring back to Claude
 
 The 4 lines and the problem list. Paste them into the Claude Code chat.
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-18, pasted by the owner:
+
+- French: Votre appui sur le bouton n'a pas été enregistré. Le personnel ne sait peut-être pas que vous attendez toujours. Veuillez réessayer.
+- Urdu: آپ کا ٹیپ محفوظ نہیں ہوا۔ ہو سکتا ہے عملہ نہ جانتا ہو کہ آپ اب بھی انتظار کر رہے ہیں۔ براہ کرم دوبارہ کوشش کریں۔
+- Arabic: لم يتم حفظ نقرتك. قد لا يعلم الموظفون أنك لا تزال تنتظر. يرجى المحاولة مرة أخرى.
+- Mandarin (Simplified): 您的点击未保存。工作人员可能不知道您仍在等待。请重试。
+
+Problems it found:
+
+1. Any desk or return words from the old line would make an off-site patient think they were called. Calmer: keep only "Please try again".
+2. "Still here" in the red box could make a patient at home think they had to be at the hospital. Calmer: keep "still waiting", as on the card.
+3. "Your answer" or "your visit" in place of "your tap" could sound like the whole visit was lost. Calmer: tie it to the button tap.
+4. French "votre appui" alone can mean "your support". Use "votre appui sur le bouton".
+5. Urdu "ٹیپ" is an English loanword. If a fluent reviewer prefers, use "بٹن دبنے کا عمل محفوظ نہیں ہوا۔ ..." ("the button press did not save").
+6. Arabic "نقرتك" can sound like a mouse click. If a fluent reviewer prefers, use "لم يتم حفظ ضغطتك على الزر. ..." ("your press on the button").
+7. "Staff may not know" in a red box could make an anxious patient fear losing their place. Keep "may not know", not "do not know". If the English line changes, "Your tap did not save. Please tap again so staff know you are still waiting." tells the patient a second tap fixes it.
