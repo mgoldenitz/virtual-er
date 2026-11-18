@@ -77,7 +77,7 @@ export const en = {
     brokenLinkHeading: "This link did not work",
     brokenLinkText: "The link might be wrong or cut short. No visit was opened.",
     // Staff gave a new link or closed the visit, so this link no longer works.
-    replacedLinkHeading: "This visit link is no longer active",
+    replacedLinkHeading: "This visit link does not work or is no longer active",
     replacedLinkText: "Please ask the emergency department desk for help.",
     findVisitHelp:
       "Scan the QR code on your slip. You can also type the link printed under it. If it still fails, ask the desk to show the QR code again.",

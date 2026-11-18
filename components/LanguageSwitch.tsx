@@ -9,10 +9,10 @@ import { chooseLanguage } from "@/data/savedLanguage";
 import { textFor } from "@/lib/text";
 import { languageInfo, LANGUAGES, menuLabel, type LanguageInfo } from "@/lib/text/languages";
 
-/** The menu words for one language: its label, then "(draft)" in that language if it is not approved. */
+/** The menu words for one language: its label, then " - draft" in that language if it is not approved. */
 function optionLabel(info: LanguageInfo): string {
   if (info.approved) return menuLabel(info);
-  return `${menuLabel(info)} (${textFor(info.code).language.draftTag})`;
+  return `${menuLabel(info)} - ${textFor(info.code).language.draftTag}`;
 }
 
 export function LanguageSwitch({ language }: { language: string }) {
