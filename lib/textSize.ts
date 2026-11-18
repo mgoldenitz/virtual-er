@@ -25,13 +25,14 @@ export function rootFontSize(size: TextSize): string {
 
 /**
  * A short plain-JavaScript script for the page's <head>. It sets the page font size before the first
- * paint on patient screens, so a patient who chose a larger size does not see the page at Normal
- * size first. It does nothing outside /patient, and does nothing if browser storage is blocked.
- * The key and the sizes are written in as JSON, so they are defined only in this file.
+ * paint on the start page and patient screens, so a patient who chose a larger size does not see the
+ * page at Normal size first. It does nothing on other pages (staff, dashboard), and does nothing if
+ * browser storage is blocked. The key and the sizes are written in as JSON, so they are defined only in this file.
  */
 export function textSizeScript(): string {
   return `(function () {
-  if (!location.pathname.startsWith("/patient")) return;
+  var path = location.pathname;
+  if (path !== "/" && !path.startsWith("/patient")) return;
   try {
     var saved = localStorage.getItem(${JSON.stringify(TEXT_SIZE_KEY)});
     var sizes = ${JSON.stringify(ROOT_FONT_SIZES)};
