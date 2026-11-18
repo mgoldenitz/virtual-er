@@ -333,3 +333,21 @@ a. Yes, in 4 ways: the status skips `called` (and `recallSaved` stays true); the
 b. Yes. A visit keeps its `visit.id` when it goes to `needs_reassessment` and back to `waiting`, or when a closed visit such as `unable_to_reach` is opened again. `focusDone` stays true and blocks the second focus move.
 
 c. No. `act()` runs effects at once and hides real draw timing. The "called before saved" test misses the `nextTick()`. No test: status skips `called`; row unmounts while saving; a second recall on the same row; another screen recalls while this save returns `refused` or `not_saved`; `nextTick()` between "Yes" and `draw(called)`; `draw(called)` and `finish("saved")` in one `act()`; clicks on "Recall patient" or a double tap on "Yes" while saving or after "saved"; Enter, Space, Tab and "Cancel" in `VisitRow.click.test.tsx`; the two `useId()` values are not compared (`id1 !== id2`).
+
+## Claude's check
+
+2026-11-18. Checked against the code on `phase3-review-fixes` at `cde7768`.
+
+1. Valid, adopt. Our own `putVisit` puts `called` into the list before "saved", so the skip is rare, but a patient tap or another staff screen can make the next drawn status `on_the_way`. The effect then never runs and focus stays on the body. Fix: return when the status is `waiting`, not when it is not `called`. The `progress` text for `on_the_way` also starts with "Called", so the screen reader still reads the right line. New test: the row is drawn as `on_the_way` after "saved"; focus must be on the progress line.
+
+2. Not valid in practice. `activeLine` (`lib/queue.ts` line 25) keeps only `ACTIVE_STATUSES` (`lib/visit.ts` line 54: `waiting`, `called`, `on_the_way`). From `called` or `on_the_way` a visit can get back to `waiting` only through `arrived` or `removed` (undo) or through `unable_to_reach` and `needs_reassessment` (`lib/allowedSteps.ts`). None of those is in the list, so the row unmounts and React resets `recallSaved` and `focusDone` when it comes back. The suggested fix also calls `setRecallSaved(false)` in the effect, which the lint rule `react-hooks/set-state-in-effect` refuses. No change.
+
+3. Not valid. In `act` (`components/staff/VisitRow.tsx` lines 59 to 70), `callBackVisit` queues the list update before it returns "saved", and `setSaving(false)` comes after it, so React draws both in one update. If a second "Yes" ever got through, the database step check refuses `called` to `called` and the row shows "The list just changed". No change.
+
+4. Known item, no change now. This is the Phase 5 item in `docs/known-issues.md` line 48 (focus falls to the body when another staff screen changes a visit). The `refused` case is part of it: another screen made the change.
+
+5. Valid, adopt. The "called before saved" test gets `await nextTick()` after "Yes" and `expect(textAtFocus).not.toContain("Waiting off-site")`.
+
+Questions a to c: a is covered by points 1 and 4; b by point 2 (the row unmounts); c by points 1 and 5. The other paths with no test (keys, "Cancel", double taps) are covered in `RecallPanel.click.test.tsx`, which already tests "Yes" while `saving` and "Cancel". The `useId` test checks that each panel's question is inside its own box, which fails if the two ids are the same.
+
+Plan: test first (point 1 test and point 5 changes), "Test:" commit, then the fix, "Fix:" commit.
