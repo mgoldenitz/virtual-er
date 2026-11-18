@@ -2933,3 +2933,13 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner (bold marks r
 - 3b, no link to the start page on the 3 "none" screens: true. Only the expired screen (`PatientStatus.tsx` line 141) links to `/`. A patient with no visit or with a broken link has no way to the start page and its other care options. On the replaced-link screen a new visit could make a second visit for the same person, so a link there is less useful. Product decision.
 - 6, the two small fixes: Gemini found no problem.
 - Areas 1 and 5: Gemini found no problem. Not checked by me beyond Gemini's answer.
+
+## Outcome
+
+Done 2026-11-18. Owner chose all 3 points (plan approved):
+
+- Point 1: "I'm still here" has its own not-saved line `stillHere.notSaved` (test `626fbba`, fix `de4d51c`; translations in `handoffs/archive/2026-11-18-gemini-translate-still-here-not-saved.md`).
+- Point 2: "Recall patient" asks first, `components/staff/RecallPanel.tsx`; focus goes to the progress line after a saved recall (tests `2aff2df`, fix `2436c39`).
+- Point 3: no scan help and no start link on the replaced-link screen; start link on the no-visit and broken-link screens (test `9024340`, fix `0926a0a`). `replacedLinkText` not changed.
+
+Checked: 65 test files, 367 tests pass; lint 0 errors (2 warnings from the `.playwright-mcp` helpers); build passed. Browser at 390 px: `/patient` with no saved data and with a bad token shows "Or start a new demo visit on the start page." linked to `/`, no page wider than the screen; staff "Recall patient" on demo visit 5B7QRK shows the question, focus on "Yes, recall patient", "Cancel" puts focus back on "Recall patient 5B7QRK" and the visit stays "Waiting off-site" (screenshots `screenshots/2026-11-18-*-390.png`).

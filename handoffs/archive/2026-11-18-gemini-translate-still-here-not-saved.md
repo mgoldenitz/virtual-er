@@ -61,3 +61,7 @@ Problems it found:
 - Point 7 asks for a product decision on the English line. I ask the owner in the same turn.
 
 Not checked: that the 4 lines read naturally. Only a fluent human reviewer can check that (Phase 3 rule).
+
+## Outcome
+
+Done 2026-11-18. Owner kept the English line. The 4 main lines from Gemini are in `lib/text/fr.ts`, `ur.ts`, `ar.ts` and `zh.ts` as `stillHere.notSaved` (fix `de4d51c`). The Urdu and Arabic tap words (points 5 and 6) go to the fluent reviewer, with the rest of the drafts.
