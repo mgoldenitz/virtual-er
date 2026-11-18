@@ -55,8 +55,12 @@ describe("textSizeScript", () => {
     expect(runScript("/patient", storageWith("extraLarge"))).toBe("150%");
   });
 
+  it("sets the saved size on the start page", () => {
+    expect(runScript("/", storageWith("large"))).toBe("125%");
+  });
+
   it("does nothing on other pages", () => {
-    expect(runScript("/", storageWith("extraLarge"))).toBe("");
+    expect(runScript("/staff", storageWith("extraLarge"))).toBe("");
   });
 
   it("ignores a saved value that is not a size", () => {
