@@ -1363,3 +1363,84 @@ export function isDeadToken(
   return typeof token === "string" && shown === null;
 }
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner, as given.
+
+### 1. `StatusAnnouncer.tsx`
+
+1. **Already-expired visit is never announced on open (`components/patient/StatusAnnouncer.tsx`, lines 39 and 59–65)**
+* **What goes wrong for a patient or screen reader user:** `wasExpired` is initialized from the initial `expired` prop (`useState(expired)` on line 39). When a patient opens or refreshes `/patient` on a visit that has already expired (`expired={true}` on the first render), `expired !== wasExpired` on line 59 is `false`, so `announce.expired` is never spoken at all (unlike `status === "called"`, which line 55 explicitly queues on initial open).
+* **Smallest fix:** Initialize `wasExpired` to `false` (`const [wasExpired, setWasExpired] = useState(false);`) so an opening `expired={true}` state is queued and announced once after the page becomes visible.
+
+2. **Expiry announcement can be lost if `status` changes within 300 ms or while the tab is in the background (`components/patient/StatusAnnouncer.tsx`, lines 51–65)**
+* **What goes wrong for a patient or screen reader user:** When `expired` flips `false -> true`, line 63 sets `pending` with `expired: true`. If `status` changes before the 300 ms timer fires (or while the tab is hidden in the background), line 56 runs `setPending((p) => ({ round: (p?.round ?? 0) + 1, status, expired: false }))` while `expired !== wasExpired` on line 59 is now `false`. That overwrites `expired: true` with `expired: false`, dropping the expiry message completely (or leaving `pending` stuck non-null forever if `messageFor(status, language)` returns `""` on line 73).
+* **Smallest fix:** Preserve `expired` when `status` changes while `expired` is true (`expired: Boolean(p?.expired) || expired`) and clear `setPending(null)` when `!text` on line 73.
+
+3. **Stale assertive `"It is your turn"` text stays in the DOM when a `called` visit expires, and `called` + `expired` is downgraded to `polite` (`components/patient/StatusAnnouncer.tsx`, lines 61–62 and 77–78)**
+* **What goes wrong for a patient or screen reader user:** When `expired` becomes `true`, line 61 clears `setPolite("")` but never clears `setUrgent("")`. If the visit was previously `"called"`, `<p aria-live="assertive">` still holds `"It is your turn. Please come back to the emergency department now."` while `<p aria-live="polite">` receives `"This visit request has expired..."`. A screen reader user navigating in browse/reading mode hears contradictory instructions (that it is their turn right now, and that the request expired), and downgrading an active `called` recall to `polite` risks a patient missing that they should no longer expect their recalled spot (`plausible` — depends on whether `lib/patientView.ts` can ever set `expired` while `status === "called"`, which is not shown in the diff).
+* **Smallest fix:** Call `setUrgent("")` alongside `setPolite("")` on line 61 when `expired` turns `true`, and treat `pending.status === "called"` as `urgent` even when `pending.expired` is `true`.
+
+4. **Re-announcing a repeated expiry (`components/patient/StatusAnnouncer.tsx`, lines 59–65)**
+* **What goes wrong for a patient or screen reader user:** Because `wasExpired` tracks the boolean `expired` directly, if `view.expired` ever flickers `true -> false -> true` across polls (for example due to clock/view recomputation, `plausible` without `lib/patientView.ts`), `announce.expired` is spoken a second time.
+* **Smallest fix:** Track `const [announcedExpired, setAnnouncedExpired] = useState(false)` and only queue the expiry announcement once per visit (`if (expired && !announcedExpired) { setAnnouncedExpired(true); ... }`).
+
+5. **Switching language after an announcement leaves stale old-language text in the live region (`components/patient/StatusAnnouncer.tsx`, lines 80–81; `components/patient/StatusAnnouncer.test.tsx`, lines 73–78)**
+* **What goes wrong for a patient or screen reader user:** After `setPending(null)` runs on line 81, changing `language` (e.g. from English to French or Urdu) leaves the previous English sentence sitting inside `<p aria-live="polite">` or `<p aria-live="assertive">` (which have no `lang` attribute). If a screen reader user reads through the page in browse mode after switching to Urdu or Arabic, the screen reader attempts to read the leftover English sentence with an Urdu/Arabic voice.
+* **Smallest fix:** Clear `setPolite("")` and `setUrgent("")` when `language` changes while `pending === null`.
+
+### 2. `useDocumentLanguage.ts`
+
+1. **Visible LTR-to-RTL layout and scrollbar flash on initial load and reload (`components/useDocumentLanguage.ts`, lines 10–20; `data/savedLanguage.ts`, lines 39–41)**
+* **What goes wrong for a patient or screen reader user:** `useChosenLanguage()` returns `null` during SSR (`useSyncExternalStore(..., () => null)`), so `/` and `/patient` first render with `<html lang="en" dir="ltr">`. Because `useDocumentLanguage` uses `useEffect` (which runs *after* browser paint) and there is no `<head>` script setting `lang`/`dir` before first paint (unlike `textSizeScript()` in `lib/textSize.ts`), a patient who chose Urdu or Arabic sees the page paint left-to-right and then visibly jump to right-to-left (including the browser scrollbar and title direction) after hydration.
+* **Smallest fix:** Use `useLayoutEffect` instead of `useEffect` in `components/useDocumentLanguage.ts` (and mirror `textSizeScript()` with a small `<head>` script reading `vwr.language` from `localStorage` if zero first-paint flash is needed).
+
+2. **Cleanup resets `<html>` to `en`/`ltr` on every language change and can leave the wrong `lang`/`dir` after client navigation (`components/useDocumentLanguage.ts`, lines 16–19; `app/patient/page.tsx`, lines 32–41)**
+* **What goes wrong for a patient or screen reader user:**
+* Every time `language` changes (e.g., `fr` -> `ur`), the `[language]` effect cleanup temporarily sets `<html lang="en" dir="ltr">` before the new effect sets `ur`/`rtl`.
+* During client navigation from `/` (in Urdu) to `/patient#t=...&l=ur` (a desk QR link when no language was saved in `localStorage` yet), `PatientPage` renders first with `language = "en"` before its `useEffect` on line 32 reads `#l=ur`, briefly flipping `<html>` to `en`/`ltr` and back to `ur`/`rtl`.
+* If Next.js App Router runs an outgoing route's deferred effect cleanup after an incoming route's effect during a concurrent transition (`plausible`), the outgoing cleanup overwrites `<html lang="ur" dir="rtl">` back to `lang="en" dir="ltr"`, leaving `<main>` in RTL while `<html>` (and the scrollbar/title) stays in LTR.
+* **Smallest fix:** Separate the unmount reset into a mount-only `useLayoutEffect(() => () => { html.setAttribute("lang", "en"); html.setAttribute("dir", "ltr"); }, [])` so language updates do not bounce through `"en"`/`"ltr"`, and apply `linkLanguage(window.location.hash)` synchronously in `patientLanguage` or before first paint.
+
+### 3. `LanguageSwitch.tsx`
+
+1. **Simultaneous `<select>` change and `role="status"` update can cut off screen reader speech (`components/LanguageSwitch.tsx`, lines 26–44)**
+* **What goes wrong for a patient or screen reader user:** When a user selects a draft language in `<select>`, `onChange` synchronously updates both the `<select>` value and the `<div role="status">` text in the same tick. In mobile screen readers (iOS VoiceOver and Android TalkBack), the native picker's selection announcement collides with the `role="status"` live-region update, cutting off either the chosen language name or the draft warning (`plausible` — real screen readers are listed under "Not checked"). In addition, switching from one draft language to another (e.g., French -> Urdu) triggers the draft notice again without `aria-atomic="true"` on `<div role="status">`.
+* **Smallest fix:** Add `aria-atomic="true"` to `<div role="status">` (line 38) and delay populating the draft notice text by ~300 ms after `language` changes (matching `StatusAnnouncer.tsx`) so the `<select>` selection finishes speaking first.
+
+2. **Nested parentheses and mixed languages inside `<option lang={l.code}>` cause screen reader mispronunciation and BiDi bracket flips (`components/LanguageSwitch.tsx`, lines 12–16 and 30–34; `lib/text/languages.ts`, lines 31–33)**
+* **What goes wrong for a patient or screen reader user:** `menuLabel(l)` already appends `(EnglishName)`, so `optionLabel(l)` produces double/triple parentheticals like `اردو (Urdu) (ڈرافٹ)` and `中文（简体） (Mandarin) (草稿)`. Because HTML `<option>` cannot contain `<span lang="en">` child elements, `<option lang="ur" dir="rtl">` forces an Urdu screen-reader voice to read the English word `"Urdu"` using Urdu phonetics, and native OS `<select>` pickers that ignore `<option dir="rtl">` reorder the mixed RTL/LTR parentheses (`(ڈرافٹ) (Urdu) اردو`, `plausible`). (Sorting is not broken in standard browsers because `<select>` preserves DOM array order, and prefix type-ahead still matches the leading native language name.)
+* **Smallest fix:** Use a single separator instead of nested parentheses in `optionLabel` (e.g., `${menuLabel(info)} — ${textFor(info.code).language.draftTag}`) so screen readers pause cleanly rather than reading back-to-back parentheticals.
+
+### 4. `VisitScreen.tsx` and `app/patient/page.tsx`
+
+1. **A mistyped 26-character link shows `"This visit link is no longer active"` instead of `"This link did not work"` (`app/patient/page.tsx`, lines 48–52 and 108; `lib/deadToken.ts`, lines 10–15; `components/patient/VisitScreen.tsx`, lines 66–69)**
+* **What goes wrong for a patient or screen reader user:** `isDeadToken(token, result)` returns `true` whenever `typeof token === "string" && result === null`. If a patient types their 26-character visit link from the paper slip and mistypes one valid Crockford character, `takeTokenFromLink()` accepts the format (`brokenLink` is `false`), `usePatientView` queries the database and gets `null` (no matching row), and `linkReplaced` becomes `true`. The patient sees `"This visit link is no longer active — Please ask the emergency department desk for help"` instead of `"This link did not work — The link might be wrong or cut short"`, preventing them from fixing their typo.
+* **Smallest fix:** Only treat a missing row as `linkReplaced` when the token came from `localStorage` (a previously valid saved visit on this phone) rather than a newly typed/scanned `#t=` URL hash (`brokenLink` should cover any `#t=` hash that returns `null`).
+
+2. **Network/fetch failure returning `null` would erase a valid saved token (`app/patient/page.tsx`, lines 44–51; `lib/deadToken.ts`, lines 10–15)**
+* **What goes wrong for a patient or screen reader user:** When `usePatientView` returns `"unavailable"`, `isDeadToken` returns `false` and `VisitScreen` shows `"We cannot load your visit"`. However, if any network timeout or unexpected error path inside `data/patientVisit.ts` (`usePatientView`, not included in the diff) ever resolves to `null` instead of `"unavailable"`, `deadToken` becomes `true`, `forgetSavedToken()` permanently deletes the patient's saved visit token from `localStorage`, and the patient sees `"This visit link is no longer active"` (`plausible` — cannot be proven without `data/patientVisit.ts`).
+* **Smallest fix:** Ensure `usePatientView` never returns `null` unless the RPC explicitly succeeded with 0 rows, and separate `linkReplaced` from `linkFailed` in `VisitScreen` props so `linkReplaced` cannot be passed without `linkFailed`.
+
+### 5. `lib/textSize.ts`
+
+1. **Optional `catch {` syntax throws a `SyntaxError` in pre-2019 mobile WebViews (`lib/textSize.ts`, line 42)**
+* **What goes wrong for a patient or screen reader user:** Line 42 uses ES2019 parameterless `} catch {` inside an inline `<head>` `<script>`. Older mobile browsers/WebViews (e.g., iOS Safari < 12.1 or older Android WebViews) fail to parse the entire script with a `SyntaxError`, leaving low-vision patients at `100%` text size on initial paint.
+* **Smallest fix:** Change `} catch {` to `} catch (e) {` on line 42 and move `var path = location.pathname;` inside the `try` block.
+
+2. **Prefix check `!path.startsWith("/patient")` matches non-patient routes like `/patients` (`lib/textSize.ts`, line 35)**
+* **What goes wrong for a patient or screen reader user:** `path.startsWith("/patient")` matches any future route beginning with `/patient` (such as `/patients` or `/patient-lookup`), applying a patient's saved `150%` root font size to a staff screen (`plausible` — no `/patients` route is shown in the diff, but the prefix match is overly broad).
+* **Smallest fix:** Check `if (path !== "/" && path !== "/patient" && !path.startsWith("/patient/")) return;` on line 35.
+
+### 6. Tap Size of Care Links and `sr-only` Thank-You Box
+
+1. **`inline-block py-1` on `CareOptions` links leaves `811` narrow (`0px` horizontal padding) and breaks mid-sentence links onto new lines (`components/start/CareOptions.tsx`, line 9; `components/start/CareOptions.test.tsx`, lines 15–21)**
+* **What goes wrong for a patient or screen reader user:**
+* `py-1` gives `~32px` height at 100% text size, which meets the `24px` vertical minimum of WCAG 2.5.8, **but** there is no horizontal padding (`px-*`). The `811` (`tel:811`) link is only 3 characters wide (`~27px` at 16px bold — barely above 24px and well below the `44px` `min-h-11` used on every other interactive element on the page), and `CareOptions.test.tsx` only asserts class names rather than rendered box dimensions.
+* Applying `inline-block` to links embedded inside sentences (`Health811: Call 811...` and `For hours and addresses, see THP's emergency page...`) forces multi-word links to wrap as a separate block onto the next line at large text sizes instead of flowing naturally inline.
+* **Smallest fix:** Keep inline-in-sentence links `inline` (covered by WCAG 2.5.8's inline exception, with `px-1` on `811` if needed) and give standalone block links in `CareOptions.tsx` `inline-block min-h-11 py-2`.
+
+2. **Toggling `sr-only` off in the same render that populates `role="status"` can drop the screen reader announcement (`components/patient/StillHerePrompt.tsx`, line 83; `components/patient/StillHerePrompt.click.test.tsx`, lines 90–96)**
+* **What goes wrong for a patient or screen reader user:** Sighted users **do** see the thank-you card after tapping `"I'm still here"` because `thanking ? "clean-card font-semibold" : "sr-only"` removes `"sr-only"`. However, switching the `<p role="status">` element's CSS positioning/clipping from `sr-only` (`position: absolute; width: 1px; height: 1px`) to a visible block box in the **same commit** that inserts the text causes iOS VoiceOver / WebKit and some desktop screen readers to reconstruct the accessible object and skip speaking the live-region update (`plausible` — cannot be proven in happy-dom; also `StillHerePrompt.click.test.tsx` never asserts that `sr-only` is removed when `thanking` becomes `true`).
+* **Smallest fix:** Keep `<div role="status" className={thanking ? undefined : "sr-only"}>` with the `<p className="clean-card font-semibold">` mounted conditionally inside it (matching `OfflineBanner.tsx` and `LanguageSwitch.tsx`), and assert in `StillHerePrompt.click.test.tsx` that `statusBox()?.className` does not contain `"sr-only"` after the tap.
