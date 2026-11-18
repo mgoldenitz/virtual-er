@@ -37,7 +37,7 @@ export function LanguageSwitch({ language }: { language: string }) {
       {/* Always on the page, so a screen reader hears the notice when it appears after a language change. */}
       <div role="status">
         {!current.approved && (
-          <p className="rounded-lg border-2 border-amber-700 bg-amber-50 p-2 text-sm font-semibold text-amber-950" data-testid="draft-notice">
+          <p className="rounded-lg border-2 border-amber-700 bg-amber-50 p-2 text-base font-semibold text-amber-950" data-testid="draft-notice">
             {t.language.draftNotice}
           </p>
         )}
