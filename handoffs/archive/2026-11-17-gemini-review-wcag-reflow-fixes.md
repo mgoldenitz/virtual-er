@@ -418,3 +418,10 @@ Better check without a signed-in staff session: Run a Playwright viewport check 
 - 6.1: latent only. The site menu has two fixed choices ("Demo Site A", "Demo Site B"), and the check at 390 px and 200% text gave no part off the screen. Adding `max-w-full` to the label costs one class. Owner choice.
 - 6.2: partly correct. A missed match gives `""`, so the test fails loud, not silent. A wrong match is possible only if another element has the same shape; none does now. The project already has happy-dom (click tests), so a parse with `querySelector` is possible. Optional.
 - 6.3: correct, goes with 4.1.
+
+## Outcome (owner choice, 2026-11-17)
+
+- 4.1 and 6.3: fixed. Test `22cdce8` (failed first), fix `8ae12a7`. 335 tests pass, lint 0 errors, build passes.
+- 5: noted in `docs/known-issues.md`; no Playwright test runner now.
+- 6.1 and 6.2: not done (owner choice).
+- 4.2 and 4.3: rejected (see the check above).
