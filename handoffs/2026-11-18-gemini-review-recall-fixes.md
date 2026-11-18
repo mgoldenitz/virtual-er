@@ -259,3 +259,17 @@ b. Yes. `confirm()` calls `returnToRecall()`, whose timer focuses "Recall patien
 c. No. Duplicate codes give duplicate `id` values, and `aria-describedby` points to the first `<p>`. `useId()` makes each `id` unique.
 
 d. Fix 1 is proven for re-renders one after the other (`RecallPanel.click.test.tsx` lines 85 to 93). No test: a tap on "Recall patient" during a real pending `callBackVisit` in `VisitRow.click.test.tsx`; a fast double click on "Yes" in one frame; "Cancel" while `saving`. Fix 2 is proven for one panel (lines 95 to 103). No test: two panels with the same code; where focus lands when the question opens. Fix 3 is not proven for a real browser, because of the `flushSync` timer. No test: a "saved" that takes more than 0 ms (shows the double focus move); a "not_saved" that takes more than 0 ms; "refused"; the row leaving the list before the focus runs.
+
+## Claude's check
+
+Checked against the code on 2026-11-18 (`components/staff/VisitRow.tsx` 132 lines, `components/staff/RecallPanel.tsx` 75 lines).
+
+1. Valid. `setTimeout(0)` does not wait for React to draw the `called` row. But Gemini's fix has a fault: `changeVisit` calls `putVisit` before it returns "saved", so the row can get `visit.status === "called"` before the ref is set. Then the effect on `[visit.status]` runs while the ref is still false, and focus never moves. My fix: a state flag (`focusAfterSave`), set to true on "saved", and an effect on `[focusAfterSave, visit.status]` that focuses the progress line when both are true. This works in the two orders. Two tests: the row is drawn as `called` before "saved", and after "saved".
+
+2. Partly valid. On a slow save, focus goes first to "Recall patient" (`aria-disabled`), then to the progress line. I keep the first move: while the save runs, the "Yes" button is gone, and without it focus falls to the page body; the second move is needed because "Recall patient" leaves the page. A screen reader hears "Recall patient", "Saving…", then the called text, which is what happened. Gemini's "nothing moves focus after a late `not_saved`" is not a fault: focus is already on "Recall patient", which stays on the page. I add tests for a late `not_saved` and a late `refused` to prove this.
+
+3. Not a real risk now: visit codes are `unique` in the database (`supabase/migrations/20261110060756_tables_and_security.sql` line 29) and the staff page keys rows by `visit.id`. I still use `useId()`, because it is a small, standard change and does not depend on the data. One test: two panels with the same code each point to their own question.
+
+4. Not valid. A click is a discrete event in React 19: its state updates are drawn before the next click event runs, so the second click sees `saving === true`. Also, the first click on "Yes" closes the question (`setMode("idle")`), so there is no second "Yes" to click. The database also stops a second recall (the version check and the step check). "Cancel" saves nothing; it only closes the question, so it needs no guard. No change.
+
+5. Partly valid. The `flushSync` mock fixes one order. I replace it with a promise that the test resolves, and normal re-renders in the two orders (point 1). The old test "after Yes and a save" must now also re-render the row as `called`, because focus waits for the called row; the check stays the same. New tests: a late `not_saved`, a late `refused`, two panels with the same code. No double-click test, because of point 4.
