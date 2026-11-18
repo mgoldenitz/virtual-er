@@ -143,3 +143,43 @@ describe("VisitScreen when the whole screen changes", () => {
     expect(document.activeElement).toBe(heading);
   });
 });
+
+describe("VisitScreen help on the no-visit, broken-link and replaced-link screens", () => {
+  /** Shows a screen with no visit. */
+  const showNone = (linkFailed: boolean, linkReplaced: boolean) =>
+    act(() =>
+      root.render(
+        <VisitScreen
+          loading={false}
+          result={null}
+          linkFailed={linkFailed}
+          linkReplaced={linkReplaced}
+          token="t"
+          language="en"
+          onOnMyWay={() => {}}
+          sending={false}
+          online
+          notSaved={false}
+        />,
+      ),
+    );
+  const startLink = () => container.querySelector<HTMLAnchorElement>('a[href="/"]');
+
+  it("has no slip help and no start-page link when the link was replaced", () => {
+    showNone(true, true);
+    expect(container.textContent).not.toContain(p.findVisitHelp);
+    expect(startLink()).toBeNull();
+  });
+
+  it("links to the start page when there is no visit", () => {
+    showNone(false, false);
+    expect(container.textContent).toContain(p.findVisitHelp);
+    expect(startLink()?.textContent).toBe(p.expiredNewVisit);
+  });
+
+  it("links to the start page when the link is broken", () => {
+    showNone(true, false);
+    expect(container.textContent).toContain(p.findVisitHelp);
+    expect(startLink()?.textContent).toBe(p.expiredNewVisit);
+  });
+});
