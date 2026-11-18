@@ -77,10 +77,11 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const recall = async () => {
     if ((await act(() => callBackVisit(visit.id))) === "saved") setRecallSaved(true);
   };
-  // Focus moves only once React has drawn the row as called, so a screen reader reads the called
-  // text. The list can get the called visit before or after the save says "saved"; this works both ways.
+  // Focus moves only once React has drawn the row as no longer waiting, so a screen reader reads the
+  // called text. The list can get the called visit before or after the save says "saved"; this works
+  // both ways. The next status can also be on_the_way if the patient taps first; that line also says "Called".
   useEffect(() => {
-    if (!recallSaved || visit.status !== "called" || focusDone.current) return;
+    if (!recallSaved || visit.status === "waiting" || focusDone.current) return;
     focusDone.current = true;
     progressLine.current?.focus();
   }, [recallSaved, visit.status]);
