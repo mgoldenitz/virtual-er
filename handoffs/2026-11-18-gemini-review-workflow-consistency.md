@@ -2888,3 +2888,39 @@ index da40db3..98860e4 100644
  47    );
  48  }
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner (bold marks removed).
+
+### Problems found (worst first)
+
+1. `components/patient/StillHerePrompt.tsx` line 90 (`lib/text/en.ts` `patient.notSaved`, line 101) - Area 4 (Inconsistent wording)
+
+- What is wrong: When `"I'm still here"` fails to save, `StillHerePrompt.tsx` shows `t.patient.notSaved`, which says `"Your answer did not save. Staff do not know you are on your way. Please try again or go to the desk."` That message belongs to the `"I'm on my way"` button after a recall, not to a patient who is still waiting off-site.
+- Who it hurts and how: It hurts patients (and creates unnecessary desk traffic for staff). A waiting patient who has not been called back is told staff do not know they are "on your way" and to go to the desk, which can make them think they were recalled or must return to the hospital right away.
+- Fix: Add a `notSaved` key under `stillHere` in `lib/text/en.ts` (lines 148-153) and render `{t.stillHere.notSaved}` on line 90 of `components/patient/StillHerePrompt.tsx`: `notSaved: "Your tap did not save. Staff may not know you are still waiting. Please try again."`
+- How sure: High.
+
+2. `components/staff/VisitRow.tsx` lines 94-106 - Area 3 (Confusing staff workflow)
+
+- What is wrong: `"Recall patient"` fires on a single tap with no confirmation step and no undo (`RecentlyClosed.tsx` only lists closed visits, and `RecallAllPanel.tsx` line 70 notes recalled patients stay recalled), while sitting right next to `"Mark arrived"` and `"Show QR again"`. Every other irreversible or high-impact staff action (`RecallAllPanel.tsx`, `NewLinkPanel.tsx`, `PauseSwitch.tsx`, and `"Confirm unable to reach"` in `FollowUpPanel.tsx`) requires a confirmation step.
+- Who it hurts and how: It hurts patients and staff. One accidental tap meant for `"Mark arrived"` or `"Show QR again"` immediately sends `"Please head back now"` to the wrong patient's phone and starts the no-response escalation timers, with no way for staff to undo it.
+- Fix: Add an inline two-step confirmation for `"Recall patient"` in `components/staff/VisitRow.tsx` (matching `NewLinkPanel.tsx` and `RecallAllPanel.tsx`). Prompt: `Recall visit {visit.code}? The patient's phone will show "Please head back now". There is no undo.` Buttons: `"Yes, recall patient"` and `"Cancel"`.
+- How sure: High.
+
+3. `components/patient/VisitScreen.tsx` lines 63-72 (`lib/text/en.ts` `patient.replacedLinkText`, line 81) - Area 2 (Unclear or dead-end screen)
+
+- What is wrong: When `linkReplaced` is true (`screen === "none"`), `VisitScreen.tsx` line 70 still renders `p.findVisitHelp`, telling the patient to scan the QR code or type the link on their old slip even though that slip just stopped working. In addition, none of the three `screen === "none"` states (`noVisitHeading`, `brokenLinkHeading`, `replacedLinkHeading`) has a link back to `/` (the start page), unlike `Expired` in `PatientStatus.tsx` line 141.
+- Who it hurts and how: It hurts patients. A patient whose link was replaced or ended is told to reuse an invalid slip, and a patient who opens `/patient` with no active visit (or after 24-hour deletion) has no link back to `/` to start a new visit or check care options.
+- Fix: In `components/patient/VisitScreen.tsx` lines 63-72, show `p.findVisitHelp` only when `!linkReplaced`, and add a link to `/` (`p.expiredNewVisit`) inside `screen === "none"`. In `lib/text/en.ts` line 81, change `patient.replacedLinkText` to: `"This link was replaced or is no longer active. Please ask the emergency department desk for help."`
+- How sure: High.
+
+### Check by review area
+
+1. Labels that do not match between patient and staff screens: No problem found.
+2. Statuses or states with no clear screen, or a screen the patient cannot leave or understand: See problem 3 above. All ten visit statuses in `SPEC.md` line 119 map to clear screens in `PatientStatus.tsx`.
+3. Confusing workflow steps for staff: See problem 2 above.
+4. Inconsistent wording: See problem 1 above.
+5. Breaks of the SPEC hard rules: No problem found.
+6. Bugs in the two small fixes (thank-you card and draft notice): No problem found.
