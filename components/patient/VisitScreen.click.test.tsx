@@ -117,4 +117,29 @@ describe("VisitScreen when the whole screen changes", () => {
     expect(heading?.textContent).toBe(p.waitingHeading);
     expect(document.activeElement).toBe(heading);
   });
+
+  it("shows the replaced-link message, with focus on its heading, when staff made a new link", () => {
+    focusOnWaitingHeading();
+    act(() =>
+      root.render(
+        <VisitScreen
+          loading={false}
+          result={null}
+          linkFailed
+          linkReplaced
+          token="t"
+          language="en"
+          onOnMyWay={() => {}}
+          sending={false}
+          online
+          notSaved={false}
+        />,
+      ),
+    );
+    const heading = container.querySelector("#status-heading");
+    expect(heading?.textContent).toBe(p.replacedLinkHeading);
+    expect(container.textContent).toContain(p.replacedLinkText);
+    expect(container.textContent).not.toContain(p.brokenLinkText);
+    expect(document.activeElement).toBe(heading);
+  });
 });
