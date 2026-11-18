@@ -32,7 +32,8 @@ class FakeContext {
   }
 }
 
-const vibrate = vi.fn();
+// A real phone gives back true when it starts to vibrate, false when the browser blocks it.
+const vibrate = vi.fn((): boolean => true);
 /** Called when a beep really starts, so a test can see that sound was made, not only a true result. */
 const start = vi.fn();
 
@@ -186,5 +187,14 @@ describe("stopVibration", () => {
     stopVibration();
     stopVibration();
     expect(vibrate.mock.calls.filter((call) => call[0] === 0)).toHaveLength(1);
+  });
+
+  it("does not call the phone when the browser blocked the vibration", async () => {
+    // Gemini review 2026-11-17, point 4.1: a blocked call gives back false and starts nothing.
+    const { playAlert, stopVibration } = await load();
+    vibrate.mockReturnValueOnce(false);
+    await playAlert();
+    stopVibration();
+    expect(vibrate).not.toHaveBeenCalledWith(0);
   });
 });
