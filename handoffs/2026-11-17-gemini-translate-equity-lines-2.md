@@ -111,3 +111,21 @@ Gemini Hydrogen 4, High, new chat, 2026-11-17. Pasted by the owner, as given.
 - Arabic (`ar`) `expiredText` homograph risk without vowel marks: in unvocalized Arabic, `"لم ترك"` ("did not see you", jussive of `رأى` + `-ك`) looks identical to `"لم تترك"` / `"ترك"` ("left / abandoned"). Adding diacritics (`"لم تَرَكَ"`) prevents patients from misreading the line as "No nurse left you".
 - Urdu (`ur`), Arabic (`ar`), and Mandarin (`zh`) `patient.replacedLinkText` used "ask a question" verbs: because the earlier English read `"Please ask the emergency department desk."` with no object, the earlier drafts used `"پوچھیں"` (pūchheṅ) in Urdu, `"سؤال"` (su'āl) in Arabic, and `"询问"` (xúnwèn) in Mandarin, all of which mean "ask a question" and cannot grammatically take "help" as an object, requiring a verb change to `"مدد مانگیں"`, `"طلب المساعدة"`, and `"寻求帮助"`.
 - All four earlier drafts of `language.interpreter` included the illogical `", or wait inside"` option: translating `", or wait inside"` (`"ou attendez à l'intérieur"`, `"یا اندر انتظار کریں"`, `"أو انتظر في الداخل"`, `"或在里面等候"`) made waiting inside sound like a substitute for an interpreter rather than an alternative to using the app; removing it in the new English resolves this across all four languages.
+
+## Claude's check
+
+Claude, 2026-11-17, at `b08748b`.
+
+### Translation faults
+
+- ar `expiredText`: "لم تَرَكَ أي ممرضة" is a poor choice. With the marks Gemini added, "تَرَكَ" reads as "taraka" ("he left"), which is the misreading Gemini wanted to stop. The Arabic file already says "لم تفحصك ممرضة بعد" ("no nurse has checked you yet") in `fromHomeHeading` (first pass). Fix: "لم تفحصك أي ممرضة في هذه الزيارة." It uses the same verb and has no homograph. Real.
+- fr `expiredText` and `language.interpreter` use the masculine forms ("vu", "un interprète"). The French file uses the masculine for the patient in other lines too (first pass, "ne vous a enregistré"). Low. This goes to the fluent reviewer, with no change now.
+- The other lines are good. The zh fix "6个多小时前" is there, and the ur, ar and zh `replacedLinkText` now use a "request help" verb. Not checked: the meaning in Urdu and Arabic (the fluent reviewer does that).
+
+### English points
+
+- "has seen" or "saw" in `expiredText`: a product choice. The French, Urdu and Mandarin drafts work for both. Simple past ("No nurse saw you for this visit.") matches sentence 1.
+- "seen" can mean "spotted": Low. "Seen by a nurse" is the same phrase as in `fromHomeHeading`, which the owner chose.
+- `replacedLinkText` "for help" and the desk name: the owner decided these (docs/decisions.md, 2026-11-17, last line). No change.
+- Interpreter "catch-22": real, but a text line cannot fix it. A patient who reads none of the 5 languages needs the staff to see the problem at the desk. This goes in docs/known-issues.md.
+- "free interpreter" can make people expect a person who is there: Low. The phone and video interpreter services in Canadian emergency departments are still interpreters.
