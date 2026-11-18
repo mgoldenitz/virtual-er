@@ -486,3 +486,17 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner (bold marks r
 2. `<option lang="ur">` / `<option lang="ar">` reads English language names with an Urdu/Arabic voice (`components/LanguageSwitch.tsx`, line 15)
    * What goes wrong for a real user: Because `<option>` cannot hold child `<span lang="en">` elements, an `<option lang="ur">` containing `"اردو (Urdu) - ڈرافٹ"` forces VoiceOver/TalkBack to pronounce the English word `"Urdu"` (and `"Arabic"`) using an Urdu or Arabic speech synthesizer, often spelling it out letter-by-letter or mispronouncing it. (Only solvable if the native `<select>` is ever replaced with a custom ARIA listbox, which is likely overkill for this prototype; worth noting as a known native `<select>` constraint.)
    * How sure I am: High.
+
+## Claude's check
+
+- 1, server warning: false. `react-dom` is 19.3.0. A search of `node_modules/react-dom/cjs/` and `node_modules/next/dist/compiled/react-dom/cjs/` for "does nothing on the server" finds nothing. React 19 removed that warning.
+- 1, left to right before hydration: true, but the cause is larger and the fix is wrong. `useChosenLanguage()` (`data/savedLanguage.ts`) gives null on the server, so the server sends the whole screen in English, not only `dir="ltr"`. A head script that sets `dir="rtl"` before hydration would show English text right to left, which is worse. `useLayoutEffect` still helps: after hydration, the Urdu text and `dir="rtl"` show in the same paint. The English-first moment before hydration is not in docs/known-issues.md yet. On `/patient` the first screen is the loading screen, so the moment is short there.
+- 2, heard twice: Gemini agrees it is not.
+- 2, missed when the screen leaves on a status change: by design. `StatusAndSound.tsx` line 30 shows the prompt only while `waiting`. If the visit goes to `called`, `StatusAnnouncer` speaks the call, which matters more than the thank-you.
+- 2, `aria-atomic` on the thank-you box: true and small. The box changes from empty to the full text, so the risk is low, but it matches the other regions.
+- 2, `aria-hidden` card and touch to explore: true. A VoiceOver or TalkBack user who touches the visible card hears nothing, and swipe focus goes to the 1 px `sr-only` box. Gemini's fix (a visible card with no `aria-hidden`, and a `sr-only` announcer that empties after a few seconds) fixes this and keeps the 6.2 fix: the live region never changes its class.
+- 3, 44 px: Gemini agrees it works.
+- 3, text at the top of the 44 px box: true, a small look problem. `inline-flex min-h-11 items-center` puts the text in the middle and keeps the test "makes the 2 links that stand alone 44 pixels high". `py-2.5` would change that test.
+- 4, mixed direction in `<option>`: possible, not checked. It needs a real Android phone and an iPhone. Unicode isolate marks may help, but they are also not checked on a phone.
+- 5.1, `<html>` stuck at English after moving between `/` and `/patient`: false. In one React commit, the cleanup of a component that leaves runs before the setup of a new one. A language change goes through `en` and back in the same commit, before the paint, so nobody sees it.
+- 5.2, English names read with an Urdu or Arabic voice: true. A native `<select>` cannot hold a `<span lang="en">`. This is a limit of the native menu; a custom menu is too large for this prototype.
