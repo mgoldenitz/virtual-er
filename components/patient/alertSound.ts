@@ -81,17 +81,28 @@ export async function playAlert(stillWanted: () => boolean = () => true): Promis
   }
 }
 
+/**
+ * True after vibrate() asked the phone for a vibration, until stopVibration() stops it. Before a tap
+ * the browser blocks every vibrate call with a console error, so stopVibration() calls only when needed.
+ */
+let vibrationStarted = false;
+
 /** One vibration pattern (200 ms on, 100 ms off, 200 ms on) where the phone allows it. */
 function vibrate(): void {
   try {
-    if (typeof navigator.vibrate === "function") navigator.vibrate([200, 100, 200]);
+    if (typeof navigator.vibrate === "function") {
+      navigator.vibrate([200, 100, 200]);
+      vibrationStarted = true;
+    }
   } catch {
     // Ignore: the on-screen words remain the real alert.
   }
 }
 
-/** Stops a vibration that is running. Phones with no vibration are ignored. */
+/** Stops a vibration that is running. Does nothing when no vibration started, or the phone has none. */
 export function stopVibration(): void {
+  if (!vibrationStarted) return;
+  vibrationStarted = false;
   try {
     navigator.vibrate?.(0);
   } catch {
