@@ -2924,3 +2924,12 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner (bold marks r
 4. Inconsistent wording: See problem 1 above.
 5. Breaks of the SPEC hard rules: No problem found.
 6. Bugs in the two small fixes (thank-you card and draft notice): No problem found.
+
+## Claude's check
+
+- 1, the wrong not-saved message on "I'm still here": true. `StillHerePrompt.tsx` line 90 shows `t.patient.notSaved` (`en.ts` line 101), which says "Staff do not know you are on your way. Please try again or go to the desk." A patient who is still `waiting` reads that they must go to the desk. Gemini's words fit: "Your tap did not save. Staff may not know you are still waiting. Please try again." The fix needs a new key `stillHere.notSaved` in `en.ts` and in the 4 draft files, so it touches 2 folders (plan mode). The 4 drafts need a translation step.
+- 2, "Recall patient" has no confirm step and no undo: true. `VisitRow.tsx` line 96 calls `callBackVisit` on one tap. `lib/allowedSteps.ts` line 16 lets `called` go to `on_the_way`, `arrived`, `removed` or `unable_to_reach`, never back to `waiting`, and the database trigger uses the same list. A wrong tap sends "Please head back now" to the phone and starts the 10, 20 and 30 minute follow-up steps. "Mark arrived", "Left" and "No-show" have one tap, but each has Undo under "Recently closed", so they are not the same case. The SPEC (line 78) does not ask for a confirm step on this button, so this is a product decision.
+- 3a, the find-your-visit help on the replaced-link screen: true. `VisitScreen.tsx` line 70 shows `findVisitHelp` ("Scan the QR code on your slip...") also when `linkReplaced` is true, but the old slip no longer works. Show it only when `!linkReplaced`. Gemini's new `replacedLinkText` is not needed: the present text "Please ask the emergency department desk for help." is correct, and Gemini's first sentence repeats the heading.
+- 3b, no link to the start page on the 3 "none" screens: true. Only the expired screen (`PatientStatus.tsx` line 141) links to `/`. A patient with no visit or with a broken link has no way to the start page and its other care options. On the replaced-link screen a new visit could make a second visit for the same person, so a link there is less useful. Product decision.
+- 6, the two small fixes: Gemini found no problem.
+- Areas 1 and 5: Gemini found no problem. Not checked by me beyond Gemini's answer.
