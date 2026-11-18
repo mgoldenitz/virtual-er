@@ -66,7 +66,7 @@ export const fr: PatientText = {
     noVisitHeading: "Aucune visite trouvée sur ce téléphone",
     brokenLinkHeading: "Ce lien n'a pas fonctionné",
     brokenLinkText: "Le lien pourrait être erroné ou coupé court. Aucune visite n'a été ouverte.",
-    replacedLinkHeading: "Ce lien de visite n'est plus actif",
+    replacedLinkHeading: "Ce lien de visite ne fonctionne pas ou n'est plus actif",
     replacedLinkText: "Veuillez demander de l'aide au bureau du service des urgences.",
     findVisitHelp:
       "Scannez le code QR sur votre billet. Vous pouvez également taper le lien imprimé en dessous. Si cela échoue toujours, demandez au bureau de vous montrer à nouveau le code QR.",

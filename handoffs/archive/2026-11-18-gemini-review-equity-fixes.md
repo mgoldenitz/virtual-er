@@ -1473,7 +1473,7 @@ Owner's choices, 2026-11-18. Fixed with a test that failed first:
 - 6.1: the 2 care links that stand alone have `min-h-11` (2be5b2e).
 - 3.1: both announcer regions have `aria-atomic="true"` (2be5b2e).
 - 3.2: draft options read "Francais (French) - brouillon" (24e754c).
-- 4.1: `replacedLinkHeading` is "This visit link does not work or is no longer active" in English (24e754c). The 4 drafts go to handoffs/2026-11-18-gemini-translate-link-heading.md.
+- 4.1: `replacedLinkHeading` is "This visit link does not work or is no longer active" in English (24e754c). The 4 drafts go to handoffs/archive/2026-11-18-gemini-translate-link-heading.md.
 
 Kept as it is: 1.1 (owner). False: 1.3, 4.2. No change: 2.2. In docs/known-issues.md: 1.2, 1.4, 1.5, 5.1, 5.2, and the token check digit.
 

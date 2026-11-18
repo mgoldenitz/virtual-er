@@ -66,7 +66,7 @@ export const zh: PatientText = {
     noVisitHeading: "在此手机上未找到就诊信息",
     brokenLinkHeading: "此链接无效",
     brokenLinkText: "链接可能错误或被截断。没有打开任何就诊。",
-    replacedLinkHeading: "此就诊链接已失效",
+    replacedLinkHeading: "这个就诊链接无法打开或已经不能用了",
     replacedLinkText: "请向急诊室前台寻求帮助。",
     findVisitHelp:
       "扫描凭条上的 QR 码。您也可以输入打印在它下方的链接。如果仍然失败，请要求前台再次出示 QR 码。",

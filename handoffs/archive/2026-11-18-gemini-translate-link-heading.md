@@ -58,3 +58,14 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner:
 - The "broken" words Gemini warns about ("خراب", "معطّل", "تالف", "坏了", "损坏", "brisé", "cassé") are in none of the 8 lines.
 - The Mandarin calmer option says "无法打开" (cannot be opened). The page does open; it is the visit that does not open. "无法使用" (cannot be used) in the main line is closer to what happens.
 - I cannot check the meaning or the reading level myself. A fluent human reviewer must approve these lines before real use, as the Phase 3 plan says.
+
+## Outcome
+
+Owner's choices, 2026-11-18, now on line 69 of each file:
+
+- French (`lib/text/fr.ts`): the main line, "Ce lien de visite ne fonctionne pas ou n'est plus actif".
+- Urdu (`lib/text/ur.ts`): the calmer option, "یہ وزٹ لنک کام نہیں کر رہا یا اب استعمال میں نہیں ہے".
+- Arabic (`lib/text/ar.ts`): the calmer option, "رابط الزيارة هذا لا يعمل أو لم يعد صالحًا للاستخدام".
+- Mandarin (`lib/text/zh.ts`): the calmer option, "这个就诊链接无法打开或已经不能用了".
+
+All 4 are still drafts. A fluent human reviewer approves them in Phase 3. `npm test`: 63 files, 353 tests passed. Lint: 0 errors, 2 warnings (`.playwright-mcp`). Build passed.
