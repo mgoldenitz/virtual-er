@@ -33,7 +33,7 @@ class FakeContext {
 }
 
 // A real phone gives back true when it starts to vibrate, false when the browser blocks it.
-const vibrate = vi.fn((): boolean => true);
+const vibrate = vi.fn<(pattern: VibratePattern) => boolean>(() => true);
 /** Called when a beep really starts, so a test can see that sound was made, not only a true result. */
 const start = vi.fn();
 

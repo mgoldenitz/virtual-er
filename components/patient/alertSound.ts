@@ -82,7 +82,7 @@ export async function playAlert(stillWanted: () => boolean = () => true): Promis
 }
 
 /**
- * True after vibrate() asked the phone for a vibration, until stopVibration() stops it. Before a tap
+ * True after the phone started a vibration for vibrate(), until stopVibration() stops it. Before a tap
  * the browser blocks every vibrate call with a console error, so stopVibration() calls only when needed.
  */
 let vibrationStarted = false;
@@ -91,8 +91,8 @@ let vibrationStarted = false;
 function vibrate(): void {
   try {
     if (typeof navigator.vibrate === "function") {
-      navigator.vibrate([200, 100, 200]);
-      vibrationStarted = true;
+      // The browser gives back false when it blocks the call; then no vibration started.
+      if (navigator.vibrate([200, 100, 200])) vibrationStarted = true;
     }
   } catch {
     // Ignore: the on-screen words remain the real alert.
