@@ -1463,3 +1463,18 @@ Checked against the code on `phase3-review-fixes` at 9710d95.
 - 5.2 (`startsWith("/patient")` also matches `/patients`): true, but no such route exists. Cheap fix: `path === "/patient" || path.startsWith("/patient/")`.
 - 6.1 (inline care links are under 44 px): the inline exception of WCAG 2.5.8 covers the 811 link and the hours link, which sit in sentences. The wait-times link and the virtual care link stand alone, so `min-h-11` on those two is a valid small gain.
 - 6.2 (the thank-you `role="status"` box changes from `sr-only` to visible in the same render as its text): plausible. Some screen readers skip text that comes in while the box moves into the layout. Fix: keep the `role="status"` element `sr-only` or always plain, and put the visible card around it, as `components/patient/OfflineBanner.tsx` line 14 does.
+
+## Outcome
+
+Owner's choices, 2026-11-18. Fixed with a test that failed first:
+
+- 2.1: `components/useDocumentLanguage.ts` uses `useLayoutEffect` (6c4fc57).
+- 6.2: the `role="status"` box stays `sr-only`; a visible card with `aria-hidden="true"` shows the thank-you (2be5b2e).
+- 6.1: the 2 care links that stand alone have `min-h-11` (2be5b2e).
+- 3.1: both announcer regions have `aria-atomic="true"` (2be5b2e).
+- 3.2: draft options read "Francais (French) - brouillon" (24e754c).
+- 4.1: `replacedLinkHeading` is "This visit link does not work or is no longer active" in English (24e754c). The 4 drafts go to handoffs/2026-11-18-gemini-translate-link-heading.md.
+
+Kept as it is: 1.1 (owner). False: 1.3, 4.2. No change: 2.2. In docs/known-issues.md: 1.2, 1.4, 1.5, 5.1, 5.2, and the token check digit.
+
+Browser check after the fixes: `/` and `/patient`, 390 px, English and Urdu, 100% and 200% text: 8 runs, all `off=0 viol=none`, Urdu `dir=rtl`.
