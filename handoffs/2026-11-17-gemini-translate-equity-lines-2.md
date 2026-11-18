@@ -2,7 +2,7 @@
 
 Model: Gemini Hydrogen 4, High. Start a new chat. If you have no Gemini Hydrogen 4 credits, use Gemini 3.6 Flash, High.
 
-The first pass is in handoffs/2026-11-17-gemini-translate-equity-lines.md. After it, the owner changed 3 English lines (docs/decisions.md, 2026-11-17, last line).
+The first pass is in handoffs/archive/2026-11-17-gemini-translate-equity-lines.md. After it, the owner changed 3 English lines (docs/decisions.md, 2026-11-17, last line).
 
 ## What to paste into Gemini
 
