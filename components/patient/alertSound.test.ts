@@ -167,8 +167,24 @@ describe("playAlert", () => {
 
 describe("stopVibration", () => {
   it("stops a running vibration", async () => {
-    const { stopVibration } = await load();
+    const { playAlert, stopVibration } = await load();
+    await playAlert();
     stopVibration();
     expect(vibrate).toHaveBeenCalledWith(0);
+  });
+
+  it("does not call the phone when no vibration started", async () => {
+    // Before a tap the browser blocks every vibrate call and writes an error in the console.
+    const { stopVibration } = await load();
+    stopVibration();
+    expect(vibrate).not.toHaveBeenCalled();
+  });
+
+  it("calls the phone only once for one vibration", async () => {
+    const { playAlert, stopVibration } = await load();
+    await playAlert();
+    stopVibration();
+    stopVibration();
+    expect(vibrate.mock.calls.filter((call) => call[0] === 0)).toHaveLength(1);
   });
 });
