@@ -5,6 +5,10 @@
  * `result` is the number of demo visits deleted, or "failed" if the database could not be reached.
  */
 export function clearDemoMessage(result: number | "failed"): string {
-  // TODO(human): return the words for each case (see lib/clearDemoMessage.test.ts).
-  return "";
+  if (result === "failed") {
+    return "Not saved: the database could not be reached. Demo data was not cleared. Try again.";
+  }
+  if (result === 0) return "No demo visits to delete. The demo simulator is off.";
+  const visits = result === 1 ? "visit" : "visits";
+  return `${result} demo ${visits} deleted. The demo simulator is off.`;
 }
