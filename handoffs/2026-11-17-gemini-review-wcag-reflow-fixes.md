@@ -407,3 +407,14 @@ Better check without a signed-in staff session: Run a Playwright viewport check 
    - File and line: `components/patient/alertSound.test.ts`, lines 168-189
    - What goes wrong: The `vibrate` spy does not mock the DOM `boolean` return value (`true`/`false`), so the suite passes even when `vibrate()` ignores a `false` return from `navigator.vibrate([200, 100, 200])`.
    - Small fix: Have the default mock return `true` and add a test where `vibrate.mockReturnValueOnce(false)` confirms `stopVibration()` does not call `navigator.vibrate(0)`.
+
+## Claude's check
+
+- 1, 2, 3: no problem found, and I agree. Point 2 depends on `lg` being in rem (Tailwind 4 default; `app/globals.css` does not change it).
+- 4.1: correct in principle. Chrome returns false from a blocked `navigator.vibrate` call, and `vibrate()` sets `vibrationStarted` all the same. The path is narrow: `shouldAlert` needs the sound turned on by a tap and the page visible, so a blocked start is rare. The fix is one line, and the flag then means what its comment says. Fix with a test (same as 6.3).
+- 4.2: rejected. Sticky activation does not expire while the page is open, so a late `vibrate(0)` after a tap gives no error. There is only one `SoundSwitch` on the page (`components/patient/StatusAndSound.tsx` line 38).
+- 4.3: rejected, no path. `called` cannot go back to `waiting` (`lib/allowedSteps.ts` line 16: `on_the_way`, `arrived`, `removed`, `unable_to_reach`). Each of those statuses removes `SoundSwitch` (`StatusAndSound.tsx` line 37), and the unmount cleanup calls `stopVibration()`. The vibration is 500 ms long in any case.
+- 5: partly correct. The class tests are guards for the classes, not proof of the layout; the proof is the browser check (`.playwright-mcp/axe-staff.js`, not in the repo). Correct that nothing guards the 3 class changes in `app/staff/page.tsx`. Options for the owner below. A Playwright test runner with stubbed Supabase calls is a new dependency and a bigger change; not now.
+- 6.1: latent only. The site menu has two fixed choices ("Demo Site A", "Demo Site B"), and the check at 390 px and 200% text gave no part off the screen. Adding `max-w-full` to the label costs one class. Owner choice.
+- 6.2: partly correct. A missed match gives `""`, so the test fails loud, not silent. A wrong match is possible only if another element has the same shape; none does now. The project already has happy-dom (click tests), so a parse with `querySelector` is possible. Optional.
+- 6.3: correct, goes with 4.1.
