@@ -28,3 +28,4 @@
 - A test for a button label with `toContain("Waits on-site")` also passes on a longer label that starts with those words. To check the exact label, match the whole tag: `toMatch(/<button[^>]*>Waits on-site<\/button>/)` (found 2026-11-17).
 - In a Python script, `\\"` in a normal string writes a backslash before the quote into the file. For text that has quotes, use Edit, or check the file for `\\"` after the script runs (found 2026-11-17, `docs/decisions.md` line 61).
 - The Write and Edit tools turn a `\u` escape code for a curly quote or another symbol into the real character. In a file that must not hold the character (for example `lib/straightQuotes.test.ts`), build it with `String.fromCharCode(0x2019)`, and Grep the file after the edit (found 2026-11-17).
+- Do not write the push state in `docs/progress.md` before the owner says yes to the push. After the yes, write "Pushed (owner approved)", commit, then push, so no doc commit stays behind (found 2026-11-17).
