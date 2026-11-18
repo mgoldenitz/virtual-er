@@ -13,7 +13,7 @@ What this is: a concept prototype of a virtual ER waiting room. Low-acuity patie
 ## Every session
 
 - Start: read CLAUDE.md and the three docs: docs/progress.md, docs/decisions.md, docs/known-issues.md.
-- End: update progress.md, add new decisions and gotchas, and propose skill edits with the evidence from this session (/reflect). I approve them before you apply them.
+- At each save point that ends a step: add or extend today's log line in progress.md, because a context summary can drop the details. End: update progress.md, add new decisions and gotchas, and propose skill edits with the evidence from this session (/reflect). I approve them before you apply them.
 - If you made the same mistake twice in this session, propose a line for CLAUDE.md or docs/known-issues.md in /reflect so it does not happen a third time.
 
 ## Folder map
