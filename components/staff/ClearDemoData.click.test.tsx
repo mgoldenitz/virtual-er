@@ -97,4 +97,25 @@ describe("ClearDemoData taps", () => {
     expect(question()).not.toBeNull();
     expect(button("Yes, clear demo data")).toBeDefined();
   });
+
+  it("while a clear is pending, a second Yes and Cancel do nothing; after it ends, focus is on Clear demo data", async () => {
+    let finish!: (v: number | "failed") => void;
+    vi.mocked(clearDemoData).mockReturnValue(
+      new Promise<number | "failed">((resolve) => {
+        finish = resolve;
+      }),
+    );
+    show();
+    await press("Clear demo data");
+    await press("Yes, clear demo data");
+    // The Yes button now reads "Saving…", so it is found by that text.
+    await press("Saving…");
+    expect(clearDemoData).toHaveBeenCalledTimes(1);
+    await press("Cancel");
+    expect(question()).not.toBeNull();
+    await act(async () => finish(3));
+    await nextTick();
+    expect(question()).toBeNull();
+    expect(document.activeElement).toBe(button("Clear demo data"));
+  });
 });
