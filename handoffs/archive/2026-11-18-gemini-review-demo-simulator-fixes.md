@@ -141,3 +141,7 @@ Question 1 (VWR02 blocks) and question 2 (slack): no problem found. The answers 
 6. A pause in the same ms as step 5 can still add a declined or not_eligible row. True. These rows never join the line (declined and not_eligible are closed at once). Recommendation: no fix, write it in decisions.md. Owner question below.
 
 Not changed by this review: the migration. All fixes in points 1 to 5 are in supabase/checks/demo_tick.sql only, which saves nothing (begin ... rollback).
+
+## Result of the fixes (2026-11-18)
+
+Points 1 to 5 are fixed in supabase/checks/demo_tick.sql (commit 761479a); point 6 is a decision (no fix, docs/decisions.md). The owner ran the new check in the SQL Editor. All 13 rows are as expected: 00 demo visits before 0; 01 real visits checked 8 (3 real and 5 test visits); 02 real visits changed 0; 03 real visits added 0; 04 site A waiting 9; 05 site B waiting 9; 06 site B added or waiting after pause 0; 07 call-backs at A 9; 08 demo arrived 12; 09 phone attempts recorded 6; 10 unable_to_reach 2; 11 unable_to_reach with under 2 attempts 0; 12 changes while running is false 0.
