@@ -51,3 +51,13 @@ Problems it found:
 5. Urdu "ٹیپ" is an English loanword. If a fluent reviewer prefers, use "بٹن دبنے کا عمل محفوظ نہیں ہوا۔ ..." ("the button press did not save").
 6. Arabic "نقرتك" can sound like a mouse click. If a fluent reviewer prefers, use "لم يتم حفظ ضغطتك على الزر. ..." ("your press on the button").
 7. "Staff may not know" in a red box could make an anxious patient fear losing their place. Keep "may not know", not "do not know". If the English line changes, "Your tap did not save. Please tap again so staff know you are still waiting." tells the patient a second tap fixes it.
+
+## Claude's check
+
+- All 4 lines keep only "Please try again". None has a desk, hospital or "come back" word. Checked by reading each line.
+- All 4 use "still waiting", as on the card's meaning line, not "still here".
+- The tap words match the drafts already in the app. Checked with grep: French `fr.ts` line 115 uses "appuyer sur le bouton"; Urdu `ur.ts` line 142 uses "ٹیپ کریں"; Arabic `ar.ts` line 115 uses "النقر على الزر"; Mandarin `zh.ts` lines 115 and 142 use "点击". So I keep Gemini's main lines, not its options in points 5 and 6. The fluent reviewer can change those two words.
+- No curly quotes and no em dashes in the 4 lines.
+- Point 7 asks for a product decision on the English line. I ask the owner in the same turn.
+
+Not checked: that the 4 lines read naturally. Only a fluent human reviewer can check that (Phase 3 rule).
