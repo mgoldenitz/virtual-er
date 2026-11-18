@@ -80,7 +80,7 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
         </PromptCard>
       )}
       {/* Always on the page, so screen readers hear the thank-you when its text comes in. */}
-      <p role="status" className={thanking ? "clean-card font-semibold" : undefined} data-testid="still-here-thanks">
+      <p role="status" className={thanking ? "clean-card font-semibold" : "sr-only"} data-testid="still-here-thanks">
         {thanking ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
       </p>
     </>

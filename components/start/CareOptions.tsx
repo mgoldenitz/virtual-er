@@ -6,7 +6,8 @@ import { textFor } from "@/lib/text";
 
 const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
-const linkStyle = "font-semibold text-brand underline underline-offset-2";
+// inline-block with py-1 makes each link a tap target of at least 24 by 24 pixels (WCAG 2.5.8).
+const linkStyle = "inline-block py-1 font-semibold text-brand underline underline-offset-2";
 
 function External({ href, children, newTab }: { href: string; children: string; newTab: string }) {
   return (
