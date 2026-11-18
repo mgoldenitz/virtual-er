@@ -126,6 +126,7 @@ export const fr: PatientText = {
     button: "Je suis toujours ici",
     thanks: "Merci.",
     meaning: "Cela indique au personnel que vous attendez toujours. Ce n'est pas un bilan de votre santé.",
+    notSaved: "Votre appui sur le bouton n'a pas été enregistré. Le personnel ne sait peut-être pas que vous attendez toujours. Veuillez réessayer.",
   },
   secondAlert: "Veuillez revenir au service des urgences immédiatement. Le personnel peut appeler votre téléphone.",
   returnNow: {

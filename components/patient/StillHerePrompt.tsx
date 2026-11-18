@@ -87,7 +87,7 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
           </Button>
           {notSaved && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
-              {t.patient.notSaved}
+              {t.stillHere.notSaved}
             </p>
           )}
         </PromptCard>

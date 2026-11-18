@@ -126,6 +126,7 @@ export const zh: PatientText = {
     button: "我还在",
     thanks: "谢谢。",
     meaning: "这告诉工作人员您仍在等待。这不是对您健康状况的检查。",
+    notSaved: "您的点击未保存。工作人员可能不知道您仍在等待。请重试。",
   },
   secondAlert: "请立即回到急诊室。工作人员可能会拨打您的电话。",
   returnNow: {

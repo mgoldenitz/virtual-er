@@ -150,6 +150,8 @@ export const en = {
     button: "I'm still here",
     thanks: "Thank you.",
     meaning: "This tells staff you are still waiting. It is not a check of your health.",
+    /** The tap could not be saved. No desk or "come back" words: the patient is still waiting off-site. */
+    notSaved: "Your tap did not save. Staff may not know you are still waiting. Please try again.",
   },
   secondAlert: "Please come back to the emergency department right now. Staff may phone you.",
   returnNow: {
