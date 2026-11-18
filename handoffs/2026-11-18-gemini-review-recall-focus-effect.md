@@ -1,0 +1,310 @@
+# Gemini review: recall focus in an effect, and useId for the question
+
+Model: Gemini Hydrogen 4, High, in a new chat. Date: 2026-11-18. No keys and no patient data in this file; all visits are synthetic.
+
+## Question to ask
+
+You review a small change in a Next.js (App Router, React 19) concept prototype of a virtual ER waiting room. Staff recall a patient from a staff screen. Find problems; do not confirm that the change is good. For each problem give the file and line, what goes wrong, and the smallest fix.
+
+The change fixes 2 points from an earlier review:
+1. After a saved recall, focus moved to the row's progress line after `setTimeout(0)`, which does not wait for React to draw the row as `called`. Now a saved recall sets a state flag `recallSaved`, and an effect on `[recallSaved, visit.status]` focuses the progress line when the flag is true and the status is `called`. A ref `focusDone` makes it run once. The list can get the called visit before or after `callBackVisit` returns "saved" (the real save puts the new visit in the list first, but React can draw it later), so the flag is state, not a ref.
+2. The question id was `recall-question-${code}`. Now it comes from `useId()`.
+
+Not changed, on purpose: while the save runs, focus waits on "Recall patient" (`aria-disabled`), because "Yes" has left the page. A click is a discrete event in React 19, so a second click on "Yes" sees `saving === true`; "Cancel" saves nothing.
+
+Questions:
+a. Can the effect miss the focus move (for example the row unmounts, the status skips `called` and goes to `on_the_way` before the effect runs, or the parent keys the row again)? What happens then?
+b. `focusDone` is never reset. Can a row need a second focus move in its lifetime?
+c. Do the tests prove both orders of the list change and "saved" in a way that holds in a real browser? Name any path that has no test.
+
+## Changed files (lines now)
+
+- `components/staff/VisitRow.tsx`: 142 lines (16 changed)
+- `components/staff/RecallPanel.tsx`: 77 lines (8 changed)
+- `components/staff/VisitRow.click.test.tsx`: 139 lines (68 changed)
+- `components/staff/RecallPanel.click.test.tsx`: 125 lines (21 added)
+
+## Checked
+
+- After commit `7c355ea`: `npm test` 65 test files, 375 tests pass; `npm run lint` 0 errors, 2 warnings (old helper files, not in this diff); `npm run build` passed.
+- The test for "the list changes after saved" and the two-panels id test failed before the fix (commit `362d866`) and pass after.
+- The tests for a slow `not_saved` and `refused`, and for "the list changes before saved", passed before the fix too.
+
+## Not checked
+
+- Not checked in a real browser or with a real screen reader.
+
+## Helpers the changed lines call (not in the diff)
+
+`act` in `components/staff/VisitRow.tsx`:
+
+```tsx
+const act = async (change: () => Promise<ChangeResult>, leftListMessage?: string): Promise<ChangeResult | undefined> => {
+  if (saving) return; // while one change is on its way, further presses do nothing
+  setSaving(true);
+  setOkNote("");
+  const result = await change();
+  setSaving(false);
+  if (result === "saved" && leftListMessage) {
+    onLeftList(leftListMessage);
+  }
+  setNote(result === "saved" ? "" : result === "not_saved" ? NOT_SAVED : CHANGED);
+  return result;
+};
+```
+
+`returnToRecall` and `confirm` in `components/staff/RecallPanel.tsx` (not changed):
+
+```tsx
+const returnToRecall = () => {
+  setMode("idle");
+  window.setTimeout(() => {
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (lost) recallButton.current?.focus();
+  }, 0);
+};
+const confirm = () => { if (saving) return; onConfirm(); returnToRecall(); };
+```
+
+`changeVisit` (`data/staffActions.ts`) puts the new visit into the list (`putVisit`) before it returns "saved". The staff page keys each row by `visit.id`. The row shows `<RecallPanel>` only while `visit.status === "waiting"`. The progress line is `<p ref={progressLine} tabIndex={-1} data-testid="progress">`. Visit statuses after `called`: `on_the_way`, then the visit leaves the list.
+
+## Diff (commits 362d866 and 7c355ea)
+
+```diff
+diff --git a/components/staff/RecallPanel.click.test.tsx b/components/staff/RecallPanel.click.test.tsx
+index b0789d8..c805c4b 100644
+--- a/components/staff/RecallPanel.click.test.tsx
++++ b/components/staff/RecallPanel.click.test.tsx
+@@ -101,4 +101,25 @@ describe("RecallPanel taps", () => {
+     expect(document.getElementById(id ?? "")?.textContent).toContain("Recall visit ABC234?");
+     expect(document.getElementById(id ?? "")?.textContent).toContain("There is no undo.");
+   });
++
++  it("two open questions for the same code each have their own question id", async () => {
++    act(() =>
++      root.render(
++        <>
++          <div data-testid="first"><RecallPanel code="ABC234" saving={false} onConfirm={vi.fn()} /></div>
++          <div data-testid="second"><RecallPanel code="ABC234" saving={false} onConfirm={vi.fn()} /></div>
++        </>,
++      ),
++    );
++    for (const panel of ["first", "second"]) {
++      const open = container.querySelector(`[data-testid="${panel}"] button`) as HTMLButtonElement;
++      await act(async () => open.click());
++    }
++    for (const panel of ["first", "second"]) {
++      const box = container.querySelector(`[data-testid="${panel}"]`) as HTMLElement;
++      const yes = [...box.querySelectorAll("button")].find((b) => b.textContent?.startsWith("Yes"));
++      const question = document.getElementById(yes?.getAttribute("aria-describedby") ?? "");
++      expect(box.contains(question)).toBe(true);
++    }
++  });
+ });
+diff --git a/components/staff/RecallPanel.tsx b/components/staff/RecallPanel.tsx
+index 55df158..bef8714 100644
+--- a/components/staff/RecallPanel.tsx
++++ b/components/staff/RecallPanel.tsx
+@@ -3,7 +3,7 @@
+ // The "Recall patient" button for one waiting visit. Staff must confirm first, because a recall
+ // has no undo: the phone shows "Please head back now" at once. This file only asks; the parent saves.
+ 
+-import { useEffect, useRef, useState } from "react";
++import { useEffect, useId, useRef, useState } from "react";
+ import { Button } from "@/components/Button";
+ 
+ type Props = {
+@@ -21,6 +21,8 @@ export function RecallPanel({ code, saving, onConfirm }: Props) {
+   const [mode, setMode] = useState<Mode>("idle");
+   const recallButton = useRef<HTMLButtonElement>(null);
+   const yesButton = useRef<HTMLButtonElement>(null);
++  /** A page-wide unique id for the question, so each "Yes" points to its own question. */
++  const questionId = useId();
+ 
+   // When the confirm question opens, focus moves to "Yes" for keyboard and screen-reader users.
+   useEffect(() => {
+@@ -55,13 +57,13 @@ export function RecallPanel({ code, saving, onConfirm }: Props) {
+   return (
+     <div className="w-full space-y-2">
+       {/* "Yes" points to this question, so a screen reader reads the code and "There is no undo." */}
+-      <p id={`recall-question-${code}`} className="font-semibold">
++      <p id={questionId} className="font-semibold">
+         {`Recall visit ${code}? The patient's phone will show "Please head back now". There is no undo.`}
+       </p>
+       <div className="flex flex-wrap gap-2">
+         <Button variant="danger" ref={yesButton}
+           aria-disabled={saving}
+-          aria-describedby={`recall-question-${code}`}
++          aria-describedby={questionId}
+           onClick={confirm}
+         >
+           Yes, recall patient
+diff --git a/components/staff/VisitRow.click.test.tsx b/components/staff/VisitRow.click.test.tsx
+index ee48210..3834540 100644
+--- a/components/staff/VisitRow.click.test.tsx
++++ b/components/staff/VisitRow.click.test.tsx
+@@ -3,11 +3,11 @@
+ // and focus then moves to the progress line, because the "Recall patient" button leaves the page.
+ 
+ import { act } from "react";
+-import { flushSync } from "react-dom";
+ import { createRoot, type Root } from "react-dom/client";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ import { callBackVisit } from "@/data/staffActions";
+ import { callBack, checkInAtDesk } from "@/lib/visitActions";
++import type { ChangeResult, Visit } from "@/lib/visit";
+ import { VisitRow } from "./VisitRow";
+ 
+ // The save is replaced, so the test controls what it returns.
+@@ -24,15 +24,28 @@ vi.mock("@/data/staffActions", () => ({
+ const now = new Date("2026-11-18T20:00:00Z");
+ const input = { id: "v1", code: "ABC234", access_token: "TOKEN", site: "A" as const, ctas_level: 4 as const, language: "en" };
+ const waiting = checkInAtDesk(input, "waiting", new Date(now.getTime() - 30 * 60_000));
++const called = callBack(waiting, now);
++if (!called) throw new Error("callBack refused the test visit");
+ 
+ let container: HTMLDivElement;
+ let root: Root;
+ 
+ const button = (words: string) => [...container.querySelectorAll("button")].find((b) => b.textContent?.startsWith(words));
++const progressLine = () => container.querySelector('[data-testid="progress"]') as HTMLElement;
++
++/** Draws the row for this visit, as the page does when the list changes. */
++const draw = (visit: Visit) => act(() => root.render(<VisitRow visit={visit} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />));
+ 
+ /** Lets the one-tick focus waits (setTimeout 0) run. */
+ const nextTick = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+ 
++/** A save that only finishes when the test calls `finish`, like a slow network. */
++function slowSave() {
++  let finish: (result: ChangeResult) => void = () => {};
++  vi.mocked(callBackVisit).mockImplementation(() => new Promise((resolve) => (finish = resolve)));
++  return (result: ChangeResult) => act(async () => finish(result));
++}
++
+ async function press(words: string) {
+   const target = button(words);
+   if (!target) throw new Error(`No button "${words}"`);
+@@ -45,7 +58,7 @@ beforeEach(() => {
+   container = document.createElement("div");
+   document.body.appendChild(container);
+   root = createRoot(container);
+-  act(() => root.render(<VisitRow visit={waiting} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />));
++  draw(waiting);
+ });
+ 
+ afterEach(() => {
+@@ -63,9 +76,10 @@ describe("VisitRow recall", () => {
+     vi.mocked(callBackVisit).mockResolvedValue("saved");
+     await press("Recall patient");
+     await press("Yes, recall patient");
+-    await nextTick(); // focus moves one tick later, after the row shows the called text
++    draw(called); // the list gets the called visit, so the row shows it
++    await nextTick();
+     expect(callBackVisit).toHaveBeenCalledWith("v1");
+-    expect(document.activeElement).toBe(container.querySelector('[data-testid="progress"]'));
++    expect(document.activeElement).toBe(progressLine());
+   });
+ 
+   it("after Yes and a failed save, shows the not-saved note and keeps the progress line out of focus", async () => {
+@@ -73,26 +87,33 @@ describe("VisitRow recall", () => {
+     await press("Recall patient");
+     await press("Yes, recall patient");
+     expect(container.textContent).toContain("Not saved");
+-    expect(document.activeElement).not.toBe(container.querySelector('[data-testid="progress"]'));
++    expect(document.activeElement).not.toBe(progressLine());
+   });
+ 
+-  it("after a save, the progress line already shows the called text when focus lands on it", async () => {
+-    const called = callBack(waiting, now);
+-    if (!called) throw new Error("callBack refused the test visit");
+-    // Like the real save: the list gets the called visit before the save says "saved", but a
+-    // browser draws that change in a later task, not at once. flushSync draws it in that task.
+-    vi.mocked(callBackVisit).mockImplementation(async () => {
+-      window.setTimeout(() =>
+-        flushSync(() => root.render(<VisitRow visit={called} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />)),
+-      );
+-      return "saved";
+-    });
+-    const progress = container.querySelector('[data-testid="progress"]') as HTMLElement;
++  it("when the row shows the called visit before the save says saved, focus lands on the called text", async () => {
++    const finish = slowSave();
+     let textAtFocus = "";
+-    progress.addEventListener("focus", () => (textAtFocus = progress.textContent ?? ""));
++    progressLine().addEventListener("focus", () => (textAtFocus = progressLine().textContent ?? ""));
+     await press("Recall patient");
+     await press("Yes, recall patient");
++    draw(called); // the real save puts the called visit in the list before it returns
++    await finish("saved");
+     await nextTick();
++    expect(document.activeElement).toBe(progressLine());
++    expect(textAtFocus).toContain("Called");
++  });
++
++  it("when the row shows the called visit after the save says saved, focus waits for the called text", async () => {
++    const finish = slowSave();
++    let textAtFocus = "";
++    progressLine().addEventListener("focus", () => (textAtFocus = progressLine().textContent ?? ""));
++    await press("Recall patient");
++    await press("Yes, recall patient");
++    await finish("saved");
++    await nextTick();
++    draw(called); // the browser draws the list change later
++    await nextTick();
++    expect(document.activeElement).toBe(progressLine());
+     expect(textAtFocus).toContain("Called");
+     expect(textAtFocus).not.toContain("Waiting off-site");
+   });
+@@ -104,4 +125,15 @@ describe("VisitRow recall", () => {
+     await nextTick();
+     expect(document.activeElement).toBe(button("Recall patient"));
+   });
++
++  it.each(["not_saved", "refused"] as const)("after a slow save that ends %s, focus is on Recall patient", async (result) => {
++    const finish = slowSave();
++    await press("Recall patient");
++    await press("Yes, recall patient");
++    await nextTick();
++    await finish(result);
++    await nextTick();
++    expect(document.activeElement).toBe(button("Recall patient"));
++    expect(container.textContent).toContain(result === "not_saved" ? "Not saved" : "The list just changed");
++  });
+ });
+diff --git a/components/staff/VisitRow.tsx b/components/staff/VisitRow.tsx
+index e9a808d..05362a9 100644
+--- a/components/staff/VisitRow.tsx
++++ b/components/staff/VisitRow.tsx
+@@ -3,7 +3,7 @@
+ // One patient in the staff's off-site list: minutes waited, call-back progress and actions.
+ // The no-response flags and phone-call buttons are in FollowUpPanel.
+ 
+-import { useRef, useState, type ReactNode } from "react";
++import { useEffect, useRef, useState, type ReactNode } from "react";
+ import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from "@/data/staffActions";
+ import { minutesBetween } from "@/lib/queue";
+ import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
+@@ -70,10 +70,20 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
+   };
+   /** The progress line, which stays on the page when the "Recall patient" button leaves it. */
+   const progressLine = useRef<HTMLParagraphElement>(null);
++  /** True once a recall from this row is saved. */
++  const [recallSaved, setRecallSaved] = useState(false);
++  /** True once focus has moved after that recall, so it moves only once. */
++  const focusDone = useRef(false);
+   const recall = async () => {
+-    // Wait one tick, so the row shows the called text before a screen reader reads it.
+-    if ((await act(() => callBackVisit(visit.id))) === "saved") window.setTimeout(() => progressLine.current?.focus(), 0);
++    if ((await act(() => callBackVisit(visit.id))) === "saved") setRecallSaved(true);
+   };
++  // Focus moves only once React has drawn the row as called, so a screen reader reads the called
++  // text. The list can get the called visit before or after the save says "saved"; this works both ways.
++  useEffect(() => {
++    if (!recallSaved || visit.status !== "called" || focusDone.current) return;
++    focusDone.current = true;
++    progressLine.current?.focus();
++  }, [recallSaved, visit.status]);
+   /** After "Issue a new link" saves: open the slip with the new QR code and say what happened. */
+   const showNewLink = (updated: Visit) => {
+     onShowSlip(updated);
+```
