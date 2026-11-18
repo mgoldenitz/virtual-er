@@ -418,3 +418,71 @@ index 01ec7e6..505165e 100644
 ```
 
 ## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner (bold marks removed):
+
+### 1. `useLayoutEffect` in Next.js App Router (`components/useDocumentLanguage.ts`, line 11)
+
+* Does it warn or fail in server rendering?
+  * File and line: `components/useDocumentLanguage.ts`, line 11.
+  * What goes wrong: It does not fail the build or throw a runtime error (`npm run build` passes), but React 19 logs a server-side warning (`useLayoutEffect does nothing on the server...`) every time `/` or `/patient` is server-rendered. In production logs or strict error-monitoring setups, every initial page request generates SSR console noise.
+  * How sure I am: Certain (standard React 19 SSR behavior for `useLayoutEffect` in `"use client"` components).
+* Does the screen still show left-to-right before hydration?
+  * File and line: `components/useDocumentLanguage.ts`, lines 11-16 (and `app/layout.tsx`).
+  * What goes wrong for a real user: Yes. `useLayoutEffect` only runs in the browser after React downloads and hydrates the client bundle, not before the browser's First Contentful Paint of the server-rendered HTML. Because `useChosenLanguage()` returns `null` during SSR, the server sends `<html lang="en" dir="ltr">`. On a patient's phone over cellular data, the browser paints the initial page left-to-right (with English/LTR layout and left-side scrollbar) and then visibly snaps the entire page to right-to-left once hydration runs `useLayoutEffect`. (Note also that `components/useDocumentLanguage.test.tsx` lines 42-61 only tests a client-side sibling commit, not SSR + hydration.)
+  * How sure I am: Certain (Next.js App Router SSR streams HTML before client JS executes).
+* Smallest fix to close the gap:
+  * Mirror the inline `<head>` script pattern already used for text size (`lib/textSize.ts`): add a tiny synchronous `<script>` in `app/layout.tsx` `<head>` that reads `localStorage.getItem("vwr.language")` (and `#l=` in `location.hash` if present) and sets `document.documentElement.dir = "rtl"` and `lang` before first paint when the value is `"ur"` or `"ar"`. Then switch `components/useDocumentLanguage.ts` line 11 back to `useEffect` (eliminating the SSR warning while keeping runtime language switches synced).
+
+### 2. The Thank-You in `StillHerePrompt.tsx` (`components/patient/StillHerePrompt.tsx`, lines 84-91)
+
+* Can a screen reader hear it twice?
+  * No. Because `<p aria-hidden="true" className="clean-card font-semibold">` (lines 88-90) is removed from the accessibility tree and contains no focusable controls, screen readers will not read both elements.
+  * How sure I am: Certain.
+* Can a screen reader still miss it?
+  * Yes, in three ways:
+    1. Unmounting on status change (`components/patient/StillHerePrompt.tsx`, line 84): `StillHerePrompt` only renders while `view.status === "waiting"` (and `!view.expired`). If a patient taps "I'm still here" and the next poll immediately moves the visit to `"called"`, `"paused"`, or `"expired"`, `<p role="status">` unmounts before iOS VoiceOver or Android TalkBack finishes speaking the polite queue (or gets cut off by `StatusAnnouncer`).
+    2. Missing `aria-atomic="true"` (`components/patient/StillHerePrompt.tsx`, line 84): Point 4 of this diff added `aria-atomic="true"` to `StatusAnnouncer.tsx` lines 93 and 96, but `<p role="status" className="sr-only">` on line 84 still lacks `aria-atomic="true"`, which some Android TalkBack / browser combinations require to read the whole node reliably.
+    3. Dropped polite queue on swipe: Because `role="status"` is `aria-live="polite"`, if VoiceOver/TalkBack is actively reading another element when the tap resolves, mobile screen readers can drop or truncate the polite update, and once missed, the user cannot touch-explore the visible card (see below).
+  * How sure I am: Medium-High (real screen readers are listed under "Not checked").
+* Does `aria-hidden="true"` on the visible card break any WCAG rule for a sighted screen reader user?
+  * File and line: `components/patient/StillHerePrompt.tsx`, lines 87-91.
+  * What goes wrong for a real user: Strictly under WCAG 1.3.1 (Info and Relationships) and 4.1.2 (Name, Role, Value), the text is not omitted from the accessibility tree because `<p role="status" className="sr-only">` sits immediately above it in the same DOM location (lines 84-86). However, it breaks Touch-to-Explore and visual focus tracking for sighted/low-vision VoiceOver and TalkBack users:
+    * When a sighted screen reader user sees the `.clean-card` on their phone and taps directly on the card to hear it read aloud, VoiceOver/TalkBack ignores the card (`aria-hidden="true"`) and speaks nothing (or hits the container behind it).
+    * When swiping sequentially to the thank-you text, the screen reader's focus rectangle highlights the 1x1 px `sr-only` element off-screen instead of the visible card.
+  * How sure I am: High (standard iOS VoiceOver / Android TalkBack hit-test behavior).
+  * Smallest fix: Render a single visible `<p className="clean-card font-semibold">` without `aria-hidden="true"` when `thanking` is true (so touch-explore and the focus ring match the visible card), and keep the always-mounted `<p role="status" aria-atomic="true" className="sr-only">` purely as a transient announcer that clears its text after ~2 seconds so browse navigation never reads it twice.
+
+### 3. `min-h-11` on an `inline-block` Link (`components/start/CareOptions.tsx`, lines 12, 41, 56)
+
+* Does the tap area really grow to 44 px?
+  * File and line: `components/start/CareOptions.tsx`, lines 12, 41, 56.
+  * What goes wrong / how it behaves: Yes, the hit-test box reaches `44px` (`2.75rem`). Because `linkStyle` sets `display: inline-block` (line 10), CSS honors `min-height: 2.75rem` (`min-h-11`), giving both standalone links (`Virtual urgent care` and `See current wait times on THP's website`) at least a `44 x 44 px` tap target at 100% text size (and `66px` tall at 150%).
+  * How sure I am: Certain.
+* Does the text still line up?
+  * File and line: `components/start/CareOptions.tsx`, lines 12, 41, 56.
+  * What goes wrong for a real user: The baseline of the first line still lines up with the `<li>` bullet (`vertical-align: baseline`), but the text is top-aligned inside the `44px` tap box rather than vertically centered:
+    * At 100% text size (`24px` line-height) + `py-1` (`4px` top/bottom), the text sits `4px` from the top edge of the link with `16px` of empty space below it inside the hit box.
+    * On a phone screen, that creates uneven vertical gaps between bullet 2 (`Virtual urgent care`, line 41) and bullet 3 (`Urgent Care Centre...`, line 46) compared to the surrounding list items, and leaves `16px` of invisible clickable area below the underline.
+  * How sure I am: Certain (standard CSS `inline-block` box model).
+  * Smallest fix: Use `py-2.5` instead of `py-1 min-h-11` on `aloneStyle` (or `inline-flex min-h-11 items-center`): `10px` top + `24px` line-height + `10px` bottom equals `44px` (`2.75rem`) naturally while centering the text evenly inside its tap target.
+
+### 4. Mixed-Direction `<option>` Text (`components/LanguageSwitch.tsx`, line 15)
+
+* Does `"اردو (Urdu) - ڈرافٹ"` (and `"العربية (Arabic) - مسودة"`) show wrongly on Android Chrome or iOS Safari?
+  * File and line: `components/LanguageSwitch.tsx`, line 15.
+  * What goes wrong for a real user: Because HTML `<option>` elements cannot contain `<bdi>` or `<span>` tags, native mobile `<select>` pickers render the raw string using OS-level Unicode Bidirectional (UAX #9) rules:
+    * On iOS Safari: The native picker applies Unicode first-strong direction per option (`ا` is strong RTL), so it renders right-to-left as `ڈرافٹ - (Urdu) اردو` (reading right-to-left: `اردو` -> `(Urdu)` -> `-` -> `ڈرافٹ`). Replacing `(ڈرافٹ)` with `- ڈرافٹ` fixed the old adjacent-parentheses collision.
+    * On Android Chrome (when the page is currently in English, `<html dir="ltr">`): Android's native `<select>` dialog often ignores `<option dir="rtl">` and inherits LTR paragraph direction from `<select dir="ltr">`. Under LTR base direction, UAX #9 lays out the runs left-to-right as `اردو (Urdu) - ڈرافٹ` (left-aligned, with `اردو` on the left and `ڈرافٹ` on the right), which reverses the expected RTL reading flow right when an Urdu or Arabic speaker opens the menu from the default English screen.
+  * How sure I am: Medium-High (UAX #9 behavior is Certain; exact Android Chrome/WebView picker behavior varies slightly across Android OS versions and was not tested on a real device).
+  * Smallest fix: Keep the exact settled text format `"Name (English name) - tag"`, and wrap each RTL segment (or the LTR `(EnglishName)` segment) in Unicode directional isolate characters (`⁧...⁩` RLI/PDI around RTL words, `⁦...⁩` LRI/PDI around `(${info.englishName})`) inside `optionLabel` so both LTR and RTL native pickers order the segments identically.
+
+### 5. Other Problems in the Diff
+
+1. Language-switch cleanup resets `<html>` to `lang="en"` and `dir="ltr"` on every language change (`components/useDocumentLanguage.ts`, lines 11-20)
+   * What goes wrong for a real user: Because `[language]` is on the same `useLayoutEffect` that resets `html` to `lang="en"` and `dir="ltr"` in its cleanup (lines 17-20), changing language (e.g., `ar` -> `ur`) unnecessarily toggles `<html>` back through `en`/`ltr`. More critically, during client-side navigation between `/` and `/patient` (both of which call `useDocumentLanguage`), if React runs the outgoing route's cleanup after the incoming route's setup, `<html>` stays stuck at `lang="en" dir="ltr"` while `<main>` renders in Urdu/Arabic.
+   * How sure I am: High (Certain that cleanup runs on every `language` change; Medium-High on App Router transition ordering).
+   * Smallest fix: Move the `"en"`/`"ltr"` reset into a separate mount-only cleanup `useEffect(() => () => { ... }, [])`.
+2. `<option lang="ur">` / `<option lang="ar">` reads English language names with an Urdu/Arabic voice (`components/LanguageSwitch.tsx`, line 15)
+   * What goes wrong for a real user: Because `<option>` cannot hold child `<span lang="en">` elements, an `<option lang="ur">` containing `"اردو (Urdu) - ڈرافٹ"` forces VoiceOver/TalkBack to pronounce the English word `"Urdu"` (and `"Arabic"`) using an Urdu or Arabic speech synthesizer, often spelling it out letter-by-letter or mispronouncing it. (Only solvable if the native `<select>` is ever replaced with a custom ARIA listbox, which is likely overkill for this prototype; worth noting as a known native `<select>` constraint.)
+   * How sure I am: High.
