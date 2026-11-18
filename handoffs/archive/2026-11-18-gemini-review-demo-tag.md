@@ -232,3 +232,7 @@ Checked against the code on commit `2bc692f`.
 5. Test gaps. True: no reassess test, `is_demo` left out instead of `false`, and no test of the screen reader text. Accept all 3.
 
 Answer 2 (wording) is a product choice (asked below).
+
+## Result of the fixes
+
+Owner choices: the screen reader says "ABC234, Demo visit"; no tag on `VisitSlip`. Fixed: points 2, 4 and 5, and the `RecentlyClosed` part of point 1. Point 3 ("·") is in `docs/known-issues.md`. Checks: `npm test` 66 files, 384 tests passed; `npm run lint` no errors; `npm run build` passed. Round 2: handoffs/2026-11-18-gemini-review-demo-tag-fixes.md.

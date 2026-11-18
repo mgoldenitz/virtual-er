@@ -34,13 +34,22 @@ describe("VisitRow times", () => {
 });
 
 describe("VisitRow demo tag", () => {
+  /** The visible and spoken text of the row, with the tags removed. */
+  const text = (html: string) => html.replace(/<[^>]+>/g, "");
+
   it("shows a Demo tag next to the code for a demo visit", () => {
     const html = render(checkInAtDesk({ ...input, is_demo: true }, "waiting", minutesAgo(10)));
     expect(html).toContain('data-testid="demo-tag"');
-    expect(html).toMatch(/data-testid="demo-tag"[^>]*>Demo</);
+    expect(html).toMatch(/data-testid="demo-tag"[^>]*>/);
+  });
+
+  it("reads the demo tag as ', Demo visit' after the code, with no 'synthetic' wording", () => {
+    const html = render(checkInAtDesk({ ...input, is_demo: true }, "waiting", minutesAgo(10)));
+    expect(text(html)).toContain(", Demo visit");
+    expect(text(html)).not.toContain("synthetic");
   });
 
   it("shows no Demo tag for a real visit", () => {
-    expect(render(checkInAtDesk(input, "waiting", minutesAgo(10)))).not.toContain("demo-tag");
+    expect(render(checkInAtDesk({ ...input, is_demo: false }, "waiting", minutesAgo(10)))).not.toContain("demo-tag");
   });
 });

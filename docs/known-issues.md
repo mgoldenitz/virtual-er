@@ -55,3 +55,4 @@
 - Gotcha (2026-11-18): a Bash call that starts with sleep N is blocked. To wait for a deploy or a check run, use gh run watch <id> --exit-status, or an until-loop with run_in_background: true.
 - Gotcha (2026-11-18): a `pg_cron` time rule with an exact 5-minute step (`<= now() - interval '5 minutes'`) can miss by a few ms and slip a full tick. Give each rule 1 minute of slack.
 - Gotcha (2026-11-18): never edit a migration that already ran in Supabase. Put the fix in a new migration file with `create or replace`, so the files and the database stay the same.
+- Gotcha (2026-11-18): in JSX, a line break between `{visit.code}` and the next element gives no space, so a screen reader reads "ABC234Demo". Put the space in on purpose (`{" "}`). Open: the "·" between parts of a staff row (6 lines in `components/staff/`) can start a new line at 320 px, and some screen readers read it as "middle dot". Fix the whole staff screen at once in a later step, not one row at a time.
