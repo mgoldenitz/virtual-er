@@ -15,6 +15,7 @@ Look for these problems, in this order:
 3. Workflow steps that are confusing for staff: an order of buttons that invites a wrong tap, a confirm step that is missing on an action that cannot be undone, or two buttons that seem to do the same thing.
 4. Wording that is not consistent: the same thing said in two different ways, different units or time words, different tone, or a term that appears on one screen and never gets explained.
 5. Any break of the SPEC hard rules below (for example a screen that gives medical advice, or that says the wait is exact).
+6. Bugs in the two small fixes in the section "Small fixes to review" at the end: the thank-you card and the size of the draft notice. Look for timer bugs, a status box that a screen reader misses or hears twice, tests that do not prove what their names say, and anything the diff breaks. The design of the thank-you card is settled (see below), so review only its code.
 
 Important context:
 
@@ -2675,4 +2676,215 @@ Each part below is the full file unless it says otherwise. Line numbers are on t
 153      </StaffShell>
 154    );
 155  }
+```
+
+## Small fixes to review
+
+Two fixes, each with a test commit first and then a fix commit. The changed lines call only React (`useState`, `useEffect`), `window.setTimeout` and `window.clearTimeout`, and the text from `en.ts`. No other project helper is called by the changed lines. The full `StillHerePrompt.tsx` is in the Material above.
+
+Line counts after the fixes: `components/patient/StillHerePrompt.tsx` 124, `components/patient/StillHerePrompt.click.test.tsx` 135, `components/LanguageSwitch.tsx` 48, `components/LanguageSwitch.test.tsx` 63.
+
+Checked after both fixes (2026-11-18): `npm test` 63 files, 356 tests passed; `npm run lint` 0 errors, 2 warnings (`.playwright-mcp` helpers); `npm run build` passed. Each new test failed before its fix. Not checked: VoiceOver or TalkBack on a real phone.
+
+Fix A, the thank-you card. Before: the visible card had `aria-hidden="true"`, so a screen reader user who touched it heard nothing. After: the card has no `aria-hidden`; the `sr-only` status box has `aria-atomic="true"` and empties 3 seconds after the thank-you comes in, so a swipe reads the words only once, on the card.
+
+Fix B, the draft notice. Before: `text-sm` on the notice that tells a patient the text is a draft. After: `text-base`, the size of the other patient text.
+
+### Commit fb97c67: Test: the thank-you card can be touched by a screen reader, and the hidden box empties after a few seconds
+
+```diff
+diff --git a/components/patient/StillHerePrompt.click.test.tsx b/components/patient/StillHerePrompt.click.test.tsx
+index cb974aa..e044296 100644
+--- a/components/patient/StillHerePrompt.click.test.tsx
++++ b/components/patient/StillHerePrompt.click.test.tsx
+@@ -95,16 +95,36 @@ describe("StillHerePrompt tap", () => {
+     expect(statusBox()?.className.split(" ")).toContain("sr-only");
+   });
+ 
+-  it("keeps the status box hidden after the tap and shows the thank-you in a separate card", async () => {
++  it("keeps the status box hidden after the tap and shows the thank-you in a card screen readers can touch", async () => {
+     show(due);
+     await act(async () => button()?.click());
+     show(tapped);
+     expect(statusBox()?.className.split(" ")).toContain("sr-only");
+     const card = container.querySelector('[data-testid="still-here-card"]');
+-    expect(card?.getAttribute("aria-hidden")).toBe("true");
++    expect(card?.hasAttribute("aria-hidden")).toBe(false);
+     expect(card?.textContent).toContain(s.thanks);
+   });
+ 
++  it("makes screen readers read the thank-you box as one whole message", () => {
++    show(due);
++    expect(statusBox()?.getAttribute("aria-atomic")).toBe("true");
++  });
++
++  it("empties the hidden thank-you box after a few seconds, so a swipe reads the words only on the card", async () => {
++    vi.useFakeTimers();
++    try {
++      show(due);
++      await act(async () => button()?.click());
++      show(tapped);
++      expect(statusBox()?.textContent).toContain(s.thanks);
++      act(() => vi.advanceTimersByTime(5_000));
++      expect(statusBox()?.textContent).toBe("");
++      expect(container.querySelector('[data-testid="still-here-card"]')?.textContent).toContain(s.thanks);
++    } finally {
++      vi.useRealTimers();
++    }
++  });
++
+   it("leaves focus on the page after a phone tap that did not focus the button", async () => {
+     show(due);
+     expect(document.activeElement).toBe(document.body);
+```
+
+### Commit 38ee12c: Fix: a screen reader can touch the thank-you card, and the hidden box empties after 3 seconds
+
+```diff
+diff --git a/components/patient/StillHerePrompt.tsx b/components/patient/StillHerePrompt.tsx
+index 26b32b7..6c47dc9 100644
+--- a/components/patient/StillHerePrompt.tsx
++++ b/components/patient/StillHerePrompt.tsx
+@@ -15,6 +15,8 @@ import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
+ 
+ /** How long the thank-you stays after a tap. */
+ const THANKS_MS = 5 * 60_000;
++/** How long the hidden box keeps the thank-you, so a screen reader has time to speak it. */
++const THANKS_SPOKEN_MS = 3_000;
+ 
+ type Props = {
+   view: PatientView;
+@@ -50,6 +52,17 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
+   const tapped = view.lastStillHereAt ? new Date(view.lastStillHereAt).getTime() : null;
+   const thanking = !showing && now !== null && tapped !== null && now.getTime() - tapped < THANKS_MS;
+ 
++  // After a few seconds the hidden box goes empty, so a swipe reads the thank-you only on the card.
++  const [thanksSpoken, setThanksSpoken] = useState(false);
++  useEffect(() => {
++    if (!thanking) return;
++    const timer = window.setTimeout(() => setThanksSpoken(true), THANKS_SPOKEN_MS);
++    return () => {
++      window.clearTimeout(timer);
++      setThanksSpoken(false);
++    };
++  }, [thanking]);
++
+   async function onTap() {
+     if (sending) return;
+     setSending(true);
+@@ -80,12 +93,13 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
+         </PromptCard>
+       )}
+       {/* Always on the page and always hidden, so screen readers hear the thank-you when its text
+-          comes in. The card below shows the same words on screen; screen readers skip it. */}
+-      <p role="status" className="sr-only" data-testid="still-here-thanks">
+-        {thanking ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
++          comes in. It empties after a few seconds. The card below shows the same words on screen,
++          and a screen reader user can touch it to hear them again. */}
++      <p role="status" aria-atomic="true" className="sr-only" data-testid="still-here-thanks">
++        {thanking && !thanksSpoken ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
+       </p>
+       {thanking && (
+-        <p aria-hidden="true" className="clean-card font-semibold" data-testid="still-here-card">
++        <p className="clean-card font-semibold" data-testid="still-here-card">
+           {t.stillHere.thanks} {t.stillHere.meaning}
+         </p>
+       )}
+```
+
+### Commit 458029a: Test: the draft notice uses normal-size text
+
+```diff
+diff --git a/components/LanguageSwitch.test.tsx b/components/LanguageSwitch.test.tsx
+index 30b9d94..73d7fb8 100644
+--- a/components/LanguageSwitch.test.tsx
++++ b/components/LanguageSwitch.test.tsx
+@@ -46,6 +46,16 @@ describe("LanguageSwitch", () => {
+     expect(optionText(html, "en")).toBe("English");
+   });
+ 
++  it("shows the draft notice in normal-size text, not small text, so a patient can read it", () => {
++    for (const language of ["fr", "ur", "ar", "zh"]) {
++      const html = renderToStaticMarkup(<LanguageSwitch language={language} />);
++      const tag = html.match(/<p[^>]*data-testid="draft-notice"[^>]*>/)?.[0] ?? "";
++      const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? "").split(" ");
++      expect(classes).toContain("text-base");
++      expect(classes).not.toContain("text-sm");
++    }
++  });
++
+   it("always shows the interpreter line", () => {
+     const html = renderToStaticMarkup(<LanguageSwitch language="en" />);
+     expect(html).toContain(textFor("en").language.interpreter);
+```
+
+### Commit c27ef36: Fix: the draft notice uses normal-size text on patient screens
+
+```diff
+diff --git a/components/LanguageSwitch.tsx b/components/LanguageSwitch.tsx
+index da40db3..98860e4 100644
+--- a/components/LanguageSwitch.tsx
++++ b/components/LanguageSwitch.tsx
+@@ -37,7 +37,7 @@ export function LanguageSwitch({ language }: { language: string }) {
+       {/* Always on the page, so a screen reader hears the notice when it appears after a language change. */}
+       <div role="status">
+         {!current.approved && (
+-          <p className="rounded-lg border-2 border-amber-700 bg-amber-50 p-2 text-sm font-semibold text-amber-950" data-testid="draft-notice">
++          <p className="rounded-lg border-2 border-amber-700 bg-amber-50 p-2 text-base font-semibold text-amber-950" data-testid="draft-notice">
+             {t.language.draftNotice}
+           </p>
+         )}
+```
+
+### components/LanguageSwitch.tsx (full file, after Fix B)
+
+```tsx
+  1  "use client";
+  2  
+  3  // The language menu on patient screens, with each language written in itself so a patient
+  4  // can find their own. Each draft language has a tag in the menu, in its own words, and the
+  5  // draft notice shows for any language a fluent speaker has not approved yet (SPEC). The
+  6  // interpreter line is always shown. The choice is remembered on this phone (data/savedLanguage.ts).
+  7  
+  8  import { chooseLanguage } from "@/data/savedLanguage";
+  9  import { textFor } from "@/lib/text";
+ 10  import { languageInfo, LANGUAGES, menuLabel, type LanguageInfo } from "@/lib/text/languages";
+ 11  
+ 12  /** The menu words for one language: its label, then " - draft" in that language if it is not approved. */
+ 13  function optionLabel(info: LanguageInfo): string {
+ 14    if (info.approved) return menuLabel(info);
+ 15    return `${menuLabel(info)} - ${textFor(info.code).language.draftTag}`;
+ 16  }
+ 17  
+ 18  export function LanguageSwitch({ language }: { language: string }) {
+ 19    const t = textFor(language);
+ 20    const current = languageInfo(language);
+ 21    return (
+ 22      <div className="space-y-2">
+ 23        <label className="flex flex-wrap items-center gap-3">
+ 24          <span className="font-semibold">{t.language.label}</span>
+ 25          <select
+ 26            value={current.code}
+ 27            onChange={(e) => chooseLanguage(e.target.value)}
+ 28            className="min-h-11 max-w-full rounded-lg border-2 border-control bg-card px-3"
+ 29          >
+ 30            {LANGUAGES.map((l) => (
+ 31              <option key={l.code} value={l.code} lang={l.code} dir={l.dir}>
+ 32                {optionLabel(l)}
+ 33              </option>
+ 34            ))}
+ 35          </select>
+ 36        </label>
+ 37        {/* Always on the page, so a screen reader hears the notice when it appears after a language change. */}
+ 38        <div role="status">
+ 39          {!current.approved && (
+ 40            <p className="rounded-lg border-2 border-amber-700 bg-amber-50 p-2 text-base font-semibold text-amber-950" data-testid="draft-notice">
+ 41              {t.language.draftNotice}
+ 42            </p>
+ 43          )}
+ 44        </div>
+ 45        <p className="text-base">{t.language.interpreter}</p>
+ 46      </div>
+ 47    );
+ 48  }
 ```
