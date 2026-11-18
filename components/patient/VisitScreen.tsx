@@ -5,6 +5,7 @@
 // This part stays on the page when the screen changes, so it is the one that moves focus to the
 // new heading when the old screen left with focus inside it.
 
+import Link from "next/link";
 import { useRef } from "react";
 import type { PatientView } from "@/lib/patientView";
 import { fill, textFor } from "@/lib/text";
@@ -67,7 +68,17 @@ export function VisitScreen({ loading, result, linkFailed, linkReplaced = false,
           </h2>
           {linkReplaced && <p className="text-lg">{p.replacedLinkText}</p>}
           {linkFailed && !linkReplaced && <p className="text-lg">{p.brokenLinkText}</p>}
-          <p className="text-lg">{p.findVisitHelp}</p>
+          {/* The old slip no longer works after a new link, and a new visit could make a second visit for the same person. */}
+          {!linkReplaced && (
+            <>
+              <p className="text-lg">{p.findVisitHelp}</p>
+              <p className="text-lg">
+                <Link href="/" className="font-semibold text-brand underline underline-offset-2">
+                  {p.expiredNewVisit}
+                </Link>
+              </p>
+            </>
+          )}
         </section>
       )}
       {screen === "visit" && view && (
