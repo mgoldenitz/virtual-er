@@ -308,3 +308,28 @@ index e9a808d..05362a9 100644
    const showNewLink = (updated: Visit) => {
      onShowSlip(updated);
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted as given (formatting made plain).
+
+### Problems found
+
+1. Focus drops to `document.body` if `visit.status` skips `called` before the effect runs. `components/staff/VisitRow.tsx` lines 82 to 86. If the patient taps "I'm on my way" (or other staff mark the visit arrived) before the staff browser draws `called`, the status goes from `waiting` straight to `on_the_way` (or `arrived` / `needs_reassessment`). `<RecallPanel>` unmounts with focus on "Recall patient", the effect stops because the status is not `called`, and focus falls to the body. Fix: check `visit.status === "waiting"` (return) instead of `!== "called"`.
+
+2. `focusDone` and `recallSaved` are never reset, so a second recall of the same visit gets no focus move. `components/staff/VisitRow.tsx` lines 74 to 86. A visit can go back to `waiting` with the same `visit.id` (from `needs_reassessment`, or a closed `unable_to_reach` visit opened again). Fix: remove `focusDone`, and call `setRecallSaved(false)` in the effect before the focus:
+   `useEffect(() => { if (!recallSaved || visit.status === "waiting") return; setRecallSaved(false); progressLine.current?.focus(); }, [recallSaved, visit.status]);`
+
+3. A window for a second recall after "saved" and before `visit.status` changes. `components/staff/VisitRow.tsx` lines 74 to 79. `act()` sets `saving` to false when "saved" comes, before the list draws `called`; the panel is already `idle`, so "Recall patient" is active and staff can confirm a second recall. Fix: `saving={saving || recallSaved}` on `<RecallPanel>`.
+
+4. Focus drops to the body when other staff change the visit while focus is in the panel. `components/staff/VisitRow.tsx` lines 82 to 86 and `components/staff/RecallPanel.tsx` lines 55 to 69. Also after a `refused` "Yes" because other staff recalled first: `recallSaved` stays false, the panel unmounts, focus falls to the body. Fix: a wrapper ref in `RecallPanel` and an `onFocusLost` callback in a `useLayoutEffect` cleanup, wired to focus the progress line.
+
+5. The "called before saved" test skips the panel's `setTimeout(0)` before the panel unmounts. `components/staff/VisitRow.click.test.tsx` lines 93 to 104. The test calls `draw(called)` straight after "Yes", without `await nextTick()`, so the real browser order (focus on "Recall patient", then body on unmount, then the progress line on "saved") is not run. It also has no `not.toContain("Waiting off-site")`. Fix: add `await nextTick()` after "Yes" and the missing check.
+
+### Answers to questions a to c
+
+a. Yes, in 4 ways: the status skips `called` (and `recallSaved` stays true); the row unmounts while the save runs (focus to body); a new key remounts the row with fresh state; a recall from another screen makes this one `refused` while the panel unmounts.
+
+b. Yes. A visit keeps its `visit.id` when it goes to `needs_reassessment` and back to `waiting`, or when a closed visit such as `unable_to_reach` is opened again. `focusDone` stays true and blocks the second focus move.
+
+c. No. `act()` runs effects at once and hides real draw timing. The "called before saved" test misses the `nextTick()`. No test: status skips `called`; row unmounts while saving; a second recall on the same row; another screen recalls while this save returns `refused` or `not_saved`; `nextTick()` between "Yes" and `draw(called)`; `draw(called)` and `finish("saved")` in one `act()`; clicks on "Recall patient" or a double tap on "Yes" while saving or after "saved"; Enter, Space, Tab and "Cancel" in `VisitRow.click.test.tsx`; the two `useId()` values are not compared (`id1 !== id2`).
