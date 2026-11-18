@@ -66,7 +66,7 @@ export const en = {
 
   // Shown on the start page and the patient screen when a visit from home was never triaged.
   expiredText:
-    "You started this visit over 6 hours ago. It was never checked in at triage. Staff no longer expect you to arrive.",
+    "You started this visit over 6 hours ago. No nurse saw you for this visit. Staff no longer expect you to arrive.",
 
   patient: {
     loading: "Loading your visit…",
@@ -76,6 +76,9 @@ export const en = {
     noVisitHeading: "No visit found on this phone",
     brokenLinkHeading: "This link did not work",
     brokenLinkText: "The link might be wrong or cut short. No visit was opened.",
+    // Staff gave a new link or closed the visit, so this link no longer works.
+    replacedLinkHeading: "This visit link is no longer active",
+    replacedLinkText: "Please ask the emergency department desk for help.",
     findVisitHelp:
       "Scan the QR code on your slip. You can also type the link printed under it. If it still fails, ask the desk to show the QR code again.",
 
@@ -95,17 +98,17 @@ export const en = {
     onMyWay: "I'm on my way",
     sending: "Sending…",
     confirmed: "Thank you. Staff know you are on your way.",
-    notSaved: "Your answer did not save. Staff do not know you tapped it. Please try again or go to the desk.",
+    notSaved: "Your answer did not save. Staff do not know you are on your way. Please try again or go to the desk.",
 
-    fromHomeHeading: "Status: Started from home, not yet triaged",
+    fromHomeHeading: "Status: Started from home, not seen by a nurse yet",
     fromHomeText: [
       // SPEC
       "Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.",
-      "This app does not register you or give permission to wait off-site.",
-      "If you go to the emergency department, follow its normal steps. Show this visit code to staff. Only staff can approve off-site waiting.",
+      "This app does not check you in at the hospital or let you wait away from the hospital.",
+      "When you get to the emergency department, check in at the front desk and show this visit code. Only staff can let you wait away from the hospital.",
     ],
     reassessHeading: "Please go to the triage desk",
-    reassessText: "A nurse needs to check you again. This happens before you rejoin the line.",
+    reassessText: "A nurse needs to check you again before you go back in line.",
     arrivedHeading: "Status: Ready at the desk",
     arrivedText: "Staff know you are back. Please stay in the waiting area until you are called.",
     onsiteHeading: "Status: Waiting in the emergency department",
@@ -123,7 +126,7 @@ export const en = {
 
   // Heard by screen-reader users when the status changes (never the wait range or countdowns).
   announce: {
-    called: "You have been called back. Please head back to the emergency department now.",
+    called: "It is your turn. Please come back to the emergency department now.",
     onTheWay: "Thank you. Staff know you are on your way.",
     arrived: "Staff have marked you as back at the emergency department.",
     ended: "Your off-site wait has ended.",
@@ -132,6 +135,7 @@ export const en = {
     secondAlert: "Urgent: Please return to the emergency department right now.",
     waiting: "You are now in the off-site line. This page shows your place in line.",
     onsite: "Please wait inside the emergency department. Staff will call you when they are ready.",
+    expired: "This visit request has expired. If you still need care, please go to the emergency department desk.",
   },
 
   // Desk slip (printed for the patient).
@@ -147,7 +151,7 @@ export const en = {
     thanks: "Thank you.",
     meaning: "This tells staff you are still waiting. It is not a check of your health.",
   },
-  secondAlert: "Please return to the emergency department right now. Staff may try to reach you.",
+  secondAlert: "Please come back to the emergency department right now. Staff may phone you.",
   returnNow: {
     lead: "We have not heard from you.",
     // SPEC
@@ -167,6 +171,9 @@ export const en = {
   language: {
     label: "Select language",
     draftNotice: "This translation is a draft. A fluent speaker has not checked it yet.",
+    // Shown in brackets after a draft language's name in the menu.
+    draftTag: "draft",
+    interpreter: "Need another language? Ask the emergency department desk for a free interpreter.",
   },
   survey: {
     // SPEC

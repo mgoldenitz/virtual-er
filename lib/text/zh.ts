@@ -57,7 +57,7 @@ export const zh: PatientText = {
     dashboard: "仪表板",
   },
   expiredText:
-    "您在 6 小时前开始了这次就诊。它从未在分诊处登记过。工作人员不再期望您的到来。",
+    "您在6个多小时前开始了这次就诊。没有护士为这次就诊看过您。工作人员不再预计您会前来。",
   patient: {
     loading: "正在加载您的就诊信息…",
     unavailableHeading: "我们无法加载您的就诊信息",
@@ -66,6 +66,8 @@ export const zh: PatientText = {
     noVisitHeading: "在此手机上未找到就诊信息",
     brokenLinkHeading: "此链接无效",
     brokenLinkText: "链接可能错误或被截断。没有打开任何就诊。",
+    replacedLinkHeading: "此就诊链接已失效",
+    replacedLinkText: "请向急诊室前台寻求帮助。",
     findVisitHelp:
       "扫描凭条上的 QR 码。您也可以输入打印在它下方的链接。如果仍然失败，请要求前台再次出示 QR 码。",
     waitingHeading: "状态：等候中",
@@ -81,15 +83,15 @@ export const zh: PatientText = {
     onMyWay: "我正在路上",
     sending: "正在发送…",
     confirmed: "谢谢。工作人员知道您正在路上。",
-    notSaved: "您的回答未保存。工作人员不知道您点击了它。请重试或去前台。",
-    fromHomeHeading: "状态：在家开始，尚未分诊",
+    notSaved: "您的回答未保存。工作人员不知道您正在路上。请重试或前往前台。",
+    fromHomeHeading: "状态：在家开始，还没有护士看过您",
     fromHomeText: [
       "您的排队位置从护士在分诊处（triage）看到您时开始算起。最紧急的患者总是优先就诊。",
-      "此应用程序不会为您注册或允许您在院外候诊。",
-      "如果您去急诊室，请遵循其正常步骤。向工作人员出示此就诊代码。只有工作人员才能批准院外候诊。",
+      "此应用不会为您在医院登记，也不会让您在医院外等候。",
+      "当您到达急诊室时，请在前台登记并出示此就诊代码。只有工作人员才能让您在医院外等候。",
     ],
     reassessHeading: "请前往分诊台",
-    reassessText: "护士需要再次为您检查。这将在您重新加入队伍之前进行。",
+    reassessText: "在您重新排队之前，护士需要再次为您检查。",
     arrivedHeading: "状态：在前台准备就绪",
     arrivedText: "工作人员知道您回来了。请在候诊区等候，直到有人叫您。",
     onsiteHeading: "状态：在急诊室内等候",
@@ -105,7 +107,7 @@ export const zh: PatientText = {
     expiredNewVisit: "或者在起始页开始一次新的演示就诊。",
   },
   announce: {
-    called: "您已被叫回。请现在回到急诊室。",
+    called: "轮到您了。请现在回到急诊室。",
     onTheWay: "谢谢。工作人员知道您正在路上。",
     arrived: "工作人员已将您标记为回到急诊室。",
     ended: "您的院外候诊已结束。",
@@ -114,6 +116,7 @@ export const zh: PatientText = {
     secondAlert: "紧急：请立即回到急诊室。",
     waiting: "您现在已进入院外候诊队列。此页面显示您在队列中的位置。",
     onsite: "请在急诊室内等候。工作人员准备好后会叫您。",
+    expired: "此就诊请求已过期。如果您仍需要护理，请前往急诊室前台。",
   },
   slip: {
     typeLink: "或者在手机浏览器中输入此链接：",
@@ -124,7 +127,7 @@ export const zh: PatientText = {
     thanks: "谢谢。",
     meaning: "这告诉工作人员您仍在等待。这不是对您健康状况的检查。",
   },
-  secondAlert: "请立即回到急诊室。工作人员可能会试图联系您。",
+  secondAlert: "请立即回到急诊室。工作人员可能会拨打您的电话。",
   returnNow: {
     lead: "我们没有收到您的消息。",
     text: "请现在回来。如果您不回复，工作人员将审查您的就诊。",
@@ -143,6 +146,8 @@ export const zh: PatientText = {
   language: {
     label: "选择语言",
     draftNotice: "此翻译是草稿。流利的母语人士尚未检查过它。",
+    draftTag: "草稿",
+    interpreter: "需要其他语言？请向急诊室前台申请免费翻译人员。",
   },
   survey: {
     question: "您如何评价您的等待体验？",

@@ -57,7 +57,7 @@ export const fr: PatientText = {
     dashboard: "Tableau de bord",
   },
   expiredText:
-    "Vous avez commencé cette visite il y a plus de 6 heures. Elle n'a jamais été enregistrée au triage. Le personnel ne s'attend plus à ce que vous arriviez.",
+    "Vous avez commencé cette visite il y a plus de 6 heures. Aucune infirmière ne vous a vu pour cette visite. Le personnel ne s'attend plus à ce que vous arriviez.",
   patient: {
     loading: "Chargement de votre visite…",
     unavailableHeading: "Nous ne pouvons pas charger votre visite",
@@ -66,6 +66,8 @@ export const fr: PatientText = {
     noVisitHeading: "Aucune visite trouvée sur ce téléphone",
     brokenLinkHeading: "Ce lien n'a pas fonctionné",
     brokenLinkText: "Le lien pourrait être erroné ou coupé court. Aucune visite n'a été ouverte.",
+    replacedLinkHeading: "Ce lien de visite n'est plus actif",
+    replacedLinkText: "Veuillez demander de l'aide au bureau du service des urgences.",
     findVisitHelp:
       "Scannez le code QR sur votre billet. Vous pouvez également taper le lien imprimé en dessous. Si cela échoue toujours, demandez au bureau de vous montrer à nouveau le code QR.",
     waitingHeading: "Statut : En attente",
@@ -81,15 +83,15 @@ export const fr: PatientText = {
     onMyWay: "Je suis en route",
     sending: "Envoi en cours…",
     confirmed: "Merci. Le personnel sait que vous êtes en route.",
-    notSaved: "Votre réponse n'a pas été enregistrée. Le personnel ne sait pas que vous avez appuyé dessus. Veuillez réessayer ou vous rendre au bureau.",
-    fromHomeHeading: "Statut : Commencée depuis la maison, pas encore triée",
+    notSaved: "Votre réponse n'a pas été enregistrée. Le personnel ne sait pas que vous êtes en route. Veuillez réessayer ou vous rendre au bureau.",
+    fromHomeHeading: "Statut : Commencée depuis la maison, pas encore vue par une infirmière",
     fromHomeText: [
       "Votre place dans la file commence lorsqu'une infirmière vous voit au triage. Les patients les plus urgents sont toujours vus en premier.",
-      "Cette application ne vous inscrit pas ni ne vous donne la permission d'attendre hors site.",
-      "Si vous vous rendez au service des urgences, suivez ses étapes normales. Montrez ce code de visite au personnel. Seul le personnel peut approuver l'attente hors site.",
+      "Cette application ne vous enregistre pas à l'hôpital et ne vous permet pas d'attendre hors de l'hôpital.",
+      "Quand vous arrivez au service des urgences, enregistrez-vous au bureau d'accueil et montrez ce code de visite. Seul le personnel peut vous permettre d'attendre hors de l'hôpital.",
     ],
     reassessHeading: "Veuillez vous rendre au bureau de triage",
-    reassessText: "Une infirmière doit vous examiner à nouveau. Cela se produit avant que vous ne rejoigniez la file d'attente.",
+    reassessText: "Une infirmière doit vous examiner de nouveau avant que vous retourniez dans la file d'attente.",
     arrivedHeading: "Statut : Prêt au bureau",
     arrivedText: "Le personnel sait que vous êtes de retour. Veuillez rester dans la salle d'attente jusqu'à ce que l'on vous appelle.",
     onsiteHeading: "Statut : En attente au service des urgences",
@@ -105,7 +107,7 @@ export const fr: PatientText = {
     expiredNewVisit: "Ou commencez une nouvelle visite de démonstration sur la page d'accueil.",
   },
   announce: {
-    called: "Vous avez été rappelé. Veuillez retourner au service des urgences maintenant.",
+    called: "C'est votre tour. Veuillez revenir au service des urgences maintenant.",
     onTheWay: "Merci. Le personnel sait que vous êtes en route.",
     arrived: "Le personnel vous a marqué comme étant de retour au service des urgences.",
     ended: "Votre attente hors site est terminée.",
@@ -114,6 +116,7 @@ export const fr: PatientText = {
     secondAlert: "Urgent : Veuillez retourner au service des urgences immédiatement.",
     waiting: "Vous êtes maintenant dans la file d'attente hors site. Cette page indique votre place dans la file.",
     onsite: "Veuillez attendre à l'intérieur du service des urgences. Le personnel vous appellera lorsqu'il sera prêt.",
+    expired: "Cette demande de visite a expiré. Si vous avez toujours besoin de soins, veuillez vous rendre au bureau du service des urgences.",
   },
   slip: {
     typeLink: "Ou tapez ce lien dans le navigateur de votre téléphone :",
@@ -124,7 +127,7 @@ export const fr: PatientText = {
     thanks: "Merci.",
     meaning: "Cela indique au personnel que vous attendez toujours. Ce n'est pas un bilan de votre santé.",
   },
-  secondAlert: "Veuillez retourner au service des urgences immédiatement. Le personnel peut essayer de vous joindre.",
+  secondAlert: "Veuillez revenir au service des urgences immédiatement. Le personnel peut appeler votre téléphone.",
   returnNow: {
     lead: "Nous n'avons pas eu de vos nouvelles.",
     text: "Veuillez revenir maintenant. Le personnel examinera votre visite si vous ne répondez pas.",
@@ -143,6 +146,8 @@ export const fr: PatientText = {
   language: {
     label: "Choisir la langue",
     draftNotice: "Cette traduction est un brouillon. Un locuteur courant ne l'a pas encore vérifiée.",
+    draftTag: "brouillon",
+    interpreter: "Besoin d'une autre langue ? Demandez un interprète gratuit au bureau du service des urgences.",
   },
   survey: {
     question: "Comment évalueriez-vous votre expérience d'attente ?",
