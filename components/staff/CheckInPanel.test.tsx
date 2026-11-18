@@ -119,3 +119,12 @@ describe("CheckInPanel while off-site waiting is paused", () => {
     expect(render(true)).toMatch(/<button[^>]*>Waits on-site<\/button>/);
   });
 });
+
+describe("CheckInPanel on a narrow screen", () => {
+  it("keeps the language menu inside the screen width (WCAG reflow)", () => {
+    // Without max-w-full the menu is as wide as its longest choice, and the staff page scrolls sideways.
+    const tag = render(false).match(/<select[^>]*>/)?.[0] ?? "";
+    const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? "").split(" ");
+    expect(classes).toContain("max-w-full");
+  });
+});
