@@ -579,3 +579,57 @@ index 505165e..b7d9125 100644
    secondAlert: "请立即回到急诊室。工作人员可能会拨打您的电话。",
    returnNow: {
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted as given (formatting made plain).
+
+### Problems found
+
+1. Tapping "Recall patient" while `saving` is `true` re-opens the confirmation prompt during an in-flight save (including on a double-tap of "Yes, recall patient")
+- File and line: `components/staff/RecallPanel.tsx`, lines 42-53 (specifically line 50).
+- What goes wrong: `Button.tsx` sets `aria-disabled={saving}` rather than the HTML `disabled` attribute, so pointer and keyboard clicks still trigger `onClick`. When staff tap "Yes, recall patient", `confirm()` calls `returnToRecall()`, immediately switching `mode` back to "idle" and rendering "Recall patient" in the same screen position while `saving` becomes `true`. Because line 50 does not guard `if (saving) return;`, a rapid double-tap on "Yes, recall patient" (whose second tap lands on "Recall patient") or any tap while `saving` is `true` re-opens the confirmation question and moves focus to "Yes, recall patient" while the first save is still in flight.
+- Smallest fix: `<Button ref={recallButton} aria-disabled={saving} onClick={() => { if (!saving) setMode("confirm"); }}>`
+
+2. Brief window to recall the same patient twice after `callBackVisit` resolves "saved"
+- File and line: `components/staff/VisitRow.tsx`, lines 73-75 and line 102.
+- What goes wrong: `recall()` awaits `act(() => callBackVisit(visit.id))`, which sets `saving` back to `false` as soon as the RPC resolves, before the parent list re-fetches `visits` and changes `visit.status` from "waiting" to "called". "Recall patient" renders active until the parent refreshes, allowing staff to confirm a second recall on the same visit.
+- Smallest fix: track a local `recalled` boolean in `VisitRow.tsx` (set to `true` when `callBackVisit` returns "saved") and hide `RecallPanel` when `visit.status !== "waiting" || recalled`.
+
+3. Screen readers do not hear the confirmation warning or visit code when "Yes, recall patient" receives focus
+- File and line: `components/staff/RecallPanel.tsx`, lines 26-28 and 56-63.
+- What goes wrong: opening the confirm panel focuses "Yes, recall patient", past the question `<p>`. The `<p>` is not tied to the button by `aria-describedby`, so NVDA, VoiceOver and TalkBack announce only "Yes, recall patient, button", without the visit code and "There is no undo."
+- Smallest fix: `<p id={`recall-prompt-${code}`} className="font-semibold">` and `aria-describedby={`recall-prompt-${code}`}` on the "Yes" button.
+
+4. Focus moves to `progressLine` before `visit` updates to "called", reading stale "waiting" status text
+- File and line: `components/staff/VisitRow.tsx`, lines 73-75 and 91-93.
+- What goes wrong: `recall()` focuses the progress line at once after "saved", while the `visit` prop is still `waiting`, so it reads the old text. The `<p tabIndex={-1}>` also has no `focus-visible` outline.
+- Smallest fix: add `focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950`, and pass an updated `{ ...visit, status: "called" }` into `progress(...)` once saved.
+
+5. Focus drops to `document.body` if `RecallPanel` unmounts while open due to another staff screen updating `visit.status`
+- File and line: `components/staff/VisitRow.tsx` line 102, `components/staff/RecallPanel.tsx` lines 55-69.
+- What goes wrong: if the question is open and another staff screen recalls, arrives or closes the visit, `RecallPanel` unmounts and nothing rescues focus.
+- Smallest fix: a wrapper ref in `RecallPanel.tsx`; in a `useLayoutEffect` cleanup, call an `onFocusLost` prop if the wrapper held focus; `VisitRow.tsx` wires it to `progressLine.current?.focus()`.
+
+6. Broken-link and no-visit screens show "Or start a new demo visit on the start page" (`p.expiredNewVisit`), encouraging patients with an active desk visit to create a second visit
+- File and line: `components/patient/VisitScreen.tsx`, lines 73-80.
+- What goes wrong: a patient already checked in who mistyped the slip URL, or opened `/patient` in a browser without the saved token, is invited to start a duplicate `pre_arrival` visit.
+- Smallest fix: a neutral label, for example a new `p.startPageLink`: "Go to the start page".
+
+7. Replaced-link screen (`linkReplaced === true`) removes all navigation back to `/`
+- File and line: `components/patient/VisitScreen.tsx`, lines 69-81.
+- What goes wrong: the replaced-link screen has no link back to `/` (care options, 911 and Health811 information).
+- Smallest fix: keep only `findVisitHelp` inside `!linkReplaced`, and show a neutral `<Link href="/">` on all three none screens.
+
+### Answers to questions a to d
+
+a. Wrong patient: no, if the list keys `VisitRow` by `visit.id`. Each `RecallPanel` lives in its row, names `visit.code`, and binds `onConfirm` to that row's `visit.id`; a re-order moves the row with its panel. Recall twice: yes, in two narrow windows: (1) a double tap on "Yes", where the second tap hits "Recall patient" with no `saving` guard; (2) between "saved" and the list refresh, when `saving` is false and the status is still `waiting` (relying only on a server-side status check to reject it).
+
+b. Open: focus goes to "Yes" (line 27), then "Cancel" (line 64); the question `<p>` is not tied by `aria-describedby`. "Yes" saved: focus goes to the progress line and stays when the panel unmounts, because the `setTimeout(0)` sees focus on the progress line; but it reads the old "waiting" text, and has no visible focus ring. "Yes" not saved: `returnToRecall()` puts focus on "Recall patient" on the next tick and the row shows "Not saved" (one tick on `document.body`). "Cancel": focus back on "Recall patient" on the next tick. If another screen changes the status while the question is open, focus falls to `document.body`.
+
+c. Missing a way forward: the replaced-link screen has no link back to `/`. Second visit: yes, on the broken-link and no-visit screens, the `expiredNewVisit` link invites a patient with an active visit to start a second `pre_arrival` visit. (`/` blocks a second visit when `localStorage` holds an open visit, but a mistyped link or another browser bypasses that.)
+
+d. No. Paths with no test:
+- Change 1: focus back on "Recall patient" after "Yes" fails (`VisitRow.click.test.tsx` lines 66-72 only checks that focus is not on the progress line, with no `nextTick()`); a "refused" result; a tap on "Recall patient" while `saving` after "Yes" (`RecallPanel.click.test.tsx` lines 76-83 sets `saving` only in confirm mode); after "saved", no `nextTick()` to prove focus stays on the progress line, and no re-render with `status: "called"`; "Cancel" inside `VisitRow`; Tab, Shift+Tab, Escape, and the accessible description.
+- Change 2: `linkFailed={false}` with `linkReplaced={true}` (line 169 only tests `showNone(true, true)`); focus on the none screen in the new describe block.
+- Change 3: other languages on the "not_saved" alert (lines 137-144 test only "en"); a retry after "not_saved" that clears the alert.
