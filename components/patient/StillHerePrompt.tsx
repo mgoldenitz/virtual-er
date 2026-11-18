@@ -15,6 +15,8 @@ import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
 
 /** How long the thank-you stays after a tap. */
 const THANKS_MS = 5 * 60_000;
+/** How long the hidden box keeps the thank-you, so a screen reader has time to speak it. */
+const THANKS_SPOKEN_MS = 3_000;
 
 type Props = {
   view: PatientView;
@@ -50,6 +52,17 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
   const tapped = view.lastStillHereAt ? new Date(view.lastStillHereAt).getTime() : null;
   const thanking = !showing && now !== null && tapped !== null && now.getTime() - tapped < THANKS_MS;
 
+  // After a few seconds the hidden box goes empty, so a swipe reads the thank-you only on the card.
+  const [thanksSpoken, setThanksSpoken] = useState(false);
+  useEffect(() => {
+    if (!thanking) return;
+    const timer = window.setTimeout(() => setThanksSpoken(true), THANKS_SPOKEN_MS);
+    return () => {
+      window.clearTimeout(timer);
+      setThanksSpoken(false);
+    };
+  }, [thanking]);
+
   async function onTap() {
     if (sending) return;
     setSending(true);
@@ -80,12 +93,13 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
         </PromptCard>
       )}
       {/* Always on the page and always hidden, so screen readers hear the thank-you when its text
-          comes in. The card below shows the same words on screen; screen readers skip it. */}
-      <p role="status" className="sr-only" data-testid="still-here-thanks">
-        {thanking ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
+          comes in. It empties after a few seconds. The card below shows the same words on screen,
+          and a screen reader user can touch it to hear them again. */}
+      <p role="status" aria-atomic="true" className="sr-only" data-testid="still-here-thanks">
+        {thanking && !thanksSpoken ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
       </p>
       {thanking && (
-        <p aria-hidden="true" className="clean-card font-semibold" data-testid="still-here-card">
+        <p className="clean-card font-semibold" data-testid="still-here-card">
           {t.stillHere.thanks} {t.stillHere.meaning}
         </p>
       )}
