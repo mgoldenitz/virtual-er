@@ -1967,3 +1967,41 @@ Other patient sentences:
 3. `StartVisit.tsx` does not announce a pause that is already on at first load. Lines 39-43 and 131-143 (`wasPaused === false && sitePaused`). Severity: Low. Fix: announce when `wasPaused !== true && sitePaused`, or when both sites are paused.
 4. Empty `<p role="status">` in `StillHerePrompt.tsx` line 83 adds blank space under `space-y-5`. Severity: Low. Fix: `className={thanking ? "clean-card font-semibold" : "sr-only"}`.
 5. Demo links (`Staff screen`, `Patient screen`, `Dashboard`) sit right under the 911 line on `/`. `StartPageBody.tsx` lines 33-44. Severity: Low. Fix: a visible "Demo navigation (testing only)" label, or move them into the footer.
+
+## Claude's check
+
+Claude, 2026-11-17. Each point was read against the code on `phase3-review-fixes` at `ce585ee`. "Real" means the code does what Gemini says. "Not real" means the code already does something else. "Product decision" means the owner chooses.
+
+### Gemini made these errors
+
+- 1.5 and 6.1 say the 150% cap breaks "the spec's 200% target". SPEC.md line 43 asks that the layout works when the user enlarges text to 200% "in the browser or phone settings". It does not ask for a 200% choice in the app. The WCAG check on 2026-11-17 used 200% root text and found no fault on `/` and `/patient`. The 150% top size is a decision (docs/decisions.md line 12). A 200% choice is a product decision, not a fault.
+- 1.3 says the old status stays at full contrast when offline. `components/patient/StatusAndSound.tsx` line 34 already puts a dashed frame around the status when `online` is false, and the banner is above it. The captive portal case is accepted (docs/known-issues.md line 12). Not real.
+- 2.1 and 2.15 rewrite "Please head back now" and "Ready at the desk". SPEC.md line 60 fixes these status words. They stay. Gemini's list of fixed sentences missed this line.
+- 7.2 says `onOnMyWay` can stay on "Sending..." if `recordSeen` throws. `recordSeen` and `confirmOnMyWayByToken` both go through `patientStep` in `data/patientVisit.ts` (line 141), which catches every error and gives back `not_saved`. Neither call can throw. Not real. A `try / finally` would be only a guard.
+
+### Real, code fixes (no wording choice)
+
+- 4.1: `StatusAnnouncer` gets `view.status` only (`VisitScreen.tsx` line 85). When `expired` becomes true at 6 hours, the status stays `waiting`, so nothing is announced. Real, Medium.
+- 4.2: `pending` is never cleared and `language` is in the effect deps (`StatusAnnouncer.tsx` line 72). A language change runs the effect again and says the last status again, in the new language. Real, Low. It can be helpful (the patient hears the status in the new language), but an old call-back message said again is wrong if the status is still `called` only by chance.
+- 3.1: the draft notice (`LanguageSwitch.tsx` line 30) has no live region. Real, Medium. Fix: an always-present `role="status"` wrapper (known-issues line 27).
+- 6.2: `lang` and `dir` are on `<main>` only. `<html lang="en">` is fixed in `app/layout.tsx` line 22, so the footer and the page title stay English and left-to-right. Real, Low.
+- 6.4: `CareOptions.tsx` line 9 links are inline with no padding. Inline links in a sentence are an exception in WCAG 2.5.8, but the stand-alone links are not. Real, Medium. Fix: `inline-block py-1` (to measure in the browser).
+- 7.4: the empty `role="status"` in `StillHerePrompt.tsx` line 83 adds a gap. Real, Low.
+- 4.3, 4.4, 4.5, 5.3, 7.3: plausible. Not checked yet. Each gets a test that must fail first before any fix.
+
+### Real, product or wording decisions (owner)
+
+- 1.7 and 5.1: iPhone Safari has no `navigator.vibrate`. The `sound.notice` text says "It also vibrates if your phone allows it", which is true but easy to miss. A notice that shows only on phones with no vibration is a new text in 5 languages.
+- 1.8 and 7.1: a replaced or closed link (`deadToken`) shows "This link did not work" (`app/patient/page.tsx` line 53). The text blames the link, not the change by staff. A new message is new text in 5 languages.
+- 1.10 and 3.3: no line tells a patient with another language to ask for an interpreter. New text.
+- 1.5, 1.9, 6.1: a 200% choice and a text size switch on `/`. The head script works only on `/patient` (`lib/textSize.ts` line 34), so a switch on `/` needs that guard changed too.
+- 2 (plain language): 18 of the 20 rewrites are allowed (2.1 and 2.15 are fixed by SPEC). Each changed English line makes the 4 draft translations out of date, and the fluent reviewer step has not started yet.
+- 3.2: "(draft)" in the menu label. New text.
+- 1.11 and 3.3: start in the phone's language from `navigator.languages`. A new rule in `lib/`.
+
+### Out of scope for the demo (I suggest no change)
+
+- 1.1: one saved visit per phone. A second visit on a shared phone is a new feature.
+- 1.2: slower polling in a hidden tab. Useful for data, but it changes the realtime rule and needs its own test plan.
+- 5.2: iPhone stops sound after a lock. The notice already says alerts work only while the page is open and the phone is unlocked (SPEC.md line 64). When the beep fails, the box says so (`offWhileCalled`).
+- 6.3, 6.5, 7.5: Low. Note them only.
