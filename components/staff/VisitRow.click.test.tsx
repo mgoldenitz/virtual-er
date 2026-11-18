@@ -3,10 +3,11 @@
 // and focus then moves to the progress line, because the "Recall patient" button leaves the page.
 
 import { act } from "react";
+import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { callBackVisit } from "@/data/staffActions";
-import { checkInAtDesk } from "@/lib/visitActions";
+import { callBack, checkInAtDesk } from "@/lib/visitActions";
 import { VisitRow } from "./VisitRow";
 
 // The save is replaced, so the test controls what it returns.
@@ -28,6 +29,9 @@ let container: HTMLDivElement;
 let root: Root;
 
 const button = (words: string) => [...container.querySelectorAll("button")].find((b) => b.textContent?.startsWith(words));
+
+/** Lets the one-tick focus waits (setTimeout 0) run. */
+const nextTick = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
 
 async function press(words: string) {
   const target = button(words);
@@ -69,5 +73,34 @@ describe("VisitRow recall", () => {
     await press("Yes, recall patient");
     expect(container.textContent).toContain("Not saved");
     expect(document.activeElement).not.toBe(container.querySelector('[data-testid="progress"]'));
+  });
+
+  it("after a save, the progress line already shows the called text when focus lands on it", async () => {
+    const called = callBack(waiting, now);
+    if (!called) throw new Error("callBack refused the test visit");
+    // Like the real save: the list gets the called visit before the save says "saved", but a
+    // browser draws that change in a later task, not at once. flushSync draws it in that task.
+    vi.mocked(callBackVisit).mockImplementation(async () => {
+      window.setTimeout(() =>
+        flushSync(() => root.render(<VisitRow visit={called} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />)),
+      );
+      return "saved";
+    });
+    const progress = container.querySelector('[data-testid="progress"]') as HTMLElement;
+    let textAtFocus = "";
+    progress.addEventListener("focus", () => (textAtFocus = progress.textContent ?? ""));
+    await press("Recall patient");
+    await press("Yes, recall patient");
+    await nextTick();
+    expect(textAtFocus).toContain("Called");
+    expect(textAtFocus).not.toContain("Waiting off-site");
+  });
+
+  it("after a failed save, focus goes back to Recall patient on the next tick", async () => {
+    vi.mocked(callBackVisit).mockResolvedValue("not_saved");
+    await press("Recall patient");
+    await press("Yes, recall patient");
+    await nextTick();
+    expect(document.activeElement).toBe(button("Recall patient"));
   });
 });

@@ -81,4 +81,24 @@ describe("RecallPanel taps", () => {
     expect(onConfirm).not.toHaveBeenCalled();
     expect(button("Yes, recall patient")).toBeDefined();
   });
+
+  it("Recall patient does not open the question again while the recall is still saving", async () => {
+    const onConfirm = show(false);
+    await press("Recall patient");
+    await press("Yes, recall patient");
+    show(true, onConfirm);
+    await press("Recall patient");
+    expect(button("Yes, recall patient")).toBeUndefined();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("Yes is described by the question, so a screen reader hears the code and There is no undo", async () => {
+    show(false);
+    await press("Recall patient");
+    const yes = button("Yes, recall patient");
+    const id = yes?.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id ?? "")?.textContent).toContain("Recall visit ABC234?");
+    expect(document.getElementById(id ?? "")?.textContent).toContain("There is no undo.");
+  });
 });
