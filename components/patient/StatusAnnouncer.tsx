@@ -90,10 +90,10 @@ export function StatusAnnouncer({ status, language, expired = false }: Props) {
 
   return (
     <>
-      <p aria-live="polite" className="sr-only">
+      <p aria-live="polite" aria-atomic="true" className="sr-only">
         {polite}
       </p>
-      <p aria-live="assertive" className="sr-only">
+      <p aria-live="assertive" aria-atomic="true" className="sr-only">
         {urgent}
       </p>
     </>

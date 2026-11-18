@@ -8,10 +8,12 @@ const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
 // inline-block with py-1 makes each link a tap target of at least 24 by 24 pixels (WCAG 2.5.8).
 const linkStyle = "inline-block py-1 font-semibold text-brand underline underline-offset-2";
+// A link that stands alone (not inside a sentence) is at least 44 pixels high, like the buttons.
+const aloneStyle = `${linkStyle} min-h-11`;
 
-function External({ href, children, newTab }: { href: string; children: string; newTab: string }) {
+function External({ href, children, newTab, alone }: { href: string; children: string; newTab: string; alone?: boolean }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={linkStyle}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={alone ? aloneStyle : linkStyle}>
       {children}
       <span className="sr-only"> {newTab}</span>
     </a>
@@ -36,7 +38,7 @@ export function CareOptions({ language }: { language?: string }) {
           {s.health811After}
         </li>
         <li>
-          <External href="https://www.regional-virtual-urgent-care.ca/" newTab={t.newTab}>
+          <External href="https://www.regional-virtual-urgent-care.ca/" newTab={t.newTab} alone>
             {s.virtualCare}
           </External>
         </li>
@@ -51,7 +53,7 @@ export function CareOptions({ language }: { language?: string }) {
         .
       </p>
       <p>
-        <External href={THP_EMERGENCY_PAGE} newTab={t.newTab}>
+        <External href={THP_EMERGENCY_PAGE} newTab={t.newTab} alone>
           {s.waitTimesLink}
         </External>
       </p>

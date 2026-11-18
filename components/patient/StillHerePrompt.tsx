@@ -79,10 +79,16 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
           )}
         </PromptCard>
       )}
-      {/* Always on the page, so screen readers hear the thank-you when its text comes in. */}
-      <p role="status" className={thanking ? "clean-card font-semibold" : "sr-only"} data-testid="still-here-thanks">
+      {/* Always on the page and always hidden, so screen readers hear the thank-you when its text
+          comes in. The card below shows the same words on screen; screen readers skip it. */}
+      <p role="status" className="sr-only" data-testid="still-here-thanks">
         {thanking ? `${t.stillHere.thanks} ${t.stillHere.meaning}` : ""}
       </p>
+      {thanking && (
+        <p aria-hidden="true" className="clean-card font-semibold" data-testid="still-here-card">
+          {t.stillHere.thanks} {t.stillHere.meaning}
+        </p>
+      )}
     </>
   );
 }
