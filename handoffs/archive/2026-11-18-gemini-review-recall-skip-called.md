@@ -124,3 +124,7 @@ c. Is any other order of events still not covered?
 ## Not checked
 
 - Not checked in a browser.
+
+## Outcome
+
+2026-11-18. Skipped by the owner. A browser check at 390 px takes its place (see docs/progress.md).
