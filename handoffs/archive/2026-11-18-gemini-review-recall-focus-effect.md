@@ -351,3 +351,7 @@ c. No. `act()` runs effects at once and hides real draw timing. The "called befo
 Questions a to c: a is covered by points 1 and 4; b by point 2 (the row unmounts); c by points 1 and 5. The other paths with no test (keys, "Cancel", double taps) are covered in `RecallPanel.click.test.tsx`, which already tests "Yes" while `saving` and "Cancel". The `useId` test checks that each panel's question is inside its own box, which fails if the two ids are the same.
 
 Plan: test first (point 1 test and point 5 changes), "Test:" commit, then the fix, "Fix:" commit.
+
+## Outcome
+
+2026-11-18. Points 1 and 5 fixed: test `ee87bea`, fix `91ee6f3`. Focus after a saved recall now moves once the row is no longer `waiting`, so it also moves when the next drawn status is `on_the_way`. The "called before saved" test waits one tick after "Yes" and checks the focus text has no "Waiting off-site". Point 2: not valid (the row unmounts on every way back to `waiting`). Point 3: not valid. Point 4: the Phase 5 item in `docs/known-issues.md`. Checks after `91ee6f3`: 65 test files, 376 tests pass; lint 0 errors, 2 warnings (the `.playwright-mcp` helpers); build passed. Next review: handoffs/2026-11-18-gemini-review-recall-skip-called.md.
