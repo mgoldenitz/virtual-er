@@ -1444,3 +1444,22 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner, as given.
 2. **Toggling `sr-only` off in the same render that populates `role="status"` can drop the screen reader announcement (`components/patient/StillHerePrompt.tsx`, line 83; `components/patient/StillHerePrompt.click.test.tsx`, lines 90–96)**
 * **What goes wrong for a patient or screen reader user:** Sighted users **do** see the thank-you card after tapping `"I'm still here"` because `thanking ? "clean-card font-semibold" : "sr-only"` removes `"sr-only"`. However, switching the `<p role="status">` element's CSS positioning/clipping from `sr-only` (`position: absolute; width: 1px; height: 1px`) to a visible block box in the **same commit** that inserts the text causes iOS VoiceOver / WebKit and some desktop screen readers to reconstruct the accessible object and skip speaking the live-region update (`plausible` — cannot be proven in happy-dom; also `StillHerePrompt.click.test.tsx` never asserts that `sr-only` is removed when `thanking` becomes `true`).
 * **Smallest fix:** Keep `<div role="status" className={thanking ? undefined : "sr-only"}>` with the `<p className="clean-card font-semibold">` mounted conditionally inside it (matching `OfflineBanner.tsx` and `LanguageSwitch.tsx`), and assert in `StillHerePrompt.click.test.tsx` that `statusBox()?.className` does not contain `"sr-only"` after the tap.
+
+## Claude's check
+
+Checked against the code on `phase3-review-fixes` at 9710d95.
+
+- 1.1 (an expiry already on screen at open is not announced): true, but on purpose. `components/patient/StatusAnnouncer.tsx` line 38 says so, and no other opening status is announced either. The heading and the text are on screen and get focus. Product choice for the owner.
+- 1.2 (a status change within 300 ms of an expiry overwrites the expired flag): true, rare. The visible text is right; only the spoken text can be the status line in place of the expiry line. Low risk.
+- 1.3 (called and expired at the same time): false. The SQL sets `expired` only when `status = 'pre_arrival' and triaged_at is null` (supabase/migrations/20261116000000_wait_gap_distinct_moments.sql lines 68-69), so a `called` visit is never expired.
+- 1.4 and 1.5: plausible, low risk. Not changed.
+- 2.1 (the page shows left to right for one frame before `dir="rtl"`): plausible. `useDocumentLanguage` runs in `useEffect`, after paint. `<main>` already has the right `dir` in the first render, so only the `<html>` element is late. Cheap fix: `useLayoutEffect`.
+- 2.2 (the cleanup puts back `en` and `ltr` on every language change): true. The next effect sets the right value in the same commit, so nothing is seen or read. No change.
+- 3.1 (`aria-atomic` on the regions): plausible. Cheap.
+- 3.2 (nested parentheses in a draft option, for example "Francais (French) (draft)"): true. Wording choice for the owner.
+- 4.1 (a mistyped link shows "This visit link is no longer active"): true. Patients can type the link printed under the QR code (`lib/text/en.ts` line 83). The token is 26 Crockford characters with no check digit (`lib/codes.ts` lines 40 and 72), so one wrong character still passes `isAccessToken`, reads 0 rows, and `isDeadToken` gives true. Wording or design choice for the owner.
+- 4.2 (a network failure shows the replaced-link message): false. `data/patientVisit.ts` gives `"failed"` on any error and null only for 0 rows; `lib/failedRead.ts` `afterFailedRead` never gives null.
+- 5.1 (`catch {` without a name in the head script): true for very old WebViews only (before 2018). Cheap fix: `catch (e)`.
+- 5.2 (`startsWith("/patient")` also matches `/patients`): true, but no such route exists. Cheap fix: `path === "/patient" || path.startsWith("/patient/")`.
+- 6.1 (inline care links are under 44 px): the inline exception of WCAG 2.5.8 covers the 811 link and the hours link, which sit in sentences. The wait-times link and the virtual care link stand alone, so `min-h-11` on those two is a valid small gain.
+- 6.2 (the thank-you `role="status"` box changes from `sr-only` to visible in the same render as its text): plausible. Some screen readers skip text that comes in while the box moves into the layout. Fix: keep the `role="status"` element `sr-only` or always plain, and put the visible card around it, as `components/patient/OfflineBanner.tsx` line 14 does.
