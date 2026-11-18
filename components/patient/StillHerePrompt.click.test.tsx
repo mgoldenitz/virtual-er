@@ -90,6 +90,11 @@ describe("StillHerePrompt tap", () => {
     expect(box?.textContent).toContain(s.thanks);
   });
 
+  it("keeps the empty thank-you box out of the layout before the tap", () => {
+    show(due);
+    expect(statusBox()?.className.split(" ")).toContain("sr-only");
+  });
+
   it("leaves focus on the page after a phone tap that did not focus the button", async () => {
     show(due);
     expect(document.activeElement).toBe(document.body);
