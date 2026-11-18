@@ -21,8 +21,8 @@
 -- Expected result (9 rows):
 --   0 real visits checked                  more than 0 (so row 1 proves something)
 --   1 real visits changed                  0 (no real visit changed its version or was removed)
---   2 site A waiting                       7 to 9 (desk starts keep about 9; home starts can add more)
---   3 site B waiting                       7 to 9
+--   2 site A waiting                       7 to 10 (desk starts stop at 9; a home start can add 1)
+--   3 site B waiting                       7 to 10
 --   4 site B new waiting after pause       0 (nothing joins site B's line after the pause)
 --   5 call-backs at A                      8 to 11 (one recall every 15 or 20 minutes over 150 minutes)
 --   6 demo arrived                         more than 0
