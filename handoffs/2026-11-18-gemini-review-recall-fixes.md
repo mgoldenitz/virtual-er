@@ -217,3 +217,45 @@ index 54dc7b2..e9a808d 100644
    /** After "Issue a new link" saves: open the slip with the new QR code and say what happened. */
    const showNewLink = (updated: Visit) => {
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted as given (formatting made plain).
+
+### Problems found
+
+1. `setTimeout(0)` in `VisitRow.tsx` can fire before React 19 commits or paints the `called` row (question a)
+- File and line: `components/staff/VisitRow.tsx`, line 75.
+- What goes wrong: `putVisit` schedules a React 19 update (through React's `MessageChannel` scheduler), while `recall` queues a separate timer task with `setTimeout(0)`. The browser can take tasks from these two queues in any order, and React 19 can yield before it commits. `setTimeout(0)` also does not wait for the layout pass or the accessibility tree, so focus can land while the progress line still reads "Waiting off-site".
+- Smallest fix: a ref flag set to true when `act(...)` returns "saved", and the focus inside a `useEffect` that runs after React commits `visit.status === "called"`:
+  `const focusProgress = useRef(false); useEffect(() => { if (!focusProgress.current || visit.status !== "called") return; focusProgress.current = false; progressLine.current?.focus(); }, [visit.status]);`
+
+2. The two `setTimeout(0)` timers in `RecallPanel.tsx` and `VisitRow.tsx` cause two focus moves on a saved recall (question b)
+- File and line: `components/staff/RecallPanel.tsx`, `returnToRecall` and `confirm` (lines 36 to 45), and `components/staff/VisitRow.tsx`, line 75.
+- What goes wrong: "Yes" calls `confirm()`, which calls `onConfirm()` and `returnToRecall()`. `returnToRecall()` sets `mode` to "idle" (focus drops to the page body) and its timer moves focus to "Recall patient" (`aria-disabled={saving}`). When the save takes more than 0 ms: the panel timer focuses the disabled "Recall patient"; when "saved" comes, the panel leaves, focus drops to the body again, and the `VisitRow` timer moves focus a second time to the progress line. A screen reader says "Recall patient", then a second focus move. When the save resolves in a microtask, both timers run in the same turn and focus jumps twice. When the save fails after more than 0 ms, the panel timer runs too early (while `saving` is true), and nothing moves focus when "not_saved" or "refused" comes later.
+- Smallest fix: `confirm()` calls `onConfirm()` and `setMode("idle")` only; keep the `returnToRecall()` timer only for "Cancel" (with `clearTimeout` on unmount); restore focus to "Recall patient" in a `useEffect` when `saving` goes from true to false while the panel is still on the page (only a failed or refused save).
+
+3. The `id` `recall-question-${code}` is not unique if the same visit code shows twice on one page (question c)
+- File and line: `components/staff/RecallPanel.tsx`, lines 58 and 64.
+- What goes wrong: if the same code shows twice (two list sections, or a duplicate row before a refresh) and both questions are open, both `<p>` have the same `id`, and the second "Yes" points to the first `<p>`.
+- Smallest fix: `const questionId = useId();` in `RecallPanel.tsx`, used for both `id` and `aria-describedby`.
+
+4. A fast double click on "Yes, recall patient" in the same frame can send two recalls, and "Cancel" has no guard while `saving`
+- File and line: `components/staff/RecallPanel.tsx`, lines 45 and 69; `components/staff/VisitRow.tsx`, `act`.
+- What goes wrong: `confirm` and `act` read `saving` from the current render. Because `Button` uses `aria-disabled`, two fast clicks in the same event batch, before React renders again, both see `saving === false` and call `callBackVisit` twice. "Cancel" has no `aria-disabled={saving}` and no `saving` check.
+- Smallest fix: a ref (`const inFlight = useRef(false);`) in `act` next to `saving`, and `aria-disabled={saving}` plus `if (saving) return;` on "Cancel".
+
+5. `VisitRow.click.test.tsx` forces the timer order with `flushSync` and misses real async paths (question d)
+- File and line: `components/staff/VisitRow.click.test.tsx`, lines 62 to 69, 79 to 98 and 100 to 106; `components/staff/RecallPanel.click.test.tsx`, lines 85 to 103.
+- What goes wrong: the mock queues a `setTimeout` with `flushSync` before it returns "saved", so the test fixes a task order and a synchronous commit that a real browser does not have. The first saved test uses `mockResolvedValue("saved")` and never draws the row as `called`, so it passes while the progress line reads "Waiting off-site". The failed-save test resolves "not_saved" in 0 ms, so it passes only because the `returnToRecall` timer ran on the click, not after the failure.
+- Smallest fix: replace the `flushSync` timer with a delayed `callBackVisit` promise and a normal re-render; check that focus moves only once, straight to the progress line after "Called" shows; add tests for a delayed "not_saved", "refused", and a double click on "Yes" in one tick.
+
+### Answers to questions a to d
+
+a. Yes. `putVisit` schedules the React 19 update through `MessageChannel` (or a concurrent lane); `setTimeout(0)` uses the timer queue and does not wait for React's commit or the accessibility tree. Safer: a ref flag set on "saved", and the focus in a `useEffect` on `visit.status === "called"`.
+
+b. Yes. `confirm()` calls `returnToRecall()`, whose timer focuses "Recall patient" after "Yes" leaves the page. When "saved" comes, the panel leaves, focus drops to the body, and the `VisitRow` timer moves focus a second time. A screen reader hears two focus moves.
+
+c. No. Duplicate codes give duplicate `id` values, and `aria-describedby` points to the first `<p>`. `useId()` makes each `id` unique.
+
+d. Fix 1 is proven for re-renders one after the other (`RecallPanel.click.test.tsx` lines 85 to 93). No test: a tap on "Recall patient" during a real pending `callBackVisit` in `VisitRow.click.test.tsx`; a fast double click on "Yes" in one frame; "Cancel" while `saving`. Fix 2 is proven for one panel (lines 95 to 103). No test: two panels with the same code; where focus lands when the question opens. Fix 3 is not proven for a real browser, because of the `flushSync` timer. No test: a "saved" that takes more than 0 ms (shows the double focus move); a "not_saved" that takes more than 0 ms; "refused"; the row leaving the list before the focus runs.
