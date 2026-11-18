@@ -9,6 +9,7 @@ import { useState, type FormEvent } from "react";
 import { findVisitByCode } from "@/data/staffActions";
 import { backForReassessment, expectedArrivals, isExpected } from "@/lib/expectedArrivals";
 import { Duration } from "./Duration";
+import { DemoTag } from "./DemoTag";
 import { minutesBetween } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -87,7 +88,8 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
                 data-testid={`reassess-${visit.code}`}
               >
                 <p>
-                  <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span> · needs reassessment
+                  <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span>
+                  <DemoTag isDemo={visit.is_demo} /> · needs reassessment
                 </p>
                 <Button variant="secondary" onClick={() => onChoose(visit)}>
                   Triage again<span className="sr-only"> visit {visit.code}</span>
@@ -106,7 +108,8 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
               data-testid={`expected-${visit.code}`}
             >
               <p>
-                <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span> · started{" "}
+                <span className="font-mono text-lg font-bold tracking-widest">{visit.code}</span>
+                <DemoTag isDemo={visit.is_demo} /> · started{" "}
                 <Duration minutes={minutesBetween(visit.created_at, now)} /> ago
               </p>
               <Button variant="secondary" onClick={() => onChoose(visit)}>

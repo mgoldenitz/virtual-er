@@ -32,3 +32,15 @@ describe("VisitRow times", () => {
     expect(render(checkInAtDesk(input, "waiting", minutesAgo(45)))).toContain(`waited <strong>${shown("45 min", "45 minutes")}</strong>`);
   });
 });
+
+describe("VisitRow demo tag", () => {
+  it("shows a Demo tag next to the code for a demo visit", () => {
+    const html = render(checkInAtDesk({ ...input, is_demo: true }, "waiting", minutesAgo(10)));
+    expect(html).toContain('data-testid="demo-tag"');
+    expect(html).toMatch(/data-testid="demo-tag"[^>]*>Demo</);
+  });
+
+  it("shows no Demo tag for a real visit", () => {
+    expect(render(checkInAtDesk(input, "waiting", minutesAgo(10)))).not.toContain("demo-tag");
+  });
+});

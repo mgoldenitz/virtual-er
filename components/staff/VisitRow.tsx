@@ -11,6 +11,7 @@ import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 import { Duration } from "./Duration";
+import { DemoTag } from "./DemoTag";
 import { FollowUpPanel } from "./FollowUpPanel";
 import { NewLinkPanel } from "./NewLinkPanel";
 import { RecallPanel } from "./RecallPanel";
@@ -95,7 +96,10 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   return (
     <li className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-mono text-xl font-bold tracking-widest">{visit.code}</p>
+        <p className="font-mono text-xl font-bold tracking-widest">
+          {visit.code}
+          <DemoTag isDemo={visit.is_demo} />
+        </p>
         <p>
           CTAS {visit.ctas_level} · waited <strong><Duration minutes={waited} /></strong>
         </p>
