@@ -6,6 +6,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PatientView } from "@/lib/patientView";
+import { recordStillHere } from "@/data/patientVisit";
 import { textFor } from "@/lib/text";
 import { StillHerePrompt } from "./StillHerePrompt";
 
@@ -131,5 +132,14 @@ describe("StillHerePrompt tap", () => {
     await act(async () => button()?.click());
     show(tapped);
     expect(document.activeElement).toBe(document.body);
+  });
+
+  it("says the tap did not save, without telling a waiting patient to go to the desk", async () => {
+    vi.mocked(recordStillHere).mockResolvedValueOnce("not_saved");
+    show(due);
+    await act(async () => button()?.click());
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.textContent).toBe("Your tap did not save. Staff may not know you are still waiting. Please try again.");
+    expect(alert?.textContent).not.toBe(textFor("en").patient.notSaved);
   });
 });
