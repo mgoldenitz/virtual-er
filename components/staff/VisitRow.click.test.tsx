@@ -63,6 +63,7 @@ describe("VisitRow recall", () => {
     vi.mocked(callBackVisit).mockResolvedValue("saved");
     await press("Recall patient");
     await press("Yes, recall patient");
+    await nextTick(); // focus moves one tick later, after the row shows the called text
     expect(callBackVisit).toHaveBeenCalledWith("v1");
     expect(document.activeElement).toBe(container.querySelector('[data-testid="progress"]'));
   });

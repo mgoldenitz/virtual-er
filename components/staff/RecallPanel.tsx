@@ -47,18 +47,23 @@ export function RecallPanel({ code, saving, onConfirm }: Props) {
 
   if (mode === "idle") {
     return (
-      <Button ref={recallButton} aria-disabled={saving} onClick={() => setMode("confirm")}>
+      <Button ref={recallButton} aria-disabled={saving} onClick={() => !saving && setMode("confirm")}>
         Recall patient<span className="sr-only"> {code}</span>
       </Button>
     );
   }
   return (
     <div className="w-full space-y-2">
-      <p className="font-semibold">
+      {/* "Yes" points to this question, so a screen reader reads the code and "There is no undo." */}
+      <p id={`recall-question-${code}`} className="font-semibold">
         {`Recall visit ${code}? The patient's phone will show "Please head back now". There is no undo.`}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="danger" ref={yesButton} aria-disabled={saving} onClick={confirm}>
+        <Button variant="danger" ref={yesButton}
+          aria-disabled={saving}
+          aria-describedby={`recall-question-${code}`}
+          onClick={confirm}
+        >
           Yes, recall patient
         </Button>
         <Button variant="secondary" onClick={returnToRecall}>

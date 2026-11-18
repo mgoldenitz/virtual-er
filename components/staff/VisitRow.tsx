@@ -71,7 +71,8 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   /** The progress line, which stays on the page when the "Recall patient" button leaves it. */
   const progressLine = useRef<HTMLParagraphElement>(null);
   const recall = async () => {
-    if ((await act(() => callBackVisit(visit.id))) === "saved") progressLine.current?.focus();
+    // Wait one tick, so the row shows the called text before a screen reader reads it.
+    if ((await act(() => callBackVisit(visit.id))) === "saved") window.setTimeout(() => progressLine.current?.focus(), 0);
   };
   /** After "Issue a new link" saves: open the slip with the new QR code and say what happened. */
   const showNewLink = (updated: Visit) => {
