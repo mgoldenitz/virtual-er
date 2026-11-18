@@ -95,6 +95,16 @@ describe("StillHerePrompt tap", () => {
     expect(statusBox()?.className.split(" ")).toContain("sr-only");
   });
 
+  it("keeps the status box hidden after the tap and shows the thank-you in a separate card", async () => {
+    show(due);
+    await act(async () => button()?.click());
+    show(tapped);
+    expect(statusBox()?.className.split(" ")).toContain("sr-only");
+    const card = container.querySelector('[data-testid="still-here-card"]');
+    expect(card?.getAttribute("aria-hidden")).toBe("true");
+    expect(card?.textContent).toContain(s.thanks);
+  });
+
   it("leaves focus on the page after a phone tap that did not focus the button", async () => {
     show(due);
     expect(document.activeElement).toBe(document.body);

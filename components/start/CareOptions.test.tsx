@@ -3,6 +3,7 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { textFor } from "@/lib/text";
 import { CareOptions } from "./CareOptions";
 
 // The class list of every <a> tag in the rendered HTML.
@@ -18,6 +19,17 @@ describe("CareOptions", () => {
     for (const classes of links) {
       expect(classes).toContain("inline-block");
       expect(classes).toContain("py-1");
+    }
+  });
+
+  it("makes the 2 links that stand alone 44 pixels high", () => {
+    // The 811 link and the hours link sit inside sentences, so WCAG 2.5.8 lets them stay small.
+    const t = textFor("en").start;
+    const html = renderToStaticMarkup(<CareOptions language="en" />);
+    for (const words of [t.virtualCare, t.waitTimesLink]) {
+      // React writes ' as &#x27; in HTML.
+      const tag = html.match(new RegExp(`<a [^>]*>${words.replace(/'/g, "&#x27;")}`))?.[0] ?? "";
+      expect(tag.match(/class="([^"]*)"/)?.[1].split(" ")).toContain("min-h-11");
     }
   });
 });

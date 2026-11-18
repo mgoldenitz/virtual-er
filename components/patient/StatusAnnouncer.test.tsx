@@ -63,6 +63,13 @@ describe("StatusAnnouncer", () => {
     expect(polite()).toBe("");
   });
 
+  it("makes screen readers read each region as one whole message", () => {
+    show("waiting");
+    const regions = [...container.querySelectorAll("[aria-live]")];
+    expect(regions).toHaveLength(2);
+    for (const region of regions) expect(region.getAttribute("aria-atomic")).toBe("true");
+  });
+
   it("announces when the visit expires", async () => {
     draw("pre_arrival", "en", false);
     draw("pre_arrival", "en", true);
