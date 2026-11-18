@@ -140,3 +140,7 @@ index 0000000..9a2d476
 +  });
 +});
 ```
+
+## Response
+
+Skipped (owner, 2026-11-17): the Haiku `reviewer` worker reviews this change instead.
