@@ -510,4 +510,66 @@ export async function loadVisits(): Promise<void> {
 
 ## Response
 
-(paste the Gemini answer here)
+Gemini Hydrogen 4, High, 2026-11-18.
+
+### security
+
+nothing found
+
+### data loss
+
+nothing found
+
+### concurrency
+
+1. `cancel` has no `if (saving) return;` guard while `clearDemoData()` is in flight. `components/staff/ClearDemoData.tsx`, `cancel` (lines 27 to 31) and the Cancel button (lines 63 to 65). Because `Button` sets `aria-disabled={saving}` rather than native `disabled`, staff can press Cancel while `clearDemoData()` waits on an advisory lock or a slow network. `cancel()` closes the question while the delete still runs; if staff open it again and press Yes before the first call ends, `confirm()` hits `if (saving) return;` and nothing is sent; if the first call fails, "Not saved..." is announced after the question was dismissed. Fix: add `if (saving) return;` as the first line of `cancel`.
+2. `void loadVisits()` is not awaited before `clearDemoData()` returns. `data/demoData.ts`, lines 8 to 11. On a slow connection the status line says "12 demo visits deleted..." while the list still shows the deleted demo visits until `loadVisits()` ends. (`loadVisits()` catches all errors, so awaiting it cannot turn a good clear into "failed".) Fix: `await loadVisits();`.
+
+### accessibility
+
+1. Focus moving back to "Clear demo data" collides with `role="status"`, and repeat clears or repeat failures give identical text so `role="status"` stays silent. `components/staff/ClearDemoData.tsx` lines 24 to 36 and 42 to 46; `app/staff/page.tsx` line 157. On a good clear, the focus move and the live-region change happen on the same tick, so VoiceOver, TalkBack and NVDA may read "Clear demo data, button" and drop the result. `onResult("")` is never called, so two clears with 0 demo visits, or two failures offline, pass the same string and nothing is read. Fix: call `onResult("")` when the question opens and at the start of `confirm()`; on success, call `onResult(clearDemoMessage(result))` in a short timeout (about 50 ms) after the focus move.
+2. The "There is no undo." paragraph is not tied to "Yes, clear demo data". Lines 50 to 56. A screen-reader user who tabs to Yes hears only "Yes, clear demo data, button". Fix: `id="clear-demo-warning"` on the `<p>` and `aria-describedby="clear-demo-warning"` on the Yes button.
+
+### wording
+
+1. "Saving…" and "Not saved:" describe a delete as saving. Line 61 and `lib/clearDemoMessage.ts` line 9; the ellipsis is also the curly `…`. Fix: "Clearing..." and "Not cleared: the database could not be reached. Demo data was not cleared. Try again." (test: `/^Not cleared/`).
+2. "Real visits stay." omits real dashboard numbers, and "at Demo Site A and B" narrows what the SQL deletes. Lines 55 to 58. Fix: "This deletes every demo visit and demo dashboard number, and switches the demo simulator off. Real visits and real dashboard numbers stay. There is no undo."
+3. "Run this before real testers start." uses a developer verb and an unclear "this". `app/staff/page.tsx`. Fix: "For the demo only. Clear demo data before real testers start."
+
+### tests
+
+1. `ClearDemoData.click.test.tsx` never tests an in-flight call or the focus after Yes. All mocks resolve at once. Fix: a test with a promise resolved by hand: press Yes twice while pending (called once), press Cancel while pending (question stays open), resolve, then focus is on "Clear demo data".
+2. `data/demoData.ts` has no unit test. Fix: `data/demoData.test.ts` that mocks `supabaseBrowser` and `loadVisits`: "failed" without `loadVisits()` when `error` is set, `data` is not a number, or `.rpc()` rejects; returns `data` after `loadVisits()` on success.
+3. `supabase/checks/demo_clear.sql` does not check `anon`, an `authenticated` caller with no `app_metadata`, the counts right after the refusal, or a second clear that returns 0. Fix: add those cases.
+
+## Claude's check (2026-11-18)
+
+Concurrency 1: correct. `components/Button.tsx` passes `aria-disabled` only as an attribute and a style; it does not stop `onClick`. So Cancel works while `saving` is true. Accept: add `if (saving) return;` to `cancel`. The same gap is in `components/staff/RecallAllPanel.tsx` line 38 (and the same pattern may be in `PauseSwitch.tsx`). Those files are outside this review; ask the owner.
+
+Concurrency 2: correct, small. The visits trigger also sends a change signal, so the list reads again in any case, but `await` puts the result words after the new list. Accept.
+
+Accessibility 1, repeat words: correct. Two clears with the same result give the same string, and React does not change the `role="status"` text. Accept the cheap half: `onResult("")` at the start of `confirm()` (before the `await`, so it shows before the result). Reject the 50 ms timer: a timing guess, not tested with a screen reader, and `RecallAllPanel` and `onLeftList` in `app/staff/page.tsx` already move focus and set the status words in the same tick. If a screen-reader test shows the words drop, fix it for all three in one change.
+
+Accessibility 2: correct. Accept `aria-describedby`; the check-in start button already uses it (docs/decisions.md, 2026-11-17).
+
+Wording 1: "Saving…" and "Not saved:" are the app-wide pattern (`VisitRow`, `RecallAllPanel`, `PauseSwitch`, `RecentlyClosed`, `CheckInPanel`, `lib/recallAll.ts`). The ellipsis is mixed: `CheckInPanel.tsx` line 138 uses "...", all others "…". Owner decision.
+
+Wording 2: "at Demo Site A and B" does not narrow the delete, because `Site` is only "A" or "B" (`lib/visit.ts` line 4). The point that "Real visits stay." omits real dashboard numbers is fair. Owner decision.
+
+Wording 3: owner decision.
+
+Tests 1: correct. Accept; it also proves the concurrency 1 fix.
+
+Tests 2: correct. Accept; `data/sitePauses.test.ts` already mocks `supabaseBrowser` the same way.
+
+Tests 3: partly. Check 02 = 2 already proves the refusal deleted nothing (if it had, 02 would be 0). `anon` has no `EXECUTE`, which `permissions.sql` already shows. Accept the cheap cases: a caller with no `app_metadata`, and a second clear that returns 0. The owner must run the file again in the SQL Editor.
+
+Not found by Gemini: the result words go to the `role="status"` line at the top of the off-site list (`app/staff/page.tsx` line 127), but the button is at the bottom of the page. A sighted staff member who presses Yes may not see the words. Owner decision.
+
+## Owner decisions (2026-11-18)
+
+- Wording 1: keep "Saving…" and "Not saved:" (the app pattern).
+- Wording 2: use Gemini's text: "This deletes every demo visit and demo dashboard number, and switches the demo simulator off. Real visits and real dashboard numbers stay. There is no undo."
+- Wording 3: "For the demo only. Clear demo data before real testers start."
+- The result words go in a `role="status"` line inside the "Demo data" section, near the button.
+- Add the Cancel-while-saving guard to `RecallAllPanel.tsx` and `PauseSwitch.tsx` too (both have the gap: Cancel calls `cancel` / `close` with only `aria-disabled`).
