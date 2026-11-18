@@ -14,12 +14,16 @@ const SKIP = ["lib/text/zh.ts"];
 const CURLY_MARKS = String.fromCharCode(0x2018, 0x2019, 0x201c, 0x201d);
 const CURLY = new RegExp(`[${CURLY_MARKS}]|&[lr][sd]quo;`);
 
-/** Every .ts and .tsx file in the folders above, as a path with forward slashes. */
+// The same four marks written as codes: JS escapes, CSS escapes and HTML numbers.
+// Each pattern has a "[" or "(" after its first digits, so this line does not match itself.
+const CODED = /\\u\{?201[89cd]\}?|\\201[89cd]|&#(8216|8217|8220|8221|x201[89cd]);/i;
+
+/** Every code, style and text file in the folders above, as a path with forward slashes. */
 function codeFiles(): string[] {
   return FOLDERS.flatMap((folder) =>
     readdirSync(folder, { recursive: true, encoding: "utf8" })
       .map((name) => `${folder}/${name.replaceAll("\\", "/")}`)
-      .filter((path) => /\.tsx?$/.test(path) && !SKIP.includes(path)),
+      .filter((path) => /\.(tsx?|jsx?|mjs|css|json|md)$/.test(path) && !SKIP.includes(path)),
   );
 }
 
@@ -28,7 +32,7 @@ describe("straight quotes", () => {
     const found = codeFiles().flatMap((path) =>
       readFileSync(path, "utf8")
         .split("\n")
-        .flatMap((line, i) => (CURLY.test(line) ? [`${path}:${i + 1}`] : [])),
+        .flatMap((line, i) => (CURLY.test(line) || CODED.test(line) ?[`${path}:${i + 1}`] : [])),
     );
     expect(found).toEqual([]);
   });

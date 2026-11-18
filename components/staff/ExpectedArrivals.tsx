@@ -78,7 +78,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
       {reassess.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-bold">Back for reassessment ({reassess.length})</h3>
-          <p className="text-sm text-slate-700">{'Reopened after "unable to reach". Triage again before they rejoin the line.'}</p>
+          <p className="text-sm text-slate-700">{`Reopened after "unable to reach". Triage again before they rejoin the line.`}</p>
           <ul className="space-y-2">
             {reassess.map((visit) => (
               <li
