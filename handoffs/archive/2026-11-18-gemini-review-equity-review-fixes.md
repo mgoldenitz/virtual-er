@@ -500,3 +500,12 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner (bold marks r
 - 4, mixed direction in `<option>`: possible, not checked. It needs a real Android phone and an iPhone. Unicode isolate marks may help, but they are also not checked on a phone.
 - 5.1, `<html>` stuck at English after moving between `/` and `/patient`: false. In one React commit, the cleanup of a component that leaves runs before the setup of a new one. A language change goes through `en` and back in the same commit, before the paint, so nobody sees it.
 - 5.2, English names read with an Urdu or Arabic voice: true. A native `<select>` cannot hold a `<span lang="en">`. This is a limit of the native menu; a custom menu is too large for this prototype.
+
+## Outcome
+
+Owner's choices, 2026-11-18:
+
+- 2 (the thank-you card): fixed. Test fb97c67, fix 38ee12c. The card in `components/patient/StillHerePrompt.tsx` has no `aria-hidden`, the `sr-only` status box has `aria-atomic="true"`, and the box empties 3 seconds after the thank-you comes in. The test "keeps the status box hidden after the tap and shows the thank-you in a separate card" changed, because it expected `aria-hidden="true"` on the card, which the owner chose to remove. After the fix: 63 test files, 355 tests passed; lint 0 errors, 2 warnings (`.playwright-mcp`); the build passed.
+- 3, 4 and 5.2: not picked; in docs/known-issues.md.
+- 1, the English screen before hydration: in docs/known-issues.md for Phase 5.
+- 1 (server warning) and 5.1: false, no change.
