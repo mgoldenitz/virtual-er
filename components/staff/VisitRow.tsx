@@ -3,7 +3,7 @@
 // One patient in the staff's off-site list: minutes waited, call-back progress and actions.
 // The no-response flags and phone-call buttons are in FollowUpPanel.
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from "@/data/staffActions";
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
@@ -13,6 +13,7 @@ import { Button } from "@/components/Button";
 import { Duration } from "./Duration";
 import { FollowUpPanel } from "./FollowUpPanel";
 import { NewLinkPanel } from "./NewLinkPanel";
+import { RecallPanel } from "./RecallPanel";
 
 type Props = {
   visit: Visit;
@@ -55,7 +56,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   /** A short "it worked" message, for a change that keeps the patient on the list. */
   const [okNote, setOkNote] = useState("");
   /** Save one change and show what happened. `leftListMessage` is announced when the patient leaves the list. */
-  const act = async (change: () => Promise<ChangeResult>, leftListMessage?: string) => {
+  const act = async (change: () => Promise<ChangeResult>, leftListMessage?: string): Promise<ChangeResult | undefined> => {
     if (saving) return; // while one change is on its way, further presses do nothing
     setSaving(true);
     setOkNote("");
@@ -65,6 +66,12 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       onLeftList(leftListMessage);
     }
     setNote(result === "saved" ? "" : result === "not_saved" ? NOT_SAVED : CHANGED);
+    return result;
+  };
+  /** The progress line, which stays on the page when the "Recall patient" button leaves it. */
+  const progressLine = useRef<HTMLParagraphElement>(null);
+  const recall = async () => {
+    if ((await act(() => callBackVisit(visit.id))) === "saved") progressLine.current?.focus();
   };
   /** After "Issue a new link" saves: open the slip with the new QR code and say what happened. */
   const showNewLink = (updated: Visit) => {
@@ -81,7 +88,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
           CTAS {visit.ctas_level} · waited <strong><Duration minutes={waited} /></strong>
         </p>
       </div>
-      <p className="mt-1 font-semibold" data-testid="progress">
+      <p ref={progressLine} tabIndex={-1} className="mt-1 font-semibold" data-testid="progress">
         {progress(visit, now)}
       </p>
       {stillHereState({ status: visit.status, triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at }, now) ===
@@ -92,11 +99,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
       )}
       <FollowUpPanel visit={visit} now={now} saving={saving} act={act} />
       <div className="mt-3 flex flex-wrap gap-2">
-        {visit.status === "waiting" && (
-          <Button aria-disabled={saving} onClick={() => act(() => callBackVisit(visit.id))}>
-            Recall patient<span className="sr-only"> {visit.code}</span>
-          </Button>
-        )}
+        {visit.status === "waiting" && <RecallPanel code={visit.code} saving={saving} onConfirm={recall} />}
         <Button variant="secondary" aria-disabled={saving} onClick={() => act(() => markVisitArrived(visit.id), `Visit ${visit.code} marked arrived. Undo is under Recently closed.`)}>
           Mark arrived
         </Button>
