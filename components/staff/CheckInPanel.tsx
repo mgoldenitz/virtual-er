@@ -177,9 +177,9 @@ export function CheckInPanel({
         </p>
       )}
 
-      <fieldset disabled={!!homeProblem}>
+      <fieldset disabled={!!homeProblem} className="min-w-0">
         <legend className="font-semibold">CTAS level (chosen by the triage nurse)</legend>
-        <div className="mt-2 flex gap-3">
+        <div className="mt-2 flex flex-wrap gap-3">
           {([4, 5] as const).map((level) => (
             <label
               key={level}
@@ -198,7 +198,7 @@ export function CheckInPanel({
         </div>
       </fieldset>
 
-      <fieldset disabled={!!homeProblem}>
+      <fieldset disabled={!!homeProblem} className="min-w-0">
         <legend className="font-semibold">Eligibility checklist</legend>
         <div className="mt-2 space-y-2">
           {CHECKLIST.map((item) => (

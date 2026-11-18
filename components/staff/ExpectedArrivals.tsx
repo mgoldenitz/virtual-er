@@ -58,7 +58,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
         Started from home, not yet triaged. Not in the waiting line.
       </p>
       <form onSubmit={find} className="flex flex-wrap items-end gap-2">
-        <label className="block">
+        <label className="block max-w-full">
           <span className="font-semibold">Visit code</span>
           <input
             value={typed}
