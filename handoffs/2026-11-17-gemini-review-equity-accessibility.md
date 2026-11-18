@@ -1838,3 +1838,132 @@ lib/text/en.ts 192, lib/text/languages.ts 53, lib/textSize.ts 45, app/patient/pa
     21	  );
     22	}
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-17. Pasted by the owner. Blank lines are shortened; the text is not changed.
+
+### 1. Who is left out or put at a disadvantage?
+
+1. No smartphone or a shared phone
+   - File and line: `app/patient/page.tsx` lines 31-43; `components/start/StartVisit.tsx` lines 71-89.
+   - What goes wrong and for whom: Patients without a phone can wait on-site (`declined` in `PatientStatus.tsx` line 102), which works. However, for families or caregivers sharing one phone (e.g., a parent and child, or an older adult using a relative's phone), the browser stores only a single visit token in `localStorage`. Scanning a second patient's QR link in the same tab overwrites the first person's saved visit (`takeTokenFromLink` on `app/patient/page.tsx` line 33), and `/` blocks starting a second visit while one is open (`StartVisit.tsx` lines 71-89).
+   - Severity: Medium.
+   - Smallest fix: When an open visit is already saved on `/` (`StartVisit.tsx` lines 71-89), add a secondary link/button to start or open another visit in a new tab instead of hiding the start form completely.
+2. Little mobile data
+   - File and line: `app/patient/page.tsx` line 45; `components/start/StartVisit.tsx` line 34; `components/start/CareOptions.tsx` lines 38-56.
+   - What goes wrong and for whom: Patients on prepaid or tiny mobile data plans keep `usePatientView` and `useSitePauses` polling in the background even when the browser tab is hidden, and `CareOptions.tsx` links directly to external hospital websites (`thp.ca`, `regional-virtual-urgent-care.ca`) with no warning that opening them loads heavy external pages.
+   - Severity: Low.
+   - Smallest fix: Pause or slow background polling when `document.visibilityState === "hidden"` and add `"(external site)"` to `t.newTab` in `lib/text/en.ts` line 18.
+3. No data plan in the waiting area (offline or captive-portal Wi-Fi)
+   - File and line: `components/patient/OfflineBanner.tsx` lines 9-21; `components/patient/StatusAndSound.tsx` lines 34-36; `components/patient/PatientStatus.tsx` lines 43-60.
+   - What goes wrong and for whom: Patients without cellular data who connect to hospital guest Wi-Fi behind a captive-portal login screen stay `navigator.onLine === true`, so `OfflineBanner` never appears until the database request fails into `result === "unavailable"` (`VisitScreen.tsx` line 53). When `OfflineBanner` does show (`!online`), the stale queue position (`"Your place in line: ..."`) remains at 100% visual contrast directly below it (`StatusAndSound.tsx` line 34), which can mislead a patient into thinking they still have a long wait after they have already been recalled.
+   - Severity: High.
+   - Smallest fix: Add `opacity-60` to the `PatientStatus` wrapper in `StatusAndSound.tsx` line 34 whenever `!online` so the stale status looks visibly paused while keeping the visit code readable.
+4. Low literacy
+   - File and line: `lib/text/en.ts` lines 25, 34-35, 69, 80, 91, 93, 98, 100, 104-105, 110, 112, 116, 145, 150, 180; `components/patient/PatientStatus.tsx` lines 43-128.
+   - What goes wrong and for whom: Patients with lower reading literacy face hospital jargon (`triaged`, `off-site`, `THP`, `QR code`, `simulated`), idiomatic phrases (`head back`, `following your visit`), and dense unnumbered paragraphs on `pre_arrival` (`en.ts` lines 101-106) without step numbers or visual status icons.
+   - Severity: Medium.
+   - Smallest fix: Rewrite the non-SPEC strings in `lib/text/en.ts` to Grade 6 plain language (listed in Question 2) and render `fromHomeText` (`PatientStatus.tsx` lines 121-125) as a numbered list (`<ol>`).
+5. Low vision
+   - File and line: `lib/textSize.ts` lines 10-14 and 34; `components/patient/TextSizeSwitch.tsx` lines 17-22; `components/start/StartPageBody.tsx` lines 23-33; `components/start/CareOptions.tsx` lines 38-40 and 52-56.
+   - What goes wrong and for whom: Low-vision patients are capped at 150% text (`extraLarge: "150%"` in `lib/textSize.ts` line 13) instead of the spec's 200% target, and have no text-size control at all on the `/` start page (`StartPageBody.tsx`), which actively resets `document.documentElement.style.fontSize` back to 100% (`lib/textSize.ts` line 34; `TextSizeSwitch.tsx` line 20). In addition, standalone links in `CareOptions.tsx` lines 38 and 53 are single-line inline `<a>` elements under 24 CSS pixels tall at normal size.
+   - Severity: High.
+   - Smallest fix: Change `extraLarge` in `lib/textSize.ts` line 13 to `"200%"`, remove the `/patient`-only path guard on line 34, and render `<TextSizeSwitch language="{language}"/>` in `StartPageBody.tsx`.
+6. Blind screen-reader users
+   - File and line: `components/patient/StatusAnnouncer.tsx` lines 11-25, 44-51, and 55-72; `components/patient/VisitScreen.tsx` lines 48-52; `components/LanguageSwitch.tsx` lines 30-34; `components/patient/SoundSwitch.tsx` lines 119-126 and 184-191.
+   - What goes wrong and for whom: Blind screen-reader users receive no announcement when a visit expires (`view.expired` flips to `true` while `view.status` stays `"waiting"`), hear `StatusAnnouncer` collide with `#status-heading` focus rescue 300 ms later, hear old status announcements replay if they switch languages (`[pending, language]` on `StatusAnnouncer.tsx` line 72), hear no spoken notice when `draftNotice` appears in `LanguageSwitch.tsx` line 31, and have `SoundSwitch`'s `role="status"` text cut off when focus jumps to `"Turn on sound"`.
+   - Severity: High.
+   - Smallest fix: Announce `expired` in `StatusAnnouncer.tsx`, clear `pending` after announcing so language changes do not replay old alerts, and add `role="status"` to `draftNotice` in `LanguageSwitch.tsx` line 31.
+7. Deaf and hard-of-hearing users
+   - File and line: `components/patient/SoundSwitch.tsx` lines 166-192; `components/patient/alertSound.ts` lines 1 and 91-100; `lib/text/en.ts` lines 157-164.
+   - What goes wrong and for whom: iPhone Safari does not support `navigator.vibrate`, so Deaf or hard-of-hearing iPhone users who tap `"Turn on sound"` see `"Sound is on"` with no warning that their phone will not vibrate (`alertSound.ts` lines 1 and 93). If they put the phone in a pocket or face-down expecting vibration, they will miss the recall. There is also no `document.title` alert change when `status === "called"` for users watching a browser tab.
+   - Severity: High.
+   - Smallest fix: Check `typeof navigator.vibrate === "function"` in `SoundSwitch.tsx` and show `"This phone cannot vibrate. Keep this screen where you can see it."` when `soundOn` is true on devices without vibration.
+8. Cognitive or memory disabilities
+   - File and line: `app/patient/page.tsx` lines 49-53; `components/patient/VisitScreen.tsx` lines 61-69; `lib/text/en.ts` lines 77-80 and 100-106.
+   - What goes wrong and for whom: When staff issue a new link or close a visit link (`deadToken === true`), `app/patient/page.tsx` line 53 merges `deadToken` with `brokenLink` (`linkFailed = brokenLink || deadToken`), showing `"This link did not work - The link might be wrong or cut short."` A patient with memory difficulties who opens their saved bookmark sees an error blaming a mistyped link instead of explaining that the visit link ended and to check with the desk.
+   - Severity: Medium.
+   - Smallest fix: Give `deadToken` its own heading and message in `VisitScreen.tsx` lines 63-67 (`"This visit link is no longer active. Please ask the emergency department desk."`) instead of reusing `brokenLinkHeading`.
+9. Older adults
+   - File and line: `components/start/StartPageBody.tsx` lines 19-46; `components/patient/SoundSwitch.tsx` lines 131-145; `lib/text/en.ts` lines 34-35 and 79-80.
+   - What goes wrong and for whom: Older adults face default 100% text on `/` with no `TextSizeSwitch`, unexplained terms (`QR code`, `THP`), small standalone links in `CareOptions.tsx`, and silent audio deactivation on iPhones if they lock the screen or switch apps and return (`SoundSwitch.tsx` lines 138-143 resets `state` to `"off"` with generic `offWhileCalled` text that does not explain locking the phone turned sound off).
+   - Severity: Medium.
+   - Smallest fix: Add `TextSizeSwitch` to `StartPageBody.tsx`, explain `"QR code"` in `en.ts` line 80 (`"square code (QR code) on your paper slip"`), and distinguish lock/background audio reset from never turning sound on.
+10. Patients whose language is not one of the five
+    - File and line: `lib/text/languages.ts` lines 15-28 and 49-53; `components/LanguageSwitch.tsx` lines 11-36.
+    - What goes wrong and for whom: Patients who read Spanish, Punjabi, Tagalog, Tamil, Portuguese, Vietnamese, Korean, or any language outside `en`/`fr`/`ur`/`ar`/`zh` see English with no message explaining that only five languages are available in the app and no mention of free hospital interpreter services at the desk or via Health811.
+    - Severity: High.
+    - Smallest fix: Add a permanent helper line below `<select>` in `LanguageSwitch.tsx` (and in `lib/text/en.ts`): `"Need another language? Ask the emergency department desk for a free interpreter, or wait inside."`
+11. Patients with a phone set to a language the app does not have (or a supported non-English language)
+    - File and line: `lib/text/languages.ts` lines 49-53; `components/start/StartPageBody.tsx` line 20; `app/patient/page.tsx` line 57.
+    - What goes wrong and for whom: The app never reads `navigator.languages` or `navigator.language`. A patient whose phone OS is set to an unsupported language (e.g., Punjabi `pa` or Spanish `es`) lands on an English screen with no indication that their phone language is unsupported, and even a patient whose phone OS is set to French, Urdu, Arabic, or Mandarin starts in English on `/` until they spot the English `"Select language"` menu (`StartPageBody.tsx` line 20).
+    - Severity: Medium.
+    - Smallest fix: When `useChosenLanguage()` is `null` (no manual choice saved yet), match `navigator.languages` against `LANGUAGE_CODES` to pre-select a supported language, and if none matches, show an interpreter/unsupported-language notice under `LanguageSwitch`.
+
+### 2. Plain language (`lib/text/en.ts`)
+
+All SPEC fixed sentences from the hard rules (`emergencyLine`, `footer`, `start.emergencyCheck`, `start.urgentCare`, `start.pharmacist`, `start.startIntro`'s triage sentence, `start.paused`, `patient.placeCanChange`, `patient.waitLabel`, `patient.fromHomeText[0]`, `returnNow.text`, `survey.question`) are kept unchanged.
+
+Safety sentences first:
+
+1. `patient.calledHeading` (line 93). Current: "Please head back now". Why: "head back" is an English idiom that is harder for low-literacy and non-native readers than "come back" (used in `emergencyLine` on line 12). Simpler: "Please come back now".
+2. `announce.called` (line 126). Current: "You have been called back. Please head back to the emergency department now." Why: "called back" can be misread as a phone call rather than being called to the desk, and "head back" is idiomatic. Simpler: "It is your turn. Please come back to the emergency department now."
+3. `secondAlert` (line 150). Current: "Please return to the emergency department right now. Staff may try to reach you." Why: "try to reach you" is vague; a patient may not know whether staff will call their phone or look for them in the lobby. Simpler: "Please come back to the emergency department right now. Staff may call your phone."
+4. `patient.fromHomeHeading` (line 100). Current: "Status: Started from home, not yet triaged". Why: "triaged" is medical jargon above a Grade 6 reading level. Simpler: "Status: Started from home, not seen by a nurse yet".
+5. `patient.fromHomeText[1]` and `[2]` (lines 104-105). Current: "This app does not register you or give permission to wait off-site." / "If you go to the emergency department, follow its normal steps. Show this visit code to staff. Only staff can approve off-site waiting." Why: "register you" can be read as registering for an app account rather than hospital check-in; "off-site" is jargon; "follow its normal steps" is vague. Simpler: "This app does not check you in at the hospital or let you wait away from the hospital." / "When you get to the emergency department, check in at the front desk and show this visit code. Only staff can let you wait away from the hospital."
+6. `patient.reassessHeading` and `reassessText` (lines 107-108). Current: "Please go to the triage desk" / "A nurse needs to check you again. This happens before you rejoin the line." Why: "triage desk" and "rejoin" are harder than everyday words, and "This happens before..." is wordy. Simpler: "Please go to the nurse check-in desk" / "A nurse needs to check you again before you go back in line."
+7. `patient.notSaved` (line 98). Current: "Your answer did not save. Staff do not know you tapped it. Please try again or go to the desk." Why: "tapped it" has an unclear pronoun. Simpler: "Your answer did not save. Staff do not know you are on your way. Please try again or go to the desk."
+
+Other patient sentences:
+
+8. `start.careIntro` (line 25). Current: "This demo cannot choose a service for you. Check the rules and hours on each site before you go." Why: "each site" can be read as each hospital location or each linked website. Simpler: "... on each website before you go."
+9. `start.hoursLink` and `start.waitTimesLink` (lines 34-35). Current: "THP's emergency page" / "See current wait times on THP's website". Why: "THP" is an unexplained abbreviation. Simpler: "Trillium Health Partners' emergency page" / "See current wait times on Trillium Health Partners' website".
+10. `start.unavailableText` (line 52). Current: "Your saved visit will not load right now. You cannot start a new one here. If you need care, please go to the emergency department desk." Why: "here" can mean on this phone or at this hospital. Simpler: "... You cannot start a new visit on this phone. ..."
+11. `start.closedText` (line 57). Current: "Off-site waiting is over for this visit. You might still be waiting at the hospital. Open your visit to check." Why: sounds contradictory to a patient at home. Simpler: "Waiting away from the hospital is over for this visit. Your visit might still be open inside the hospital. Open your visit to check."
+12. `expiredText` (line 69). Current: "You started this visit over 6 hours ago. It was never checked in at triage. Staff no longer expect you to arrive." Why: passive voice and "triage". Simpler: "You started this visit over 6 hours ago. A nurse never checked you in. Staff no longer expect you to arrive."
+13. `patient.findVisitHelp` (line 80). Current: "Scan the QR code on your slip. You can also type the link printed under it. If it still fails, ask the desk to show the QR code again." Why: "QR code" is jargon, and "your slip" assumes a printed slip. Simpler: "Scan the square code (QR code) on your paper slip, or type the link printed under it. If you have no slip or it still fails, ask the desk to show the code again."
+14. `patient.simulated` (line 91). Current: "This estimate is simulated for the demo." Why: "simulated" is above Grade 6. Simpler: "This wait time is a fake example for the demo."
+15. `patient.arrivedHeading` (line 109). Current: "Status: Ready at the desk". Why: can be read two ways. Simpler: "Status: Checked in at the desk".
+16. `patient.onsiteText` and `announce.onsite` (lines 112 and 134). Current: "... Staff will call you when they are ready." Why: "call you" can mean a phone call. Simpler: "... Staff will call your name when it is your turn."
+17. `patient.unableText` and `patient.removedText` (lines 116 and 118). Current: "Staff could not reach you, so this visit has left the off-site line. ..." / "Staff have ended off-site waiting for this visit. ..." Why: personifies "this visit" and uses "off-site". Simpler: "Staff could not reach you, so you are no longer in line. ..." / "Staff ended your wait away from the hospital. ..."
+18. `stillHere.heading` (line 145). Current: "Are you still following your visit?" Why: abstract. Simpler: "Are you still waiting for your turn?"
+19. `language.draftNotice` (line 169). Current: "This translation is a draft. A fluent speaker has not checked it yet." Why: "draft" and "fluent speaker" are harder. Simpler: "This translation is not checked yet. It may have mistakes."
+20. `offline` (line 180). Current: "You are offline. Reconnect to the internet to see your status." Why: "Reconnect" is above Grade 6. Simpler: "You have no internet. Connect to the internet to see your place in line."
+
+### 3. Draft language notice
+
+1. Draft notice appears silently without a screen-reader live region. `components/LanguageSwitch.tsx` lines 30-34. When a screen-reader user selects French, Urdu, Arabic, or Mandarin, the `draft-notice` `<p>` mounts with no `role="status"` or `aria-live="polite"`. Severity: Medium. Fix: wrap the conditional `<p>` in a persistent `<div role="status">`.
+2. Fairness and trust: the draft warning is shown only in the unverified translation itself, with no English reference or human-help fallback. `components/LanguageSwitch.tsx` lines 30-34; `lib/text/en.ts` line 169. It undermines trust in the 911 line and recall instructions, and offers no way to compare the English wording or ask for an interpreter. The `<option>` labels (`menuLabel`, `lib/text/languages.ts` lines 31-33) do not note "(draft)" before selection. Severity: High. Fix: append a short English fallback and interpreter cue ("Unchecked draft translation - ask the desk for an interpreter if anything is unclear.") and show draft status in `menuLabel`.
+3. Phone language not one of the five is silently ignored. `lib/text/languages.ts` lines 26-28 and 49-53; `components/start/StartPageBody.tsx` line 20; `app/patient/page.tsx` line 57. Severity: High. Fix: check `navigator.languages` when `chosenOnPhone` is `null`; if outside `LANGUAGE_CODES`, show a notice that only five languages are available and to ask the desk for a free interpreter.
+
+### 4. Screen readers
+
+1. `view.expired` changing to `true` is never announced. `StatusAnnouncer.tsx` lines 30 and 44-51; `VisitScreen.tsx` line 85. Severity: High. Fix: pass `expired` (or an effective status) into `StatusAnnouncer` and add an `expired` announcement string.
+2. Switching languages re-announces the previous status change. `StatusAnnouncer.tsx` lines 55-72: `pending` is never cleared and `language` is in the effect dependencies. Severity: Medium. Fix: `setPending(null)` after announcing, or do not re-trigger on language once done for that round.
+3. `#status-heading` focus rescue collides with the 300 ms live-region update. `PatientStatus.tsx` line 154; `VisitScreen.tsx` line 40; `StatusAnnouncer.tsx` line 66. Severity: Medium. Fix: suppress the announcement when `document.activeElement?.id === "status-heading"`.
+4. Focusing `<p id="status-heading" tabIndex={-1}>` during `loading` gives a double focus jump on same-tab link changes. `VisitScreen.tsx` lines 48-52. Severity: Low. Fix: remove the id from the loading `<p>` and keep `lostFocus` pending until a real heading mounts.
+5. Status changes inside `OtherStatus` do not rescue focus, and `StillHerePrompt` runs `useRescueFocus` on every clock tick. `PatientStatus.tsx` lines 158 and 170-175; `StillHerePrompt.tsx` lines 28 and 37-38. Severity: Low. Fix: key `FocusBox` by `${view.expired}-${view.status}` and pass an `onFocusLost` callback to `StillHerePrompt`.
+
+### 5. Alerts
+
+1. Deaf and hard-of-hearing iPhone users see "Sound is on" with no warning that iOS cannot vibrate. `SoundSwitch.tsx` lines 169-177; `alertSound.ts` lines 1 and 91-100. `sound.notice` says "It also vibrates if your phone allows it". Severity: High. Fix: when `typeof navigator.vibrate !== "function"`, show "Vibration is not available on this phone. Keep this screen in sight." under "Sound is on".
+2. Locked or backgrounded iPhones suspend `AudioContext` while `waiting`, leaving a false "Sound is on" state. `SoundSwitch.tsx` lines 131-153; `alertSound.ts` lines 54-65. When `called` later arrives, `ctx.resume()` fails without a gesture, so the first beep fails and sound flips off. Severity: High. Fix: listen to `onstatechange` and `visibilitychange`; if the context becomes `interrupted` or `suspended` while hidden, reset to `off` and tell the patient to tap "Turn on sound" again.
+3. `SoundSwitch` focus jump cuts off its own `role="status"` text (`failed` and `offWhileCalled`). `SoundSwitch.tsx` lines 119-126 and 184-191. Severity: Medium. Fix: give the status `div` an id and link `aria-describedby` from the button to it when `note` is not null.
+4. Colour-only meaning: no problem found.
+
+### 6. Text size, right-to-left and layout
+
+1. Text size control caps at 150%, and is missing from `/`. `lib/textSize.ts` lines 10-14 and 34; `TextSizeSwitch.tsx` lines 17-22; `StartPageBody.tsx` lines 23-33. Severity: High. Fix: `extraLarge: "200%"`, remove the `/patient` path guard, render `TextSizeSwitch` on `/`.
+2. `dir` and `lang` are on `<main>`, not `<html>`, leaving the footer, `<title>` and browser chrome LTR and English for Urdu and Arabic. `app/patient/page.tsx` line 95; `StartPageBody.tsx` line 23. Severity: Medium. Fix: set `document.documentElement.dir` and `.lang` in an effect when the language changes.
+3. Unisolated `formatWaitRange` digits inside RTL paragraphs. `PatientStatus.tsx` lines 54-57. Severity: Low. Fix: wrap it in `<bdi>`.
+4. Standalone links in `CareOptions.tsx` (lines 9, 38-40, 52-56) are under 24 by 24 CSS pixels. Severity: Medium. Fix: add `inline-block py-1` to `linkStyle`.
+5. Keyboard focus order puts the settings above the visit content on `/patient`. `app/patient/page.tsx` lines 96-102; `StatusAndSound.tsx` lines 30-36. Severity: Low. Fix: put the status above the switches, or move `TextSizeSwitch` below the status card.
+
+### 7. Anything else
+
+1. Replaced visit links (`deadToken`) show the "broken link" message. `app/patient/page.tsx` lines 49-53; `VisitScreen.tsx` lines 61-69. Severity: Medium. Fix: pass `deadToken` on its own and show "This visit link is no longer active. Please check with the emergency department desk."
+2. `onOnMyWay` lacks `try / finally` around `setSending(false)`. `app/patient/page.tsx` lines 82-91. If `recordSeen(token)` throws, the button stays on "Sending...". Severity: Medium. Fix: `try { ... } finally { setSending(false); }`.
+3. `StartVisit.tsx` does not announce a pause that is already on at first load. Lines 39-43 and 131-143 (`wasPaused === false && sitePaused`). Severity: Low. Fix: announce when `wasPaused !== true && sitePaused`, or when both sites are paused.
+4. Empty `<p role="status">` in `StillHerePrompt.tsx` line 83 adds blank space under `space-y-5`. Severity: Low. Fix: `className={thanking ? "clean-card font-semibold" : "sr-only"}`.
+5. Demo links (`Staff screen`, `Patient screen`, `Dashboard`) sit right under the 911 line on `/`. `StartPageBody.tsx` lines 33-44. Severity: Low. Fix: a visible "Demo navigation (testing only)" label, or move them into the footer.
