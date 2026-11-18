@@ -53,3 +53,5 @@
 - Gotcha (2026-11-18): before you write "still open" or "blocks" in a log line, find that item in the Phase list or "Waiting on the owner" in docs/progress.md and copy its status from there, not from the session summary. A summary repeated an old status into two log lines.
 - Gotcha (2026-11-18): with grep -e, every other word that is not an option is a file name, so grep -q abc -e "x" looks for a file "abc". Use grep -q -e abc -e "x", or two greps in a pipe. Run a wait loop's condition once by hand before you put it in until.
 - Gotcha (2026-11-18): a Bash call that starts with sleep N is blocked. To wait for a deploy or a check run, use gh run watch <id> --exit-status, or an until-loop with run_in_background: true.
+- Gotcha (2026-11-18): a `pg_cron` time rule with an exact 5-minute step (`<= now() - interval '5 minutes'`) can miss by a few ms and slip a full tick. Give each rule 1 minute of slack.
+- Gotcha (2026-11-18): never edit a migration that already ran in Supabase. Put the fix in a new migration file with `create or replace`, so the files and the database stay the same.
