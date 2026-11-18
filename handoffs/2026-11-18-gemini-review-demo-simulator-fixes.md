@@ -45,13 +45,12 @@ Facts the code depends on (not in the files):
 ## Checked (output in this session, 2026-11-18)
 
 - The migration ran in the SQL Editor without errors. A read-only query shows the new body is live, service_role has no select on demo_settings, the cron job is active, running is false, 0 demo visits.
-- supabase/checks/permissions.sql: the list is the same as before.
+- supabase/checks/permissions.sql: the list is the same as before; the second query returned no rows (no table without row-level security).
 - supabase/checks/demo_tick.sql: 0 real visits checked 3; 1 real visits changed 0; 2 site A waiting 10; 3 site B waiting 9; 4 site B new waiting after pause 0; 5 call-backs at A 9; 6 demo arrived 15; 7 phone attempts recorded 10; 8 changes while running is false 0.
 - npm test: 65 files, 376 tests passed. npm run lint: no errors. npm run build: completed.
 
 ## Not checked
 
-- The second query of permissions.sql (no result pasted this round).
 - A real VWR02 during a tick (a staff pause in the same moment). No check makes one.
 - The simulator running live (running is still false).
 
