@@ -77,7 +77,7 @@ In a handoff, write "checked" only for a check whose output is in this session o
 
 From 2026-11-10 every handoff goes to a Gemini model (from 2026-11-14, Gemini Hydrogen 4 replaces Gemini 3.1 Pro, which I no longer have); I do not use Kimi, Grok, DeepSeek, GPT-6 Astra, GPT-6.1 Sol, GPT-6.1 Terra or Gemini 4 Argon. Use Gemini Hydrogen 4, High, unless a step below says otherwise. When I have no Gemini Hydrogen 4 credits, Gemini 3.6 Flash, High, takes any step; say so in the note. Because one model family now does every review, each review goes in a new Gemini chat (so it never checks its own work from memory), and the handoff asks it to find problems, not to confirm.
 
-- After each small change works and passes its tests: Gemini Hydrogen 4, High, reviews the result.
+- After each small change works and passes its tests: Gemini Hydrogen 4, High, reviews the result. When the same code has had two review rounds in a row, ask me first whether the next one is due.
 - When you are stuck (two fixes have failed) or a task is important or unclear: the escalation loop. Gemini Hydrogen 4, High, analyzes the problem; then, in a new chat, Gemini Hydrogen 4, Medium, challenges the assumptions and suggests simpler options; then I decide.
   If the app is broken, the save-point rule above ("go back to the last save point that worked") comes first.
 - Phase 1, after the Playwright phone and laptop tests: Gemini Hydrogen 4, High, reviews the flow for confusing labels and missing states, then suggests simpler screens.
