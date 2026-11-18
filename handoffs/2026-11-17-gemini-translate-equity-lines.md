@@ -250,3 +250,27 @@ Gemini Hydrogen 4, High, new chat, 2026-11-17. Pasted by the owner, as given.
   - Too long for a dropdown helper line: at 105 characters (and over 120 characters in French and Arabic), it wraps into several lines directly under the language menu on mobile screens.
 - Line 15 (`announce.expired`): "This visit request has expired. If you still need care, please go to the emergency department desk."
   - Terminology shift ("visit request" vs. "visit"): other lines refer to "this visit" or "visit link", whereas line 15 switches to "visit request". Translators must shift terms (`demande de visite`, `وزٹ کی درخواست`, `طلب هذه الزيارة`, `就诊请求`), which can make screen-reader users think a "visit request" is a different record from their visit.
+
+## Claude's check
+
+Claude, 2026-11-17. Each point was read against `lib/text/*.ts` at `659dd57`.
+
+### Translation faults
+
+- zh `expiredText`: "您在6小时前开始了这次就诊" means "6 hours ago", not "over 6 hours ago". The old draft had the same fault. Fix: "您在6个多小时前开始了这次就诊。" Real.
+- All 15 keys are there in each language. No curly quotes. Not checked: the meaning of each line in Urdu and Arabic (the fluent reviewer does that).
+
+### Gemini made these errors
+
+- Line 3 and line 14 "too long, wraps": the screens let text wrap. The WCAG check on 2026-11-17 found no fault at 200% text on `/` and `/patient` at 390 px. A wrap is not a fault. Not real.
+- Line 15 "visit request" is a new term: `expiredHeading` already says "visit request" (`lib/text/en.ts` lines 58 and 119) in all 5 languages. Line 15 keeps the same term. Not real.
+- Line 13: the draft tag shows in brackets after the language name, and the full draft notice shows when the language is chosen. The tag is not the only text. Low, no change.
+
+### Real, wording decisions (owner)
+
+- Line 2: "call your phone" next to the recall word "called". "Staff may phone you" removes the clash. The 4 translations already use a telephone verb, so they stay as they are.
+- Lines 6 and 7: "nurse check-in desk" is not a sign that Canadian emergency departments use, and in fr, ur and ar it can read as the desk where nurses sign in for work. Options: keep it, go back to "triage desk", or "triage desk (the nurse at the front)".
+- Line 10: "A nurse never checked you in" can sound like blame. Option: "No nurse has seen you for this visit."
+- Line 12: "Please ask the emergency department desk." does not say what to ask. Option: "Please ask the emergency department desk for help."
+- Line 14: ", or wait inside" reads as a choice in place of an interpreter. Option: drop it.
+- Low, no change suggested: line 9 "Your answer" (the old text says the same, and the button is the answer to "Please head back now"); lines 4 and 5 repeat "hospital" (clear, and it says where to wait); line 8 "check" (plain word).
