@@ -57,3 +57,16 @@ describe("SPEC's fixed sentences", () => {
     expect(t.survey.question).toBe("How would you rate your waiting experience?");
   });
 });
+
+// The owner's words from the equity review (docs/decisions.md, 2026-11-17).
+describe("the owner's equity lines", () => {
+  const t = textFor("en");
+
+  it("has the replaced-link message and the interpreter line exactly", () => {
+    expect(t.patient.replacedLinkHeading).toBe("This visit link is no longer active");
+    expect(t.patient.replacedLinkText).toBe("Please ask the emergency department desk for help.");
+    expect(t.language.interpreter).toBe(
+      "Need another language? Ask the emergency department desk for a free interpreter.",
+    );
+  });
+});
