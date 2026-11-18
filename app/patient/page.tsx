@@ -105,6 +105,7 @@ export default function PatientPage() {
         loading={loading}
         result={result}
         linkFailed={linkFailed}
+        linkReplaced={deadToken}
         token={token ?? null}
         language={language}
         onOnMyWay={onOnMyWay}

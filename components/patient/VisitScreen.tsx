@@ -1,7 +1,7 @@
 "use client";
 
 // The part of the patient page below the 911 line: "Loading…", the "could not load" box, the
-// no-visit or broken-link box, or the visit itself (code, status, sound box and announcer).
+// no-visit, broken-link or replaced-link box, or the visit itself (code, status, sound box and announcer).
 // This part stays on the page when the screen changes, so it is the one that moves focus to the
 // new heading when the old screen left with focus inside it.
 
@@ -20,6 +20,8 @@ type Props = {
   result: PatientView | null | "unavailable" | undefined;
   /** True when the link was broken or no longer opens a visit (for example after a new link). */
   linkFailed: boolean;
+  /** True when the link once opened a visit but no longer does (for example staff made a new link). */
+  linkReplaced?: boolean;
   token: string | null;
   language: string;
   onOnMyWay: () => void;
@@ -31,7 +33,7 @@ type Props = {
 
 type Screen = "loading" | "unavailable" | "none" | "visit";
 
-export function VisitScreen({ loading, result, linkFailed, token, language, onOnMyWay, sending, online, notSaved }: Props) {
+export function VisitScreen({ loading, result, linkFailed, linkReplaced = false, token, language, onOnMyWay, sending, online, notSaved }: Props) {
   const t = textFor(language);
   const p = t.patient;
   const view = result === "unavailable" ? null : result;
@@ -61,9 +63,10 @@ export function VisitScreen({ loading, result, linkFailed, token, language, onOn
       {screen === "none" && (
         <section aria-labelledby="status-heading" className="clean-card space-y-2">
           <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
-            {linkFailed ? p.brokenLinkHeading : p.noVisitHeading}
+            {linkReplaced ? p.replacedLinkHeading : linkFailed ? p.brokenLinkHeading : p.noVisitHeading}
           </h2>
-          {linkFailed && <p className="text-lg">{p.brokenLinkText}</p>}
+          {linkReplaced && <p className="text-lg">{p.replacedLinkText}</p>}
+          {linkFailed && !linkReplaced && <p className="text-lg">{p.brokenLinkText}</p>}
           <p className="text-lg">{p.findVisitHelp}</p>
         </section>
       )}
