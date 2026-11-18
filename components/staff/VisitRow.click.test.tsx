@@ -3,11 +3,11 @@
 // and focus then moves to the progress line, because the "Recall patient" button leaves the page.
 
 import { act } from "react";
-import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { callBackVisit } from "@/data/staffActions";
 import { callBack, checkInAtDesk } from "@/lib/visitActions";
+import type { ChangeResult, Visit } from "@/lib/visit";
 import { VisitRow } from "./VisitRow";
 
 // The save is replaced, so the test controls what it returns.
@@ -24,14 +24,27 @@ vi.mock("@/data/staffActions", () => ({
 const now = new Date("2026-11-18T20:00:00Z");
 const input = { id: "v1", code: "ABC234", access_token: "TOKEN", site: "A" as const, ctas_level: 4 as const, language: "en" };
 const waiting = checkInAtDesk(input, "waiting", new Date(now.getTime() - 30 * 60_000));
+const called = callBack(waiting, now);
+if (!called) throw new Error("callBack refused the test visit");
 
 let container: HTMLDivElement;
 let root: Root;
 
 const button = (words: string) => [...container.querySelectorAll("button")].find((b) => b.textContent?.startsWith(words));
+const progressLine = () => container.querySelector('[data-testid="progress"]') as HTMLElement;
+
+/** Draws the row for this visit, as the page does when the list changes. */
+const draw = (visit: Visit) => act(() => root.render(<VisitRow visit={visit} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />));
 
 /** Lets the one-tick focus waits (setTimeout 0) run. */
 const nextTick = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+
+/** A save that only finishes when the test calls `finish`, like a slow network. */
+function slowSave() {
+  let finish: (result: ChangeResult) => void = () => {};
+  vi.mocked(callBackVisit).mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+  return (result: ChangeResult) => act(async () => finish(result));
+}
 
 async function press(words: string) {
   const target = button(words);
@@ -45,7 +58,7 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  act(() => root.render(<VisitRow visit={waiting} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />));
+  draw(waiting);
 });
 
 afterEach(() => {
@@ -63,9 +76,10 @@ describe("VisitRow recall", () => {
     vi.mocked(callBackVisit).mockResolvedValue("saved");
     await press("Recall patient");
     await press("Yes, recall patient");
-    await nextTick(); // focus moves one tick later, after the row shows the called text
+    draw(called); // the list gets the called visit, so the row shows it
+    await nextTick();
     expect(callBackVisit).toHaveBeenCalledWith("v1");
-    expect(document.activeElement).toBe(container.querySelector('[data-testid="progress"]'));
+    expect(document.activeElement).toBe(progressLine());
   });
 
   it("after Yes and a failed save, shows the not-saved note and keeps the progress line out of focus", async () => {
@@ -73,26 +87,33 @@ describe("VisitRow recall", () => {
     await press("Recall patient");
     await press("Yes, recall patient");
     expect(container.textContent).toContain("Not saved");
-    expect(document.activeElement).not.toBe(container.querySelector('[data-testid="progress"]'));
+    expect(document.activeElement).not.toBe(progressLine());
   });
 
-  it("after a save, the progress line already shows the called text when focus lands on it", async () => {
-    const called = callBack(waiting, now);
-    if (!called) throw new Error("callBack refused the test visit");
-    // Like the real save: the list gets the called visit before the save says "saved", but a
-    // browser draws that change in a later task, not at once. flushSync draws it in that task.
-    vi.mocked(callBackVisit).mockImplementation(async () => {
-      window.setTimeout(() =>
-        flushSync(() => root.render(<VisitRow visit={called} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} />)),
-      );
-      return "saved";
-    });
-    const progress = container.querySelector('[data-testid="progress"]') as HTMLElement;
+  it("when the row shows the called visit before the save says saved, focus lands on the called text", async () => {
+    const finish = slowSave();
     let textAtFocus = "";
-    progress.addEventListener("focus", () => (textAtFocus = progress.textContent ?? ""));
+    progressLine().addEventListener("focus", () => (textAtFocus = progressLine().textContent ?? ""));
     await press("Recall patient");
     await press("Yes, recall patient");
+    draw(called); // the real save puts the called visit in the list before it returns
+    await finish("saved");
     await nextTick();
+    expect(document.activeElement).toBe(progressLine());
+    expect(textAtFocus).toContain("Called");
+  });
+
+  it("when the row shows the called visit after the save says saved, focus waits for the called text", async () => {
+    const finish = slowSave();
+    let textAtFocus = "";
+    progressLine().addEventListener("focus", () => (textAtFocus = progressLine().textContent ?? ""));
+    await press("Recall patient");
+    await press("Yes, recall patient");
+    await finish("saved");
+    await nextTick();
+    draw(called); // the browser draws the list change later
+    await nextTick();
+    expect(document.activeElement).toBe(progressLine());
     expect(textAtFocus).toContain("Called");
     expect(textAtFocus).not.toContain("Waiting off-site");
   });
@@ -103,5 +124,16 @@ describe("VisitRow recall", () => {
     await press("Yes, recall patient");
     await nextTick();
     expect(document.activeElement).toBe(button("Recall patient"));
+  });
+
+  it.each(["not_saved", "refused"] as const)("after a slow save that ends %s, focus is on Recall patient", async (result) => {
+    const finish = slowSave();
+    await press("Recall patient");
+    await press("Yes, recall patient");
+    await nextTick();
+    await finish(result);
+    await nextTick();
+    expect(document.activeElement).toBe(button("Recall patient"));
+    expect(container.textContent).toContain(result === "not_saved" ? "Not saved" : "The list just changed");
   });
 });

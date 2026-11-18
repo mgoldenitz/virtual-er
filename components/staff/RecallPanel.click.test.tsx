@@ -101,4 +101,25 @@ describe("RecallPanel taps", () => {
     expect(document.getElementById(id ?? "")?.textContent).toContain("Recall visit ABC234?");
     expect(document.getElementById(id ?? "")?.textContent).toContain("There is no undo.");
   });
+
+  it("two open questions for the same code each have their own question id", async () => {
+    act(() =>
+      root.render(
+        <>
+          <div data-testid="first"><RecallPanel code="ABC234" saving={false} onConfirm={vi.fn()} /></div>
+          <div data-testid="second"><RecallPanel code="ABC234" saving={false} onConfirm={vi.fn()} /></div>
+        </>,
+      ),
+    );
+    for (const panel of ["first", "second"]) {
+      const open = container.querySelector(`[data-testid="${panel}"] button`) as HTMLButtonElement;
+      await act(async () => open.click());
+    }
+    for (const panel of ["first", "second"]) {
+      const box = container.querySelector(`[data-testid="${panel}"]`) as HTMLElement;
+      const yes = [...box.querySelectorAll("button")].find((b) => b.textContent?.startsWith("Yes"));
+      const question = document.getElementById(yes?.getAttribute("aria-describedby") ?? "");
+      expect(box.contains(question)).toBe(true);
+    }
+  });
 });
