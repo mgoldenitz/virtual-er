@@ -70,7 +70,7 @@ export default function StaffPage() {
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
       <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Staff: Virtual Waiting Room</h1>
-        <label className="flex items-center gap-2">
+        <label className="flex flex-wrap items-center gap-2">
           <span className="font-semibold">Site</span>
           <select
             value={site}
@@ -79,7 +79,7 @@ export default function StaffPage() {
               setSlip(null);
               setHomeVisit(null);
             }}
-            className="min-h-11 rounded-lg border-2 border-control px-3"
+            className="min-h-11 max-w-full rounded-lg border-2 border-control px-3"
           >
             <option value="A">Demo Site A</option>
             <option value="B">Demo Site B</option>
@@ -100,7 +100,7 @@ export default function StaffPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           {visits && now && (
             <ExpectedArrivals visits={visits} site={site} now={now} onChoose={chooseHomeVisit} />

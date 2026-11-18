@@ -220,7 +220,7 @@ export function CheckInPanel({
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="mt-2 block min-h-11 rounded-lg border-2 border-control px-3"
+          className="mt-2 block min-h-11 max-w-full rounded-lg border-2 border-control px-3"
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>

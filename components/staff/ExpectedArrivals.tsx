@@ -65,7 +65,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
             onChange={(e) => setTyped(e.target.value)}
             autoComplete="off"
             spellCheck={false}
-            className="mt-1 block min-h-11 w-40 rounded-lg border-2 border-control px-3 font-mono uppercase tracking-widest"
+            className="mt-1 block min-h-11 w-40 max-w-full rounded-lg border-2 border-control px-3 font-mono uppercase tracking-widest"
           />
         </label>
         <Button type="submit" variant="secondary" aria-disabled={looking}>
