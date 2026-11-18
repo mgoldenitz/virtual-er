@@ -10,7 +10,9 @@
 -- visits_check_step, which nobody can call, so the list stays the same). The demo files
 -- (20261118000000_demo_settings.sql and 20261118000100_demo_simulator.sql) give anon and
 -- authenticated nothing either: their table has no rights for them, and their functions are
--- revoked from them, so the list stays the same:
+-- revoked from them, so the list stays the same. 20261118010000_clear_demo_data.sql gives
+-- authenticated EXECUTE on clear_demo_data (staff only, the function checks is_staff), so that
+-- one line is added to the list:
 --   anon           table     change_signal       SELECT
 --   anon           function  confirm_on_my_way   EXECUTE
 --   anon           function  get_patient_visit   EXECUTE
@@ -19,6 +21,7 @@
 --   authenticated  table     change_signal       SELECT
 --   authenticated  table     site_settings       SELECT, UPDATE
 --   authenticated  table     visits              INSERT, SELECT, UPDATE
+--   authenticated  function  clear_demo_data     EXECUTE
 --   authenticated  function  confirm_on_my_way   EXECUTE
 --   authenticated  function  get_patient_visit   EXECUTE
 --   authenticated  function  is_staff            EXECUTE
