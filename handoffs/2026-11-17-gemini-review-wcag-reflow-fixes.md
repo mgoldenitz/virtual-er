@@ -332,3 +332,78 @@ index 3da3263..963aa58 100644
          </label>
          <Button type="submit" variant="secondary" aria-disabled={looking}>
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-17.
+
+### 1. Off-screen parts at 320 px or 390 px with 200% text (from the changed lines)
+
+No problem found in the changed lines themselves. At 200% text (`1rem = 32px`), `grid-cols-1` (`minmax(0, 1fr)`) prevents grid-track blow-out, `min-w-0` overrides browser `min-width: min-content` on both `<fieldset>` elements, `flex-wrap` wraps the CTAS radio row, and `max-w-full` (`box-sizing: border-box`) caps the `<select>` elements, the `<input className="... w-40 max-w-full">` (`320px` nominal width), and its flex-item `<label className="block max-w-full">` to their parent's content box (`160-192 px` inside padded cards at 320 px viewport; `230-262 px` at 390 px). (See Question 6 item 1 for a latent risk on `app/staff/page.tsx` line 73 if site option labels ever become longer than "Demo Site A".)
+
+### 2. Width or text size where `lg:grid-cols-2` makes the two staff columns too narrow
+
+No problem found under Tailwind v4's default `rem`-based breakpoints: `lg` is `64rem` (`1024 px` at 100% text, `1536 px` at 150% text, `2048 px` at 200% text), which matches `<main className="... max-w-5xl ...">` (`64rem`). Whenever `lg:grid-cols-2` activates (`>= 64rem`), subtracting `px-4` (`2rem`) and `gap-6` (`1.5rem`) leaves `(64 - 3.5) / 2 = 30.25 rem` (`484 px` at 100% text, `968 px` at 200% text) per column, which fits `ExpectedArrivals`, `VisitRow`, and `CheckInPanel`.
+
+(Note: if `lg` were ever overridden to a fixed `1024px` pixel media query while text is at 200%, each column would shrink to `~360-392 px` = `11.25-12.25 rem`, forcing the `w-40` (`320 px`) visit code box and multi-button rows into cramped vertical stacks.)
+
+### 3. `max-w-full` on `<select>` for screen readers, keyboard users, and WCAG 1.4.10 / 1.3.1
+
+No problem found.
+
+- Screen readers: `max-w-full` only constrains the visual width of the closed `<select>` trigger box; the full `<option>` strings (including "Français (French), draft until checked") remain intact in the DOM and accessibility tree.
+- Keyboard users: Opening the native `<select>` menu (`Space` / `Enter` / `Alt+DownArrow`) renders the browser's popup listbox wide enough to display the full option text.
+- WCAG 1.4.10 and 1.3.1: Visual clipping of a closed `<select>` without horizontal page scrolling, where full option text is readable when opened, is neither a WCAG 1.4.10 Reflow failure nor a WCAG 1.3.1 Info and Relationships failure.
+
+### 4. Cases where the shared `vibrationStarted` flag misbehaves
+
+1. `vibrate()` ignores `navigator.vibrate()` returning `false`, re-triggering blocked-call console errors.
+   - File and line: `components/patient/alertSound.ts`, lines 92-96
+   - What goes wrong: Per the Vibration API spec, `navigator.vibrate([200, 100, 200])` returns `false` (without throwing) when the browser blocks vibration (e.g., missing sticky user activation, hidden tab, or unsupported hardware). Because `vibrate()` sets `vibrationStarted = true` unconditionally, a later `stopVibration()` sees `vibrationStarted === true` and calls `navigator.vibrate(0)` anyway, producing the exact "Blocked call to navigator.vibrate" console error.
+   - Small fix: Set the flag only when `navigator.vibrate` returns `true`:
+
+```ts
+if (typeof navigator.vibrate === "function" && navigator.vibrate([200, 100, 200])) {
+  vibrationStarted = true;
+}
+```
+
+2. 500 ms pattern ending on its own leaves `vibrationStarted` stuck `true`, and two `SoundSwitch` boxes cancel each other.
+   - File and line: `components/patient/alertSound.ts`, lines 88-106
+   - What goes wrong: `[200, 100, 200]` finishes after 500 ms on the phone, yet `vibrationStarted` stays `true` indefinitely until `stopVibration()` runs (so unmounting `SoundSwitch` minutes later unnecessarily calls `navigator.vibrate(0)` after sticky activation may have expired). With two `SoundSwitch` boxes on one page, Box A starting a vibration sets `vibrationStarted = true`, and Box B turning off or unmounting within 500 ms calls `navigator.vibrate(0)` and sets `vibrationStarted = false`, stopping Box A's active vibration while Box A is still alerting.
+   - Small fix: Auto-clear `vibrationStarted` after the 500 ms pattern duration (and clear that timer in `stopVibration()`), and track active vibrating owners (e.g., a `Set<symbol>` or counter) so `navigator.vibrate(0)` is only called when the last active owner stops.
+
+3. Transitioning out of `"called"` without unmounting (`"called"` to `"waiting"` on Undo, or switching visits on an open SPA page) leaves a running vibration unstopped.
+   - File and line: `components/patient/alertSound.ts`, lines 88-106; `components/patient/SoundSwitch.tsx`, lines 176-194
+   - What goes wrong: `<SoundSwitch>` stays mounted across `"waiting"` and `"called"`, and only calls `stopVibration()` inside `turnOff()` and on unmount. If staff undo a recall (`"called"` to `"waiting"`) or the open page switches from a `"called"` visit to a `"waiting"` visit within 500 ms of a vibration starting, `<SoundSwitch>` never unmounts and `stopVibration()` is never called, leaving the vibration running after the visit is no longer `"called"`.
+   - Small fix: In `SoundSwitch.tsx`, call `stopVibration()` inside the `[status, state]` effect cleanup whenever leaving `"called"` (or when `status !== "called"`).
+
+### 5. Do the `renderToStaticMarkup` class tests prove the reflow fix?
+
+No, they can pass while the page still scrolls sideways:
+
+- Missing parent constraints: Rendering `<LanguageSwitch/>`, `<CheckInPanel/>`, or `<ExpectedArrivals/>` alone tests `max-w-full` (`max-width: 100%`) without any ancestor flex/grid container. If a parent flex row lacks `flex-wrap` or `min-w-0`, `100%` resolves to an overflowing parent width and the page still scrolls horizontally.
+- `app/staff/page.tsx` is untested: None of the new tests render `StaffPage`, so removing `grid-cols-1`, `flex-wrap`, or `max-w-full` in `app/staff/page.tsx` leaves all unit tests green while `/staff` overflows again.
+- Overridden classes and unchecked siblings: Checking `.split(" ").toContain("max-w-full")` ignores conflicting classes (e.g., `min-w-fit`, `whitespace-nowrap`) and never checks unbreakable text or buttons elsewhere in the tree.
+
+Better check without a signed-in staff session: Run a Playwright viewport check at `320 x 800` and `390 x 844` with `document.documentElement.style.fontSize = "200%"` that asserts `document.documentElement.scrollWidth <= document.documentElement.clientWidth` and `el.getBoundingClientRect().right <= window.innerWidth` for all visible elements:
+
+1. Run it directly on `/` and `/patient` across all 5 languages (`en`, `fr`, `ur`, `ar`, `zh`).
+2. Run it on `/staff` without a real login by intercepting Supabase auth/REST calls with `page.route(...)` (returning a stubbed staff session and synthetic visit list) or rendering `<CheckInPanel>`, `<ExpectedArrivals>`, and `<VisitRow>` inside a dev/test route using the real `<main className="mx-auto w-full max-w-5xl ..."><div className="grid grid-cols-1 gap-6 lg:grid-cols-2">` wrapper.
+
+### 6. Anything else in the diff that is wrong
+
+1. Site `<label>` flex item in `app/staff/page.tsx` lacks `max-w-full`.
+   - File and line: `app/staff/page.tsx`, line 73
+   - What goes wrong: `<label className="flex flex-wrap items-center gap-2">` is a flex item inside `<header>` without `max-w-full` (unlike `<label className="block max-w-full">` in `ExpectedArrivals.tsx`, line 61). A flex item's automatic minimum width follows its child `<select>`'s widest `<option>` `min-content`, so if a site name is ever longer than "Demo Site A", `<label>` and `<select className="... max-w-full">` will expand past a 320 px screen at 200% text.
+   - Small fix: Change line 73 to `<label className="flex max-w-full flex-wrap items-center gap-2">`.
+
+2. Brittle HTML attribute-order regexes in the new reflow tests.
+   - File and line: `components/staff/CheckInPanel.test.tsx`, lines 126, 132, 141; `components/staff/ExpectedArrivals.test.tsx`, lines 15, 19; `components/LanguageSwitch.test.tsx`, lines 12-13
+   - What goes wrong: Patterns like `/<div class="([^"]*)"><label[^>]*><input type="radio"/` and `/<label class="([^"]*)"><span[^>]*>Visit code/` require `class` to be the sole attribute on the tag and zero whitespace between tags. Adding a `data-*` attribute, `id`, or JSX whitespace makes `.match(...)` return `null` (falling back to `""` and failing for unrelated reasons) or match an earlier sibling element.
+   - Small fix: Parse the rendered HTML with `new DOMParser().parseFromString(html, "text/html")` (or `happy-dom`/`jsdom`) and inspect `element.classList` via `querySelector` / `querySelectorAll`.
+
+3. `alertSound.test.ts` mock `vibrate` returns `undefined` instead of `boolean`.
+   - File and line: `components/patient/alertSound.test.ts`, lines 168-189
+   - What goes wrong: The `vibrate` spy does not mock the DOM `boolean` return value (`true`/`false`), so the suite passes even when `vibrate()` ignores a `false` return from `navigator.vibrate([200, 100, 200])`.
+   - Small fix: Have the default mock return `true` and add a test where `vibrate.mockReturnValueOnce(false)` confirms `stopVibration()` does not call `navigator.vibrate(0)`.
