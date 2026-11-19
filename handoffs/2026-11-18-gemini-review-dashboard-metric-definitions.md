@@ -103,3 +103,70 @@ create table public.daily_stats (
 ## What to bring back to Claude
 
 Paste Gemini's full answer. Claude adds it below under "Response", checks each point against the code, and asks you about any point that needs a product decision.
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner.
+
+1. **Cross-midnight date mismatch between numerator and denominator (`offered` vs. `triaged_ctas_4_5`) can push Offered % above 100% or divide by zero.**
+* **Affects:** Number 2 (Eligible patients offered the option %).
+* **Concrete case:** Visit `V01` (`ctas_level = 4`) has `triaged_at = 2026-11-17 23:50 EST` and `offered_at = 2026-11-18 00:05 EST`, while Visit `V02` (`ctas_level = 5`) has `triaged_at = 2026-11-18 00:10 EST` and `offered_at = null`. On Nov 18 at 00:15 EST, 1 offer today (`V01`) divided by 1 eligible triage today (`V02`) gives `100%` (or `200%` if a second yesterday-triaged visit is also offered after midnight, and `1 / 0` if `V02` has not arrived yet).
+* **Smallest fix:** Count the offered numerator on the visit's `triaged_at` America/Toronto date (visits triaged today with `offered_at` set), or report raw counts (`N offered / M eligible triaged`) and guard `0` denominators.
+
+2. **Negative or skewed denominator in Offered % when `not_eligible` visits have `ctas_level` NULL (or outside 4–5).**
+* **Affects:** Number 2 (Eligible patients offered the option %).
+* **Concrete case:** Visit `V03` is marked `status = 'not_eligible'` at desk intake on Nov 18 at 09:00 EST with `triaged_at = 2026-11-18 09:00 EST` and `ctas_level = null` (`ctas_level` is empty until triage). `triaged_ctas_4_5` is `0` and `not_eligible` is `1`, so `0 - 1` produces a denominator of `-1`.
+* **Smallest fix:** Define eligible triaged visits directly as `triaged_at` today with `ctas_level in (4, 5)` and `status <> 'not_eligible'`.
+
+3. **`Declined` has no event date in the SPEC, causing live counts to drop when 24-hour deletion folds them onto `offered_at` (and dropping rows with `offered_at = null`).**
+* **Affects:** Number 2 (How many declined) and Rule 4 consistency.
+* **Concrete case:** Visit `V04` has `created_at = 2026-11-17 09:50 EST`, `offered_at = 2026-11-17 10:00 EST`, `status = 'declined'`, and `closed_at = 2026-11-18 09:00 EST`. Before deletion at 09:30 EST on Nov 18, a live query without a date filter (or filtering on `closed_at`) counts `V04` on Nov 18; at 09:55 EST (`created_at < now() - 24h`), Rule 4 deletes `V04` and folds `declined` onto `offered_at` (Nov 17), reducing Nov 18's count by 1. A visit marked `declined` with `offered_at = null` is counted live before deletion but dropped by `daily_stats`.
+* **Smallest fix:** Define Declined as `status = 'declined'` counted on `coalesce(offered_at, triaged_at, created_at)` in America/Toronto time, matching `daily_stats`.
+
+4. **Staff can misread "Offered %" next to "Declined" as mutually exclusive outcomes.**
+* **Affects:** Number 2 (Eligible patients offered the option %, and how many declined).
+* **Concrete case:** Out of 10 eligible CTAS 4/5 visits today, all 10 are offered off-site waiting, 6 accept (`status = 'waiting'`), and 4 decline (`status = 'declined'`). Displaying `Offered: 100%` beside `Declined: 4` looks contradictory because declined patients are already inside the 100% offered.
+* **Smallest fix:** Label the pair `"Offered off-site waiting: X% (N of M eligible)"` and `"Declined offer: K of N offered"`.
+
+5. **Ambiguous `"called and arrived today"` phrasing risks excluding cross-midnight recalls before deletion and changing the average after deletion.**
+* **Affects:** Number 3 (Average minutes from call-back to arrival) and Rule 4 consistency.
+* **Concrete case:** Visit `V05` has `called_at = 2026-11-17 23:50 EST` and `arrived_at = 2026-11-18 00:10 EST` (`status = 'arrived'`). If the live query requires both `called_at` and `arrived_at` to be today, Nov 18 excludes `V05` until 24-hour deletion folds `V05` into Nov 18's `daily_stats` on `arrived_at`.
+* **Smallest fix:** Define the cohort explicitly as `status = 'arrived' and called_at is not null` with `arrived_at` today (America/Toronto), matching `daily_stats`.
+
+6. **Un-called desk arrivals (`status = 'arrived'`, `called_at = null`) and reopened visits with stale `arrived_at` distort arrival metrics.**
+* **Affects:** Number 3 (Average minutes from call-back to arrival).
+* **Concrete case:** Visit `V06` (`status = 'waiting'`) returns to the desk before any recall (`status = 'arrived'`, `arrived_at = 2026-11-18 11:00 EST`, `called_at = null`) and is absent from every dashboard metric even though `daily_stats.arrived` counts it. Conversely, Visit `V07` is called at 10:00, arrives at 10:15 (`arrived_at` set), moves to `needs_reassessment`, and closes as `no_show` at 11:00—counting in both `called_and_arrived` and `no_shows` unless `status = 'arrived'` is required.
+* **Smallest fix:** Require `status = 'arrived' and called_at is not null and arrived_at >= called_at` for the average, and display total arrivals (`status = 'arrived'` on `arrived_at`) beside recalled arrivals.
+
+7. **`No-shows` and `unable_to_reach` omit their event date in the SPEC, and `removed` with `removed_reason = 'left'` is missing completely.**
+* **Affects:** Number 4 (No-shows and patients marked unable to reach) and Rule 4 consistency.
+* **Concrete case:** Visit `V08` has `called_at = 2026-11-17 23:45 EST`, `status = 'removed'`, `removed_reason = 'no_show'`, and `closed_at = 2026-11-18 00:15 EST`; Visit `V09` closes on Nov 18 at 14:00 EST with `status = 'removed'`, `removed_reason = 'left'`. Without `closed_at` specified in the SPEC, `V08` can count on Nov 17 live and shift to Nov 18 on deletion, while `V09` is invisible on `/dashboard` despite being tracked in `daily_stats.removed_left`.
+* **Smallest fix:** Specify `closed_at` today (America/Toronto) for `no_shows` and `unable_to_reach`, and add a count for `status = 'removed' and removed_reason = 'left'` on `closed_at`.
+
+8. **`needs_reassessment` and `pre_arrival` statuses are dropped from both live "now" counts, and overnight open visits blur "now" vs. "today".**
+* **Affects:** Number 1 (Patients waiting off-site now, and patients called but not yet arrived).
+* **Concrete case:** Visit `V10` (`status = 'waiting'`) is flagged `status = 'needs_reassessment'` at 14:00 EST (`closed_at = null`), dropping out of both "Waiting off-site now" and "Called but not arrived" even though `daily_stats.open_at_deletion` treats it as open. Meanwhile, Visit `V11` (`created_at = 2026-11-17 22:30 EST`, `status = 'waiting'`) appears in `Waiting off-site now: 1` at 08:00 EST on Nov 18 alongside `Offered today: 0`.
+* **Smallest fix:** Add a live count for `needs_reassessment` (and optionally `pre_arrival`), bound live "now" counts to `created_at >= now() - interval '24 hours'`, and label the card `"Current queue right now (all open visits)"` separate from `"Today (since midnight)"`.
+
+9. **Home-to-triage cohort attribution on `created_at` date excludes cross-midnight home arrivals from today's count and retroactively alters yesterday's number.**
+* **Affects:** Number 5 (Visits started from home, and how many of those arrived at triage).
+* **Concrete case:** Visit `V12` (`source = 'home'`) has `created_at = 2026-11-17 23:35 EST` and `triaged_at = 2026-11-18 00:20 EST`. On Nov 18 at 00:30 EST, `/dashboard` shows `Started from home: 0, Arrived at triage: 0` because `V12` is credited back to Nov 17's cohort.
+* **Smallest fix:** Keep the `created_at` cohort rule (so live and `daily_stats` match), but label it `"Started from home today: X (Y of those reached triage)"` rather than implying total home arrivals triaged today.
+
+10. **Survey responses submitted after midnight (or before `closed_at` is set) are misattributed or dropped, and 0 responses causes division by zero.**
+* **Affects:** Number 6 (Survey: number of responses, average score, and share scoring 9 or 10).
+* **Concrete case:** Visit `V13` has `closed_at = 2026-11-17 23:50 EST` and submits `survey_score = 10` at `2026-11-18 00:10 EST` (credited to Nov 17 instead of Nov 18), while Visit `V14` submits `survey_score = 9` while `status = 'arrived'` (`closed_at = null`) and is dropped entirely. When `survey_responses = 0`, `survey_score_sum / survey_responses` and `survey_9_or_10 / survey_responses` divide by zero.
+* **Smallest fix:** Ensure `closed_at` is set when a survey is saved (or bucket on `coalesce(closed_at, arrived_at, created_at)`), render `—` when `survey_responses = 0`, and label the share `"Scored 9 or 10 (top satisfaction)"`.
+
+11. **Demo mode and Site (`A` vs. `B`) filtering are underspecified to build unambiguously.**
+* **Affects:** All 6 dashboard numbers.
+* **Concrete case:** On Nov 18, Site A has 10 demo visits (`is_demo = true`) and 2 real visits (`is_demo = false`), and Site B has 4 demo visits. The SPEC states `"demo visits count only in demo mode, and daily_stats keeps them apart through its is_demo key"`, but leaves undefined whether demo mode filters `is_demo = true` only or `is_demo in (true, false)`, how `/dashboard` switches into demo mode, and whether `/dashboard` filters by one `site` (`A` or `B`) or aggregates both.
+* **Smallest fix:** Specify exact query predicates `where site = $site and is_demo = $is_demo` (`true` in demo mode, `false` otherwise) and define the UI toggle or URL parameter for `$site` and `$is_demo`.
+
+### Questions that need an owner decision
+
+1. **Offered % denominator cohort:** Should Offered % measure offers made today divided by eligible visits triaged today (which can exceed 100% across midnight), or the share of **visits triaged today** that received an offer (counting `offered` on `triaged_at` so the numerator is always a subset of the denominator)?
+2. **Demo mode scope and trigger:** In demo mode, should `/dashboard` show **only** `is_demo = true` visits or combine `is_demo in (true, false)`, and what UI control or URL parameter activates demo mode?
+3. **Site layout:** Should `/dashboard` filter to one selected site (`Site A` or `Site B`), show side-by-side columns for A and B, or combine both sites?
+4. **Additional statuses already in `daily_stats`:** Should `/dashboard` also display `needs_reassessment` (live), `removed` with `removed_reason = 'left'` (today), and un-called desk arrivals (`arrived` with `called_at is null`, today), which are already stored in `daily_stats`?
+5. **Reopened visits:** Can staff move an `arrived` visit back to `waiting` or `needs_reassessment`, and if so, should `arrived_at` be cleared so it is not counted in call-to-arrival averages?
