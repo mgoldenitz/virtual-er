@@ -196,4 +196,12 @@ Gemini question 5: answered by the code. Undo clears `arrived_at`; no change.
 
 Changes to make without a decision: show a dash for any number with a bottom number of 0; write the event date for each number in the SPEC (Declined on `offered_at`, the arrival average on `arrived_at`, no-shows and `unable_to_reach` on `closed_at`).
 
-Owner decisions: see "Owner decisions" below (added after the owner answers).
+## Owner decisions (2026-11-18)
+
+- A. Offered: show both numbers, each with its counts. Share offered = offered (`waiting` plus `declined` at triage) divided by CTAS 4 or 5 visits triaged today. Share accepted = accepted divided by offered today.
+- C. Add two counts: patients who left (`removed` with `left`, on `closed_at`), and visits back for reassessment now (`needs_reassessment`). Not added: arrivals without a call.
+- D. A Demo / Real switch on the dashboard. Real counts `is_demo = false` only, Demo counts `is_demo = true` only, never mixed.
+- E. Two columns, Site A and Site B; on a phone they stack.
+- B (labels, with "Now" and "Today" headings): goes into the dashboard build plan, for the owner to approve there.
+
+Review closed. The SPEC text changes go into the dashboard build plan.
