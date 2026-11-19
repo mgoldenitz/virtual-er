@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ALLOWED_MOVES, START_STATUSES, TRIAGE_STATUSES, isAllowedMove } from "./allowedSteps";
+import { ALLOWED_MOVES, OFFSITE_START_STATUSES, START_STATUSES, TRIAGE_STATUSES, isAllowedMove } from "./allowedSteps";
 import { CALL_REVIEW_MINUTES } from "./demoTimes";
 import type { Visit } from "./visit";
 import {
@@ -19,6 +19,7 @@ import {
   undoClose,
 } from "./visitActions";
 import { PAUSE_REFUSED, STEP_REFUSED } from "./saveResult";
+import { switchToOffsite, undoSwitch } from "./switchToOffsite";
 
 // The newest migration that makes the trigger function: that is the one the database runs.
 // Only "create (or replace) function" counts, so a later "drop function" or "grant ... on
@@ -67,7 +68,9 @@ const arrived = markArrived(onTheWay, at(3))!;
 const removed = markRemoved(called, "left", at(3))!;
 const declined = checkInAtDesk(input, "declined", t0);
 const notEligible = checkInAtDesk(input, "not_eligible", t0);
-const everyStatus = [home, waiting, called, onTheWay, unableToReach, reassess, arrived, removed, declined, notEligible];
+// A declined patient switched to off-site waiting (only that visit can be undone back to declined).
+const switched = switchToOffsite(declined, at(1))!;
+const everyStatus = [home, waiting, called, onTheWay, unableToReach, reassess, arrived, removed, declined, notEligible, switched];
 
 // Every rule in lib/visitActions.ts that changes an existing visit, at a time late enough for the phone steps.
 const late = at(1 + CALL_REVIEW_MINUTES);
@@ -85,6 +88,8 @@ const rules: [string, (v: Visit) => Visit | null][] = [
   ["removed", (v) => markRemoved(v, "no_show", late)],
   ["new link", (v) => issueNewLink(v, "NEWTOKEN")],
   ["undo", (v) => undoClose(v, v)],
+  ["switch to off-site", (v) => switchToOffsite(v, t0)],
+  ["undo switch", (v) => undoSwitch(v, late)],
 ];
 
 describe("allowed status moves", () => {
@@ -97,13 +102,19 @@ describe("allowed status moves", () => {
     }
   });
 
+  it("lets a declined patient switch to off-site waiting, and nothing else", () => {
+    expect(ALLOWED_MOVES.declined).toEqual(["waiting"]);
+    expect(switchToOffsite(declined, t0)?.status).toBe("waiting");
+  });
+
   it("every new visit starts in a start status", () => {
     for (const v of [home, waiting, declined, notEligible]) expect(START_STATUSES).toContain(v.status);
   });
 
   it("refuses a skipped step", () => {
     expect(isAllowedMove("pre_arrival", "arrived")).toBe(false);
-    expect(isAllowedMove("declined", "waiting")).toBe(false);
+    expect(isAllowedMove("declined", "called")).toBe(false);
+    expect(isAllowedMove("not_eligible", "waiting")).toBe(false);
     expect(isAllowedMove("unable_to_reach", "waiting")).toBe(false);
   });
 
@@ -127,10 +138,10 @@ describe("allowed status moves", () => {
     const move = code.match(moveRefusal);
     expect([...(move?.[1] ?? "").matchAll(PAIR)].map((m) => `${m[1]}>${m[2]}`).sort()).toEqual(inLib);
     expect(move?.[2]).toBe(STEP_REFUSED);
-    // The pause check: a new off-site wait, or a triage into one, reads the pause "for share" and refuses with the pause code.
+    // The pause check: a new off-site wait, or a triage or declined switch into one, reads the pause "for share" and refuses with the pause code.
     const pauseCheck = /if\s+new\.status\s*=\s*'waiting'\s+and\s*\(\s*tg_op\s*=\s*'INSERT'\s+or\s+old\.status\s+in\s*\(([^)]*)\)\s*\)\s*then\s+select\s+offsite_paused\s+into\s+site_paused\s+from\s+public\.site_settings\s+where\s+site\s*=\s*new\.site\s+for\s+share\s*;\s*if\s+site_paused\s+is\s+distinct\s+from\s+false\s+then\s+raise\s+exception\s+'[^']*'\s*,\s*new\.site\s+using\s+errcode\s*=\s*'(\w+)'/i;
     const pause = code.match(pauseCheck);
-    expect(pause?.[1].match(/\w+/g)?.sort()).toEqual([...TRIAGE_STATUSES].sort());
+    expect(pause?.[1].match(/\w+/g)?.sort()).toEqual([...OFFSITE_START_STATUSES].sort());
     expect(pause?.[2]).toBe(PAUSE_REFUSED);
   });
 
