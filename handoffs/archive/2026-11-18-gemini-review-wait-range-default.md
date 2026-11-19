@@ -79,3 +79,7 @@ Questions:
 ## Not checked
 
 - The range on a patient screen in a browser (needs a visit token; demo visits have none that Claude can use).
+
+## Response
+
+Skipped by the owner on 2026-11-18.
