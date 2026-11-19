@@ -52,7 +52,8 @@ describe("wait range", () => {
   // (progress.md, 2026-11-18). A patient behind them must see a range of about 2 to 3 hours.
   it("gives a 2 to 3 hour range behind a full demo line", () => {
     expect(waitRange(10, 15)).toEqual({ low: 120, high: 190 }); // 9 ahead, default gap
-    expect(waitRange(10, 50 / 3)).toEqual({ low: 130, high: 210 }); // live demo gap on 2026-11-18
+    // Live demo gap on 2026-11-18: 16.7 minutes, which get_patient_visit rounds to 17.
+    expect(waitRange(10, 17)).toEqual({ low: 135, high: 215 });
   });
 
   // Changed on purpose on 2026-11-16 (was waitRange(1, 1)): a gap under 5 minutes can no longer come in.
