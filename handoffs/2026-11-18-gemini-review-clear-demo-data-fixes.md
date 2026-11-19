@@ -855,4 +855,125 @@ index eec2afc..f9f9c0c 100644
 
 ## Response
 
-(Not yet.)
+Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted as the owner gave it; only the blank lines are fewer and the dash in line ranges is "to".
+
+### 1. Concurrency (the Cancel guard in all three components)
+
+1. **`saving` is React state rather than a synchronous ref, leaving a pre-commit window for double submits or Cancel closing while a save is in flight**
+* **File and line:** `components/staff/ClearDemoData.tsx`, lines 15, 29 to 32, and 34 to 43; `components/staff/PauseSwitch.tsx`, lines 57 to 64; `components/staff/RecallAllPanel.tsx`, lines 39 to 41.
+* **Concrete scenario:** A staff member double-taps `"Yes, clear demo data"` (or taps `"Yes, clear demo data"` and immediately taps `"Cancel"`) before React commits the re-render triggered by `setSaving(true)`. Both click handlers read `saving === false` from the pre-render closure: a double-tap sends `clear_demo_data` twice (and the first resolution calls `setSaving(false)` and `close()` while the second RPC is still running), or a rapid tap on `"Cancel"` closes the confirmation box while `clearDemoData()` is still executing.
+* **Severity:** low
+* **Smallest fix:** Pair `saving` state with a synchronous `busy = useRef(false)` guard in `confirm`/`save` and `cancel` (`if (busy.current) return;`, setting `busy.current = true` before `await` and `false` in `finally`).
+
+---
+
+### 2. The status line
+
+1. **Closing the confirmation box and focusing `"Clear demo data"` in the same tick as updating `role="status"` can cut off the announcement on mobile screen readers**
+* **File and line:** `components/staff/ClearDemoData.tsx`, lines 28 to 32, 40 to 42, and 79 to 81.
+* **Concrete scenario:** Staff tap `"Yes, clear demo data"` and the clear succeeds. In the same continuation after `await clearDemoData()`, `close()` unmounts the focused `"Saving…"` button and schedules `openButton.current?.focus()`, while `setMessage(clearDemoMessage(result))` updates `<p role="status">` from `""` to `"3 demo visits deleted. The demo simulator is off."`. On iOS VoiceOver and Android TalkBack, programmatic `.focus()` onto `"Clear demo data"` interrupts or preempts the polite `role="status"` announcement, reading `"Clear demo data, button"` instead of the deletion count.
+* **Severity:** medium
+* **Smallest fix:** Keep the status line mounted as `<p role="status" className="min-h-6 font-semibold">`, and move focus back to `openButton` synchronously in `useLayoutEffect` (so the focus event finishes before the post-paint live-region mutation is evaluated by the accessibility tree).
+
+2. **Clearing `message` to `""` on `confirm()` and restoring the identical string on a fast response can be coalesced by screen readers**
+* **File and line:** `components/staff/ClearDemoData.tsx`, lines 37 to 42.
+* **Concrete scenario:** A clear fails immediately (for example, the browser is offline, so `clearDemoData()` rejects in ~1 ms) or returns `0` immediately twice in a row. `confirm()` sets `setMessage("")` in one commit and `setMessage(clearDemoMessage(result))` with the exact same string milliseconds later. While React does not merge them across `await`, macOS/iOS VoiceOver and Windows Narrator frequently coalesce `""` $\to$ identical-text mutations on a `role="status"` node when they happen within a few milliseconds, reading nothing on the second press.
+* **Severity:** low
+* **Smallest fix:** Track a `resultCount` state and append a trailing non-breaking space (` `) on odd attempts (`resultCount % 2 === 1 ? " " : ""`) so the rendered text node value genuinely differs between consecutive identical results without altering visible text.
+
+---
+
+### 3. Focus
+
+1. **`close()` drops focus to `document.body` for one macrotask and leaves an uncleaned `setTimeout(..., 0)`**
+* **File and line:** `components/staff/ClearDemoData.tsx`, lines 21 to 23 and 28 to 32.
+* **Concrete scenario:** Staff open `"Clear demo data"` and press `"Cancel"` (or complete a successful clear). `close()` sets `asking` to `false` (unmounting the focused `"Cancel"` or `"Saving…"` button) and schedules `window.setTimeout(() => openButton.current?.focus(), 0)`. Between the React commit and the `0 ms` timer firing, `document.activeElement` falls back to `document.body` (causing screen readers to briefly announce the document root before `"Clear demo data, button"`), and if the component unmounts before the timer fires, the orphan timer still runs.
+* **Severity:** low
+* **Smallest fix:** Replace `window.setTimeout(() => openButton.current?.focus(), 0)` in `close()` with a `wasAsking = useRef(false)` check inside the existing `useEffect` on `[asking]` (`if (asking) question.current?.focus(); else if (wasAsking.current) openButton.current?.focus(); wasAsking.current = asking;`).
+
+---
+
+### 4. `clearDemoData()` and the wait for the re-read
+
+1. **`await loadVisits()` has no timeout and can strand staff on `"Saving…"` after the database delete has already committed**
+* **File and line:** `data/demoData.ts`, lines 8 to 12; `data/visitCache.ts`, lines 5 to 15.
+* **Concrete scenario:** Staff click `"Yes, clear demo data"`. `supabaseBrowser().rpc("clear_demo_data")` succeeds and commits in Postgres (deleting all demo visits and demo stats and turning the simulator off), but the subsequent `supabaseBrowser().from("visits").select("*")` inside `loadVisits()` stalls on a slow or half-open connection (or hangs on a dead socket after a newer background poll increments `latestLoad`). Because `loadVisits()` has no timeout, `clearDemoData()` never resolves, leaving `"Saving…"` and `"Cancel"` stuck and the `"Clear all demo data?"` warning box open indefinitely even though the data is already deleted.
+* **Severity:** medium
+* **Smallest fix:** Bound the wait in `data/demoData.ts` with a short timeout so the UI finishes promptly even if the follow-up list read hangs:
+
+```ts
+await Promise.race([
+  loadVisits().catch(() => {}),
+  new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+]);
+```
+
+2. **If `loadVisits()` fails after `clear_demo_data` succeeds, deleted demo visits remain on screen while `"X demo visits deleted"` is shown**
+* **File and line:** `data/demoData.ts`, lines 10 to 12; `data/visitCache.ts`, line 15.
+* **Concrete scenario:** `clear_demo_data()` deletes 4 demo visits and returns `4`, then the connection drops before `loadVisits()` finishes. `loadVisits()` catches the read error and executes `else show(list.visits, true)` (keeping the 4 deleted demo visits in the on-screen list), while `clearDemoData()` returns `4` and `ClearDemoData` announces `"4 demo visits deleted. The demo simulator is off."` right below the 4 demo visits still displayed above it.
+* **Severity:** low
+* **Smallest fix:** Remove `is_demo` rows from the local visit cache immediately after `clear_demo_data` returns a number (before or alongside `await loadVisits()`), so deleted demo visits disappear from the screen even if the network re-read fails.
+
+---
+
+### 5. Tests
+
+1. **`ClearDemoData.click.test.tsx` (`"the same result twice is shown again"`) passes even if `setMessage("")` in `confirm()` is deleted**
+* **File and line:** `components/staff/ClearDemoData.click.test.tsx`, lines 126 to 147; `components/staff/ClearDemoData.tsx`, lines 25 to 29 and 37 to 39.
+* **Concrete scenario:** Between the first and second clear in that test, `await press("Clear demo data")` calls `open()`, which already runs `setMessage("")`. Deleting `setMessage("")` from `confirm()` (line 38 of `ClearDemoData.tsx`) still leaves `"the same result twice is shown again"` passing, and `"a failed clear pressed again"` only tests when `clearDemoData()` is held across separate `act()` blocks rather than resolving in a single microtask (`mockResolvedValue("failed")`).
+* **Severity:** medium
+* **Smallest fix:** Assert `expect(status()).toBe("")` in a test where `clearDemoData()` uses `mockResolvedValue("failed")` (without holding a manual Promise) and verify `aria-disabled="true"` on both buttons while pending.
+
+2. **`PauseSwitch.click.test.tsx` never tests the `"Yes, turn it back on"` (`paused={true}`) Cancel button, and neither `PauseSwitch.click.test.tsx` nor `RecallAllPanel.click.test.tsx` tests that Cancel actually closes when not saving**
+* **File and line:** `components/staff/PauseSwitch.click.test.tsx`, lines 20 and 50 to 67; `components/staff/RecallAllPanel.click.test.tsx`, lines 83 to 99; `components/staff/PauseSwitch.tsx`, line 147.
+* **Concrete scenario:** `PauseSwitch.tsx` has two separate confirmation boxes with two `Cancel` buttons (line 127 for `paused={false}` and line 147 for `paused={true}`), but `PauseSwitch.click.test.tsx` only renders `paused={false}`. Furthermore, because neither `PauseSwitch.click.test.tsx` nor `RecallAllPanel.click.test.tsx` tests pressing `"Cancel"` when `saving === false` (or pressing `"Yes"` twice while pending), replacing `cancel` with an empty `() => {}` function passes both test files.
+* **Severity:** medium
+* **Smallest fix:** Add a `paused={true}` pending-Cancel test case to `components/staff/PauseSwitch.click.test.tsx`, and add an idle `"Cancel"` test (confirming the box closes and focus returns to the open button) plus a double-click on `"Yes"` while pending to both `PauseSwitch.click.test.tsx` and `RecallAllPanel.click.test.tsx`.
+
+3. **`data/demoData.test.ts` misses `NaN` from `rpc("clear_demo_data")`**
+* **File and line:** `data/demoData.test.ts`, lines 28 to 32; `data/demoData.ts`, line 8.
+* **Concrete scenario:** `clearDemoData()` checks `typeof data !== "number"`. In JavaScript, `typeof NaN === "number"` is `true`, so `{ data: Number.NaN, error: null }` passes the guard and returns `NaN` instead of `"failed"`.
+* **Severity:** low
+* **Smallest fix:** Check `!Number.isFinite(data)` in `data/demoData.ts` line 8 and add a `{ data: Number.NaN, error: null }` case in `data/demoData.test.ts`.
+
+---
+
+### 6. SQL checks 08 and 09
+
+1. **Check 09 runs while `demo_settings.running` is already `false` and demo `daily_stats` are already deleted, hiding a bug where a 0-visit clear skips turning the simulator off or clearing stats**
+* **File and line:** `supabase/checks/demo_clear.sql`, lines 82 to 90; `supabase/migrations/20261118010000_clear_demo_data.sql`, lines 12 to 16.
+* **Concrete scenario:** Check 02 runs `clear_demo_data()`, which sets `demo_settings.running = false` and deletes demo `daily_stats`, and Check 09 immediately calls `clear_demo_data()` again without re-enabling `demo_settings.running = true` or inserting a demo `daily_stats` row. If a future edit to `clear_demo_data()` added an early `if not exists (select 1 from public.visits where is_demo = true) then return 0; end if;` before `update public.demo_settings` and `delete from public.daily_stats`, Checks 00 to 09 would all still pass while pressing `"Clear demo data"` on `/staff` with 0 demo visits would report `"No demo visits to delete. The demo simulator is off."` while leaving the simulator running.
+* **Severity:** medium
+* **Smallest fix:** Before Check 09 in `supabase/checks/demo_clear.sql`, run `update public.demo_settings set running = true where id = 1;` and insert one demo `daily_stats` row so Check 09 proves a 0-visit clear still turns `running` back to `false` (verified by Check 07) and removes demo stats (verified by Check 05).
+
+2. **Check 08 omits `"app_metadata"` completely rather than testing an `app_metadata` object without a `"role"` key, and `demo_clear.sql` has no final assertion check**
+* **File and line:** `supabase/checks/demo_clear.sql`, lines 71 to 80 and 95 to 97.
+* **Concrete scenario:** Supabase Auth JWTs for signed-in non-staff users normally contain `"app_metadata": {"provider": "email"}` (an `app_metadata` JSON object with no `"role"` field) rather than omitting `"app_metadata"`, and `demo_clear.sql` ends with `select ... from demo_clear_rows` without raising an exception if a row has an unexpected value (such as `08` returning `0`).
+* **Severity:** low
+* **Smallest fix:** Set `'{"role":"authenticated","app_metadata":{"provider":"email"}}'` in Check 08 and add a `do $$ ... if exists (...) then raise exception ... end if; end $$;` check before `rollback;`.
+
+## Claude's check (2026-11-18)
+
+I read each point against the code at `d69de91`. I did not run new tests for this check.
+
+1.1, ref guard: reject. A click is a discrete event. React 18 and 19 apply the state from a discrete event before the next discrete event runs, so a second tap sees `saving === true`. The click tests already hold the promise and press Yes twice and Cancel once (one call, the question stays open). A ref adds a second copy of the same fact.
+
+2.1, focus cuts the announcement: not proved, keep the round 1 decision. `useLayoutEffect` is a timing guess, the same kind as the 50 ms timer that round 1 rejected. `RecallAllPanel`, `PauseSwitch` and `NewLinkPanel` use the same pattern. If a test with a real screen reader shows the words drop, fix all four in one change.
+
+2.2, non-breaking space toggle: reject for now, same reason as 2.1. The empty step and the result are two DOM changes in two commits. No screen-reader test shows that they merge.
+
+3.1, focus by timer: partly accept. The timer cannot cause an error after unmount, because `openButton.current` is then `null` and `?.` stops the call. Focus on `document.body` for one task is real but short. The effect with `wasAsking` is clean and small, but the same timer is in 4 components (`ClearDemoData.tsx` line 35, `NewLinkPanel.tsx` line 33, `PauseSwitch.tsx` line 53, `RecallAllPanel.tsx` line 43). Owner decision: change all four, or none.
+
+4.1, no time limit on the re-read: accept. If the read hangs, the question stays on "Saving…" and Cancel is blocked by the new guard, so staff have no way out. A 3 s limit is fine. If the limit ends first, the result words show before the list changes, which is the old behaviour.
+
+4.2, deleted rows stay on screen if the re-read fails: low. The list then shows the out-of-date line (`app/staff/page.tsx` line 91), and the next poll or change signal removes the rows. The fix needs a new function in `data/visitCache.ts`. Owner decision.
+
+5.1, test gap: partly correct. The first test does pass without the empty step in `confirm()`, because `open()` empties the line. But "a failed clear pressed again" does not reopen the question, and it fails without that step (seen when the builder wrote it). The suggested test with `mockResolvedValue` cannot see the empty step, because the promise resolves in the same `act()`. Accept only the `aria-disabled="true"` check while pending.
+
+5.2, missing tests: accept. A `paused={true}` Cancel-while-pending test, an idle Cancel test (box closes, focus goes back) and a Yes-twice-while-pending test in `PauseSwitch.click.test.tsx` and `RecallAllPanel.click.test.tsx`.
+
+5.3, `NaN`: accept, low. Use `Number.isInteger(data)`, because the count of deleted rows is a whole number. Add the `NaN` test first.
+
+6.1, check 09 proves less than it can: accept. Before 09, set `running = true` and insert one demo `daily_stats` row (day `2000-01-02`, site `A`; the key is `(day, site, is_demo)`). Then 05 and 07 also prove the second call.
+
+6.2, claims and a final assertion: accept. Keep 08 as it is (no `app_metadata`) and add 10 with `{"provider":"email"}`, so both forms are proved. Add a final `do` block that raises an error if a row is not the expected value. The owner runs the file again.
