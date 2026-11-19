@@ -23,6 +23,7 @@ import {
   type Closure,
   type DeskOutcome,
 } from "@/lib/visitActions";
+import { sendRecallAlert } from "./recallAlert";
 import { serverNow } from "./serverClock";
 import { reloadSitePauses } from "./sitePauses";
 import { supabaseBrowser } from "./supabaseBrowser";
@@ -133,7 +134,12 @@ export async function findVisitByCode(typed: string): Promise<Visit | null | "fa
   }
 }
 
-export const callBackVisit = (id: string) => changeVisit(id, (v) => callBack(v, serverNow()));
+/** Recall one visit. On "saved", ask the server for the ntfy alert (not awaited; demo visits send nothing). */
+export async function callBackVisit(id: string): Promise<ChangeResult> {
+  const result = await changeVisit(id, (v) => callBack(v, serverNow()));
+  if (result === "saved") void sendRecallAlert([id]);
+  return result;
+}
 export const markVisitArrived = (id: string) => changeVisit(id, (v) => markArrived(v, serverNow()));
 export const removeVisit = (id: string, reason: "left" | "no_show") =>
   changeVisit(id, (v) => markRemoved(v, reason, serverNow()));
@@ -160,6 +166,7 @@ export async function recallAll(ids: string[]): Promise<RecallAllResult> {
       .select();
     if (error || !Array.isArray(data)) return { recalled: 0, changed: 0, notSaved: true };
     (data as StoredVisit[]).forEach(putVisit);
+    void sendRecallAlert((data as StoredVisit[]).map((v) => v.id));
     if (data.length < ids.length) void loadVisits();
     return { recalled: data.length, changed: ids.length - data.length, notSaved: false };
   } catch {
