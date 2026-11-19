@@ -13,7 +13,7 @@ What changed (commits ca958e9 and cab4248, branch phase4-dashboard):
 - `DEFAULT_GAP_MINUTES = 15` moved from `lib/queue.ts` to `lib/demoTimes.ts` (the file that holds all the demo's placeholder times). `lib/queue.ts` and `lib/patientViewFromRow.ts` now import it from there. The value did not change.
 - New test in `lib/queue.test.ts`: place 10 gives 120 to 190 minutes at a 15-minute gap, and 135 to 215 at 17.
 
-Changed files and their line counts after the change: `lib/demoTimes.ts` 30, `lib/queue.ts` 74, `lib/patientViewFromRow.ts` (import line only), `lib/queue.test.ts` 111.
+Changed files and their line counts after the change: `lib/demoTimes.ts` 30, `lib/queue.ts` 73, `lib/patientViewFromRow.ts` (import line only), `lib/queue.test.ts` 111.
 
 Added to `lib/demoTimes.ts`:
 
