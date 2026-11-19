@@ -1,9 +1,10 @@
 -- Check for the allowed steps (migrations 20261117000000_allowed_steps.sql,
--- 20261117010000_step_check_fixes.sql and 20261119000000_declined_to_waiting.sql).
+-- 20261117010000_step_check_fixes.sql, 20261119000000_declined_to_waiting.sql and
+-- 20261119010000_declined_switch_checks.sql).
 -- Run the whole file at once in the Supabase SQL Editor, after those migrations. It saves nothing:
 -- everything happens inside "begin ... rollback", so the synthetic visits and the paused site
 -- come back as they were.
--- It shows 52 rows. In each row, got must be the same as expected, and ok must be true.
+-- It shows 59 rows. In each row, got must be the same as expected, and ok must be true.
 -- If any row is not ok, the last block stops with an error that names those rows.
 -- got is 'saved' (the database took it), 'refused' (error VWR01: not an allowed move, or a
 -- change of site) or 'paused' (error VWR02: it would start off-site waiting at a paused site).
@@ -21,7 +22,12 @@
 --   7M  desk, waiting at site B while site A is paused
 --   7N  desk, waiting at site B after site B's settings row is deleted: counts as paused
 --   7P  desk, declined: cannot switch to off-site waiting while paused
---   8x and 9A  one visit for each of the 23 allowed moves (rows 101 to 123)
+--   7Q  desk, declined 7 hours ago: too late to switch
+--   7R  desk, declined: a switch that leaves closed_at set is refused
+--   7S  desk, declined, switched: Undo back to declined
+--   7T  desk, waiting from a normal check-in: cannot be marked declined
+--   7V  desk, declined, switched, then recalled: Undo refused
+--   8x and 9x  one visit for each of the 24 allowed moves (rows 101 to 124)
 
 begin;
 
@@ -87,6 +93,38 @@ insert into results select 28, '7C triage time kept by the switch',
   (select case when triaged_at = offered_at and closed_at is null then 'kept' else 'changed' end
    from public.visits where code = 'ZZZZ7C'), 'kept';
 
+-- 7Q, 7S, 7V: the time trigger is paused for one update, so a time can be set in the past.
+-- (Inside one transaction now() never moves, so a switch would otherwise share the triage moment.)
+insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at, closed_at) values
+  ('ZZZZ7Q', 'ZZZZZZZZZZZZZZZZZZZZZZZ7Q2', 'A', 'desk', 5, 'declined', now(), now(), now()),
+  ('ZZZZ7R', 'ZZZZZZZZZZZZZZZZZZZZZZZ7R2', 'A', 'desk', 5, 'declined', now(), now(), now()),
+  ('ZZZZ7S', 'ZZZZZZZZZZZZZZZZZZZZZZZ7S2', 'A', 'desk', 5, 'declined', now(), now(), now()),
+  ('ZZZZ7V', 'ZZZZZZZZZZZZZZZZZZZZZZZ7V2', 'A', 'desk', 5, 'declined', now(), now(), now());
+insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at)
+values ('ZZZZ7T', 'ZZZZZZZZZZZZZZZZZZZZZZZ7T2', 'A', 'desk', 4, 'waiting', now(), now());
+alter table public.visits disable trigger visits_before_write;
+update public.visits set triaged_at = now() - interval '7 hours 10 minutes', offered_at = now() - interval '7 hours 10 minutes',
+  closed_at = now() - interval '7 hours' where code = 'ZZZZ7Q';
+update public.visits set triaged_at = now() - interval '1 hour', offered_at = now() - interval '1 hour',
+  closed_at = now() - interval '1 hour' where code in ('ZZZZ7S', 'ZZZZ7V');
+alter table public.visits enable trigger visits_before_write;
+insert into results select 30, '7Q declined 7 hours ago to waiting', pg_temp.try_step($q$
+  update public.visits set status = 'waiting', closed_at = null, offered_at = now(), last_still_here_at = now()
+  where code = 'ZZZZ7Q' $q$), 'refused';
+insert into results select 31, '7R declined to waiting, closed_at left set', pg_temp.try_step($q$
+  update public.visits set status = 'waiting', offered_at = now(), last_still_here_at = now() where code = 'ZZZZ7R' $q$), 'refused';
+insert into results select 32, '7S switch: declined to waiting', pg_temp.try_step($q$
+  update public.visits set status = 'waiting', closed_at = null, offered_at = now(), last_still_here_at = now()
+  where code = 'ZZZZ7S' $q$), 'saved';
+insert into results select 33, '7S Undo switch: waiting to declined', pg_temp.try_step($q$
+  update public.visits set status = 'declined', closed_at = now() where code = 'ZZZZ7S' $q$), 'saved';
+insert into results select 34, '7T normal check-in: waiting to declined', pg_temp.try_step($q$
+  update public.visits set status = 'declined', closed_at = now() where code = 'ZZZZ7T' $q$), 'refused';
+update public.visits set status = 'waiting', closed_at = null, offered_at = now(), last_still_here_at = now() where code = 'ZZZZ7V';
+update public.visits set status = 'called', called_at = now() where code = 'ZZZZ7V';
+insert into results select 35, '7V recalled switch: called to declined', pg_temp.try_step($q$
+  update public.visits set status = 'declined', closed_at = now() where code = 'ZZZZ7V' $q$), 'refused';
+
 insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at)
 values ('ZZZZ7D', 'ZZZZZZZZZZZZZZZZZZZZZZZ7D2', 'A', 'desk', 4, 'waiting', now(), now());
 update public.visits set status = 'called', called_at = now() where code = 'ZZZZ7D';
@@ -116,7 +154,7 @@ values ('ZZZZ7P', 'ZZZZZZZZZZZZZZZZZZZZZZZ7P2', 'A', 'desk', 5, 'declined', now(
 update public.visits set status = 'arrived', arrived_at = now(), closed_at = now() where code = 'ZZZZ7J';
 
 -- Every allowed move once: a new visit for each move is taken to the "from" status through
--- allowed moves, then moved to the "to" status. All 23 must save. Keep the list the same as
+-- allowed moves, then moved to the "to" status. All 24 must save. Keep the list the same as
 -- the trigger's list (lib/allowedSteps.test.ts checks the trigger against lib/allowedSteps.ts).
 do $$
 declare
@@ -131,7 +169,7 @@ begin
     -- allowed moves (keep the same as lib/allowedSteps.ts)
       ('pre_arrival', 'waiting'), ('pre_arrival', 'declined'), ('pre_arrival', 'not_eligible'),
       ('needs_reassessment', 'waiting'), ('needs_reassessment', 'declined'), ('needs_reassessment', 'not_eligible'),
-      ('waiting', 'called'), ('waiting', 'arrived'), ('waiting', 'removed'),
+      ('waiting', 'called'), ('waiting', 'arrived'), ('waiting', 'removed'), ('waiting', 'declined'),
       ('called', 'on_the_way'), ('called', 'arrived'), ('called', 'removed'), ('called', 'unable_to_reach'),
       ('on_the_way', 'arrived'), ('on_the_way', 'removed'),
       ('unable_to_reach', 'needs_reassessment'),
@@ -142,17 +180,26 @@ begin
     ) as m(from_status, to_status)
   loop
     i := i + 1;
-    -- 22 letters, so the 23rd move uses ZZZZ9A.
+    -- 22 letters, so the 23rd and 24th moves use ZZZZ9A and ZZZZ9B.
     visit_code := case when i <= 22 then 'ZZZZ8' || substr(letters, i, 1) else 'ZZZZ9' || substr(letters, i - 22, 1) end;
     if move.from_status = 'pre_arrival' then
       insert into public.visits (code, access_token, site, source, status)
       values (visit_code, 'ZZZZZZZZZZZZZZZZZZZ' || visit_code || '2', 'A', 'home', 'pre_arrival');
-    elsif move.from_status = 'declined' then
+    elsif move.from_status = 'declined' or (move.from_status = 'waiting' and move.to_status = 'declined') then
       insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at, closed_at)
       values (visit_code, 'ZZZZZZZZZZZZZZZZZZZ' || visit_code || '2', 'A', 'desk', 4, 'declined', now(), now(), now());
     else
       insert into public.visits (code, access_token, site, source, ctas_level, status, triaged_at, offered_at)
       values (visit_code, 'ZZZZZZZZZZZZZZZZZZZ' || visit_code || '2', 'A', 'desk', 4, 'waiting', now(), now());
+    end if;
+    -- Undo of a switch needs a switched visit: triaged an hour ago, then switched now.
+    if move.from_status = 'waiting' and move.to_status = 'declined' then
+      alter table public.visits disable trigger visits_before_write;
+      update public.visits set triaged_at = now() - interval '1 hour', offered_at = now() - interval '1 hour',
+        closed_at = now() - interval '1 hour' where code = visit_code;
+      alter table public.visits enable trigger visits_before_write;
+      update public.visits set status = 'waiting', closed_at = null, offered_at = now(), last_still_here_at = now()
+      where code = visit_code;
     end if;
     foreach step in array case move.from_status
         when 'called' then array['called']
@@ -169,8 +216,13 @@ begin
     end loop;
     insert into results select 100 + i, 'move ' || move.from_status || ' to ' || move.to_status,
       pg_temp.try_step(format(
-        'update public.visits set status = %L, removed_reason = %L where code = %L',
-        move.to_status, case when move.to_status = 'removed' then 'left' end, visit_code)),
+        'update public.visits set status = %L, removed_reason = %L%s where code = %L',
+        move.to_status, case when move.to_status = 'removed' then 'left' end,
+        -- A switch clears closed_at; an Undo of a switch sets it again.
+        case when move.from_status = 'declined' then ', closed_at = null'
+             when move.to_status = 'declined' and move.from_status = 'waiting' then ', closed_at = now()'
+             else '' end,
+        visit_code)),
       'saved';
   end loop;
 end;

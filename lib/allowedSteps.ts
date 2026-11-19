@@ -10,8 +10,9 @@ export const ALLOWED_MOVES: Partial<Record<VisitStatus, VisitStatus[]>> = {
   // Triage: a visit started from home, or one back for reassessment.
   pre_arrival: ["waiting", "declined", "not_eligible"],
   needs_reassessment: ["waiting", "declined", "not_eligible"],
-  // Recall, or close (Mark arrived, Left, No-show).
-  waiting: ["called", "arrived", "removed"],
+  // Recall, or close (Mark arrived, Left, No-show), or Undo a switch made by mistake
+  // (back to declined, only before the recall; lib/switchToOffsite.ts undoSwitch).
+  waiting: ["called", "arrived", "removed", "declined"],
   // I'm on my way, close, or a nurse confirms "Review: unable to reach".
   called: ["on_the_way", "arrived", "removed", "unable_to_reach"],
   on_the_way: ["arrived", "removed"],

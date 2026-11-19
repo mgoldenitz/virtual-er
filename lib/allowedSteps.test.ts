@@ -19,7 +19,7 @@ import {
   undoClose,
 } from "./visitActions";
 import { PAUSE_REFUSED, STEP_REFUSED } from "./saveResult";
-import { switchToOffsite } from "./switchToOffsite";
+import { switchToOffsite, undoSwitch } from "./switchToOffsite";
 
 // The newest migration that makes the trigger function: that is the one the database runs.
 // Only "create (or replace) function" counts, so a later "drop function" or "grant ... on
@@ -68,7 +68,9 @@ const arrived = markArrived(onTheWay, at(3))!;
 const removed = markRemoved(called, "left", at(3))!;
 const declined = checkInAtDesk(input, "declined", t0);
 const notEligible = checkInAtDesk(input, "not_eligible", t0);
-const everyStatus = [home, waiting, called, onTheWay, unableToReach, reassess, arrived, removed, declined, notEligible];
+// A declined patient switched to off-site waiting (only that visit can be undone back to declined).
+const switched = switchToOffsite(declined, at(1))!;
+const everyStatus = [home, waiting, called, onTheWay, unableToReach, reassess, arrived, removed, declined, notEligible, switched];
 
 // Every rule in lib/visitActions.ts that changes an existing visit, at a time late enough for the phone steps.
 const late = at(1 + CALL_REVIEW_MINUTES);
@@ -87,6 +89,7 @@ const rules: [string, (v: Visit) => Visit | null][] = [
   ["new link", (v) => issueNewLink(v, "NEWTOKEN")],
   ["undo", (v) => undoClose(v, v)],
   ["switch to off-site", (v) => switchToOffsite(v, t0)],
+  ["undo switch", (v) => undoSwitch(v, late)],
 ];
 
 describe("allowed status moves", () => {
