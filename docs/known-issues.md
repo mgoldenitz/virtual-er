@@ -8,7 +8,7 @@
 - Claude Code keeps per-project settings (switched-off MCP servers) under the folder path in ~/.claude.json. Moving the project folder loses them.
 - The Supabase MCP is read-only and often fails to connect. The owner runs database changes in the SQL Editor.
 - Playwright cannot sign in as staff; the owner does the staff half of browser tests.
-- Playwright MCP: `target` takes a ref from the last snapshot (for example `e73`), a CSS selector or a locator, never the role text from the snapshot (`combobox "Select language"` fails). Load the tool schema with ToolSearch before the first call.
+- Playwright MCP: `target` takes a ref from the last snapshot (for example `e73`), a CSS selector or a locator, never the role text from the snapshot (`combobox "Select language"` fails). Load the tool schema with ToolSearch before the first call. The Playwright browser keeps the language saved by an earlier test; check the language on the first snapshot and switch to English before you read the text.
 - The Vercel MCP cannot change firewall settings or list cron jobs; the owner does these in the dashboard.
 - Hook scripts: text piped from PowerShell starts with an invisible byte-order mark, so JSON.parse fails and the script exits silently. Strip `\uFEFF` first. In Git Bash, Node does not read paths like /c/Users; test with C:/Users paths.
 - navigator.onLine says "online" on Wi-Fi with no internet or behind a hotel or hospital sign-in page (captive portal), so the offline banner does not show there. Accepted for the demo (Gemini review 2026-11-14): the app does not test a real connection. It asks again when the page comes back on screen (`data/useOnline.ts`).
