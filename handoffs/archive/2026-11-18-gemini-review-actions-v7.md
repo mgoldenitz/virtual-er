@@ -69,3 +69,7 @@ jobs:
 ## Not checked
 
 - A GitHub Actions run with v7 (needs a push; not pushed yet).
+
+## Response
+
+Skipped by the owner on 2026-11-18 (GitHub run 44445773244 passed with v7).

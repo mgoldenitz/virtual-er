@@ -10,7 +10,7 @@ To do in Phase 3 (from Grok's pass):
 
 ## Session log
 
-- 2026-11-18 (GitHub Actions v7): run 44443926798 warned that `actions/checkout@v4` and `actions/setup-node@v4` run on deprecated Node.js 20. `.github/workflows/checks.yml` now uses `@v7` of both (`using: node24`; breaking changes in v6 and v7 do not touch this file). Checks after `958604d`: 72 test files, 417 tests pass; lint passed; build passed. Pushed the branch (owner approved); GitHub checks with v7 passed (run 44445773244, 57 s), no Node.js 20 warning. "Where to pick up" rewritten for Phase 4 (owner asked). Gemini review handoff: `handoffs/2026-11-18-gemini-review-actions-v7.md`.
+- 2026-11-18 (GitHub Actions v7): run 44443926798 warned that `actions/checkout@v4` and `actions/setup-node@v4` run on deprecated Node.js 20. `.github/workflows/checks.yml` now uses `@v7` of both (`using: node24`; breaking changes in v6 and v7 do not touch this file). Checks after `958604d`: 72 test files, 417 tests pass; lint passed; build passed. Pushed the branch (owner approved); GitHub checks with v7 passed (run 44445773244, 57 s), no Node.js 20 warning. "Where to pick up" rewritten for Phase 4 (owner asked). Gemini review: owner said skip; handoff in `handoffs/archive/2026-11-18-gemini-review-actions-v7.md`.
 
 One dated line per session, newest first.
 
@@ -66,7 +66,7 @@ State on 2026-11-18:
 - Phase 4 done: the demo simulator (`simulate_demo_tick`, `pg_cron` every 5 minutes), the Demo tag on staff rows, "Clear demo data", the dashboard metric definitions (decisions.md, 2026-11-18 "Dashboard numbers"), Vercel Web Analytics with private page addresses. All are on `main` and live.
 - **Phase 3 is closed** (tag `savepoint-2026-11-18-phase3`); details in the Phase 3 section below. **Phase 2 is closed** (`803fb2b`).
 - Last checks (2026-11-18, after `958604d`): 72 test files, 417 tests pass; lint passed; build passed.
-- Open handoff: `handoffs/2026-11-18-gemini-review-actions-v7.md`.
+- No open handoffs in `handoffs/`.
 - The Vercel firewall rule for GET `/api/site-status` is skipped (owner, 2026-11-18: stays on Hobby; see `docs/known-issues.md`).
 - Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
 - The untracked `.codex/` and `.agents/` files are the owner's Codex copies of the agents, hooks and reflect skill; leave them (owner, 2026-11-16).
