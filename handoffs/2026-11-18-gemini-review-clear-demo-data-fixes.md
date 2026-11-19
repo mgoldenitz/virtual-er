@@ -46,9 +46,11 @@ Settled by the owner (do not report these as faults):
 - The test for point 5 failed before the fix (1 failing, 5 passing), then passed after it.
 - The owner ran `supabase/checks/demo_clear.sql` in the Supabase SQL Editor: all 10 rows as expected (00 0, 01 1, 02 2, 03 0, 04 2, 05 0, 06 1, 07 0, 08 1, 09 0).
 
+- The owner checked the buttons in a real browser (local app, signed in as staff): the box opens with focus on the question; Cancel closes it, focus goes back to "Clear demo data", and no words show; Yes shows the result line under the button, not at the top of the off-site list.
+
 ### Not checked
 
-- The buttons in a real browser. The test browser cannot sign in as staff; the owner does that check.
+- A press of Cancel or Yes while a save runs, in a real browser (only in the test browser).
 - A real screen reader (NVDA, VoiceOver).
 - Two staff screens that clear at the same time.
 
