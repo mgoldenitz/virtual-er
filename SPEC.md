@@ -92,23 +92,25 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 
 ### /dashboard (staff login required)
 
-Numbers for the current day:
+A "Show" switch with two buttons, Real (first, and on when the page opens; not saved) and Demo. Real and demo visits are never mixed; daily_stats keeps them apart through its is_demo key. Demo Site A and Demo Site B are two columns; on a phone they stack.
 
-- Patients waiting off-site now, and patients called but not yet arrived
-- Eligible patients offered the option (percentage), and how many declined
-- Average minutes from call-back to arrival
-- No-shows and patients marked unable to reach
-- Visits started from home, and how many of those arrived at triage
-- Survey: number of responses, average score, and share scoring 9 or 10
+"Now" (the visits in the table at this moment):
 
-Definitions ("today" means since midnight, America/Toronto time; demo visits count only in demo mode, and daily_stats keeps them apart through its is_demo key):
+- Waiting off-site: status waiting.
+- Recalled, not yet arrived: status called or on_the_way.
+- Back for reassessment: status needs_reassessment.
 
-- Waiting off-site now: visits with status waiting. Called but not arrived: status called or on_the_way.
-- Offered (percentage): visits with offered_at today, divided by visits triaged today as CTAS 4 or 5 minus those marked not_eligible. Declined: status declined.
-- Average minutes from call-back to arrival: arrived_at minus called_at, averaged over visits that were called and arrived today.
-- No-shows: status removed with removed_reason no_show. Unable to reach: status unable_to_reach (nurse-confirmed).
-- Visits started from home: source home, created today; of those, arrived at triage means triaged_at is set.
-- Survey: responses are visits whose closed_at is today and that have a survey_score; report the count beside the average and the share scoring 9 or 10.
+"Today (since midnight, Toronto time)". Each number counts a visit on the America/Toronto date of its own event, and adds the daily_stats row for (today, site, is_demo) (hard rule 4):
+
+- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today.
+- Accepted: "6 of 8 offered (75%)". Accepted is offered minus declined.
+- Declined: status declined, on offered_at.
+- Average minutes from recall to arrival: "14 (5 visits)". arrived_at minus called_at, over visits with status arrived and called_at set, on arrived_at. A desk arrival with no called_at stays out.
+- No-shows (status removed, removed_reason no_show), Unable to reach (nurse confirmed) (status unable_to_reach), Left (status removed, removed_reason left): on closed_at.
+- Started from home: source home, on created_at. Reached triage: those of them with triaged_at set.
+- Survey responses, Average score (0 to 10), Scored 9 or 10: visits with a survey_score, on closed_at.
+
+Percentages and minutes round to whole numbers; the average score rounds to one decimal place. A share or average whose bottom number is 0 shows "-" on screen, with the screen-reader text "no data yet". (Owner, 2026-11-18, the Gemini metric review and the dashboard plan: replaces the earlier list, whose offered percentage was always 100%.)
 
 ### Demo mode (staff only)
 
