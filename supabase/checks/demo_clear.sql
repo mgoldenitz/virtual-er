@@ -3,7 +3,7 @@
 -- The file keeps the results in a temp table and shows all rows at the end.
 -- It saves nothing: everything happens inside "begin ... rollback".
 --
--- Expected result (8 rows):
+-- Expected result (10 rows):
 --   00 demo visits before the check            0 (if not, run "Clear demo data" on /staff first)
 --   01 non-staff refused                       1
 --   02 visits deleted by the call              2 (the 2 test demo visits, plus any counted in 00)
@@ -12,6 +12,8 @@
 --   05 demo stats rows left                    0 (all days)
 --   06 real stats row left                     1 (day 2000-01-01, is_demo false)
 --   07 simulator running                       0
+--   08 sign-in with no app role refused        1
+--   09 second staff call deletes               0
 --
 -- The calls run as the "authenticated" role, the same role the app uses, with the staff or
 -- patient sign-in set in the request claims. Why the year 2000: no real visit or stats row
@@ -66,11 +68,26 @@ exception when insufficient_privilege then
   insert into demo_clear_rows values ('01 non-staff refused', 1);
 end $$;
 
+-- 08: a sign-in with no app role (no "app_metadata") may not clear anything either.
+select set_config('request.jwt.claims', '{"role":"authenticated"}', true);
+
+do $$
+begin
+  perform public.clear_demo_data();
+  insert into demo_clear_rows values ('08 sign-in with no app role refused', 0);
+exception when insufficient_privilege then
+  insert into demo_clear_rows values ('08 sign-in with no app role refused', 1);
+end $$;
+
 -- 02: staff clear the demo data. The call returns the number of demo visits it deleted.
 select set_config('request.jwt.claims', '{"role":"authenticated","app_metadata":{"role":"staff"}}', true);
 
 insert into demo_clear_rows
 select '02 visits deleted by the call', public.clear_demo_data();
+
+-- 09: a second clear right after finds nothing left to delete.
+insert into demo_clear_rows
+select '09 second staff call deletes', public.clear_demo_data();
 
 -- Back to the owner, to read the results.
 reset role;
