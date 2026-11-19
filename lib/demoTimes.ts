@@ -23,3 +23,8 @@ export const ANSWERED_PAUSE_MINUTES = 10;
 
 /** After "I'm on my way", staff see "On the way, not arrived" once this much time has passed. */
 export const ON_WAY_NOT_ARRIVED_MINUTES = 30;
+
+// Wait range (SPEC rule 8: simulated, never a hospital's real numbers).
+
+/** Simulated minutes per place in line, used until a site has 2 call-backs in its history. */
+export const DEFAULT_GAP_MINUTES = 15;

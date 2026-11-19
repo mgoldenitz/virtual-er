@@ -1,6 +1,7 @@
 // Line order and the simulated wait range.
 // The line is ordered by triaged_at, never by created_at (SPEC data section).
 
+import { DEFAULT_GAP_MINUTES } from "./demoTimes";
 import { ACTIVE_STATUSES, type Site, type Visit } from "./visit";
 
 /**
@@ -38,8 +39,6 @@ export function placeInLine(visits: Visit[], visit: Visit): number | null {
   ).length;
   return ahead + 1;
 }
-
-export const DEFAULT_GAP_MINUTES = 15;
 
 /** The smallest gap per place, so a fast burst of call-backs never gives a very short wait. */
 export const MIN_GAP_MINUTES = 5;
