@@ -153,8 +153,8 @@ export default function StaffPage() {
 
       <section aria-labelledby="demo-heading" className="glass-panel space-y-3">
         <h2 id="demo-heading" className="text-xl font-bold">Demo data</h2>
-        <p>For the demo only. Run this before real testers start.</p>
-        <ClearDemoData onResult={setAnnouncement} />
+        <p>For the demo only. Clear demo data before real testers start.</p>
+        <ClearDemoData />
       </section>
     </main>
     </StaffShell>
