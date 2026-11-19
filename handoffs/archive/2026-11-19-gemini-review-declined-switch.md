@@ -537,3 +537,6 @@ Each point checked against the code on `declined-to-offsite` (`213be49`).
 5.1 No Undo. Valid. Owner decision needed (see below).
 5.3 Language. Valid: the slip opens in the language recorded at triage. Fix: a language choice in the checklist, saved with the switch.
 5.4 Patients already seen stay listed. Valid; the app does not track on-site patients after they decline. Owner decision needed (see below).
+
+Owner decisions (2026-11-19): fix list OK; A yes ("switched to off-site N min ago" until the first tap), B yes (Undo before the recall), C note.
+Fixed: lib and database `f35a3bc` (migration `20261119010000_declined_switch_checks.sql`; `supabase/checks/allowed_steps.sql` now 59 rows, all ok on a local Postgres 16 copy, and rows 30, 31, 33 and 110 fail against the earlier trigger as they should), staff screen `452cec9`. Checks: 74 test files, 449 tests pass; lint passed; build passed. Review done; file moved to `handoffs/archive/`. Not checked: the screen in a browser, and the new migration in the live database (owner runs it).
