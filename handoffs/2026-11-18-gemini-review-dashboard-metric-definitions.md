@@ -170,3 +170,30 @@ Gemini Hydrogen 4, High, new chat, 2026-11-18. Pasted by the owner.
 3. **Site layout:** Should `/dashboard` filter to one selected site (`Site A` or `Site B`), show side-by-side columns for A and B, or combine both sites?
 4. **Additional statuses already in `daily_stats`:** Should `/dashboard` also display `needs_reassessment` (live), `removed` with `removed_reason = 'left'` (today), and un-called desk arrivals (`arrived` with `called_at is null`, today), which are already stored in `daily_stats`?
 5. **Reopened visits:** Can staff move an `arrived` visit back to `waiting` or `needs_reassessment`, and if so, should `arrived_at` be cleared so it is not counted in call-to-arrival averages?
+
+## Claude's check (2026-11-18)
+
+Facts from the code, read in this session:
+- Triage (`applyTriage` in `lib/visitActions.ts`) always sets `ctas_level` (4 or 5) and `triaged_at`. For `waiting` and `declined` it also sets `offered_at` at the same moment. For `not_eligible` it does not set `offered_at`. The database sets each time to `now()` (`20261110090134_visit_version_and_database_times.sql`), so `offered_at` and `triaged_at` are the same moment.
+- The allowed moves (`20261117010000_step_check_fixes.sql`): `arrived` can go back only to `waiting`, `called` or `on_the_way` (Undo). `undoClose` sets `arrived_at`, `closed_at` and `removed_reason` back to empty. `waiting` to `arrived` is allowed (the patient came back without a call).
+- No survey function or survey screen exists yet (no match in `supabase/migrations/`, `data/` or `app/` except the dashboard placeholder).
+- Demo mode today is only the simulator switch `demo_settings.running`. Staff cannot read it (no rights for `authenticated`).
+
+Point by point:
+1. Midnight part: premise wrong, because `offered_at` and `triaged_at` are the same moment. Divide by zero: real (no triage yet today). A gap that Gemini did not find: the bottom number "triaged CTAS 4 or 5 minus `not_eligible`" equals the visits that were offered (`waiting` plus `declined`), so the percentage is always 100% when it has a value. The definition needs an owner decision (question A below).
+2. Premise wrong: a `not_eligible` visit always has `ctas_level` and `triaged_at`, so the bottom number cannot go below zero.
+3. Partly real: the SPEC gives no date for Declined. `daily_stats` counts it on `offered_at`; the SPEC text must say the same. A `declined` visit always has `offered_at`, so the `coalesce` fix is not needed.
+4. Real, wording: a label choice (question B).
+5. Real, wording: the SPEC must say "status `arrived` with `called_at` set, counted on the `arrived_at` date", as `daily_stats` does.
+6. `V06`: real (a `waiting` visit can go to `arrived` with no call). The average already leaves it out; whether to show all arrivals too is question C. `V07`: premise wrong (`arrived` cannot go to `needs_reassessment`). `arrived_at >= called_at` is always true, because the database sets both to `now()`.
+7. Real: the SPEC must say `closed_at` for no-shows and `unable_to_reach`. Showing `left` is question C.
+8. `needs_reassessment` count: question C. The 24-hour bound is not needed: visits are deleted after at most 24 hours 15 minutes, and a visit that is still open is a "now" visit. The "now" and "today" groups need separate headings (part of question B).
+9. Wording only: part of question B. The `created_at` rule stays.
+10. Premise wrong: SPEC rule 5 allows the survey only after the visit is closed, so `closed_at` is always set, and SPEC rule 4 says survey answers count on the `closed_at` date. Divide by zero: real (show a dash). The survey is not built yet.
+11. Real: question D (demo) and question E (sites).
+
+Gemini question 5: answered by the code. Undo clears `arrived_at`; no change.
+
+Changes to make without a decision: show a dash for any number with a bottom number of 0; write the event date for each number in the SPEC (Declined on `offered_at`, the arrival average on `arrived_at`, no-shows and `unable_to_reach` on `closed_at`).
+
+Owner decisions: see "Owner decisions" below (added after the owner answers).
