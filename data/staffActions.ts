@@ -134,7 +134,7 @@ export async function findVisitByCode(typed: string): Promise<Visit | null | "fa
   }
 }
 
-/** Recall one visit. On "saved", ask the server for the ntfy alert (not awaited; demo visits send nothing). */
+/** Recall one visit. On "saved", ask the server for the Pushover alert (not awaited; demo visits send nothing). */
 export async function callBackVisit(id: string): Promise<ChangeResult> {
   const result = await changeVisit(id, (v) => callBack(v, serverNow()));
   if (result === "saved") void sendRecallAlert([id]);

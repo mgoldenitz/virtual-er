@@ -1,5 +1,5 @@
-// Rules for the ntfy alert to the owner's phone when staff recall a real visit (Phase 4).
-// The message goes through the public ntfy.sh server, so it carries only the display code and
+// Rules for the Pushover alert to the owner's phone when staff recall a real visit (Phase 4).
+// The message goes through the Pushover server, so it carries only the display code and
 // the site: never the token, a link, the language or the CTAS level (SPEC rule 1).
 
 import type { Site } from "./visit";

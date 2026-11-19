@@ -1,10 +1,11 @@
-// The server route a staff screen calls after a recall saves. It sends one ntfy message to the
-// owner's phone for real (not demo) visits. It reads the visits with the caller's own sign-in
+// The server route a staff screen calls after a recall saves. It sends one Pushover message to
+// the owner's phone for real (not demo) visits. It reads the visits with the caller's own sign-in
 // token, so the database rules decide: only staff can read visits, and a caller who is not staff
-// gets no rows, so nothing is sent. With no NTFY_TOPIC set, the route does nothing.
+// gets no rows, so nothing is sent. With no Pushover settings, the route does nothing.
 
 import { createClient } from "@supabase/supabase-js";
 import { supabaseSettings } from "@/data/supabaseSettings";
+import { PUSHOVER_URL, pushoverBody } from "@/lib/pushover";
 import { alertsToSend, parseRecallAlertBody, recallAlertText, type RecallAlertRow } from "@/lib/recallAlert";
 
 const MAX_BODY_CHARACTERS = 2_500; // 50 ids of 36 characters, with room to spare
@@ -14,8 +15,9 @@ function answer(result: string, status: number): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const topic = process.env.NTFY_TOPIC;
-  if (!topic) return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+  const appToken = process.env.PUSHOVER_APP_TOKEN;
+  const userKey = process.env.PUSHOVER_USER_KEY;
+  if (!appToken || !userKey) return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 
   const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
   if (!token) return answer("not_signed_in", 401);
@@ -46,13 +48,12 @@ export async function POST(request: Request): Promise<Response> {
   if (rows.length === 0) return answer("nothing_to_send", 200);
 
   try {
-    const sent = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+    const sent = await fetch(PUSHOVER_URL, {
       method: "POST",
-      body: recallAlertText(rows),
-      headers: { Title: "Virtual waiting room demo", Priority: "high" },
+      body: new URLSearchParams(pushoverBody(appToken, userKey, recallAlertText(rows))),
     });
-    return sent.ok ? answer("sent", 200) : answer("ntfy_failed", 502);
+    return sent.ok ? answer("sent", 200) : answer("alert_failed", 502);
   } catch {
-    return answer("ntfy_failed", 502);
+    return answer("alert_failed", 502);
   }
 }

@@ -1,4 +1,4 @@
-// Asks the server to send the ntfy alert for visits staff just recalled (app/api/recall-alert).
+// Asks the server to send the Pushover alert for visits staff just recalled (app/api/recall-alert).
 // The alert is extra: the recall is already saved, so every error here is ignored.
 
 import { supabaseBrowser } from "./supabaseBrowser";
