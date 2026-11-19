@@ -977,3 +977,9 @@ I read each point against the code at `d69de91`. I did not run new tests for thi
 6.1, check 09 proves less than it can: accept. Before 09, set `running = true` and insert one demo `daily_stats` row (day `2000-01-02`, site `A`; the key is `(day, site, is_demo)`). Then 05 and 07 also prove the second call.
 
 6.2, claims and a final assertion: accept. Keep 08 as it is (no `app_metadata`) and add 10 with `{"provider":"email"}`, so both forms are proved. Add a final `do` block that raises an error if a row is not the expected value. The owner runs the file again.
+
+## Owner decisions (2026-11-18)
+
+- 3.1, focus timer: leave all four components as they are.
+- 4.2, demo rows after a failed re-read: leave it.
+- Fix only 4.1 (3 s limit on the re-read) and 5.3 (`NaN` gives "failed"). 5.1, 5.2, 6.1 and 6.2 are not done now.
