@@ -2,7 +2,8 @@
 // shape the patient screens already use, and works out the simulated wait range.
 
 import type { PatientView } from "./patientView";
-import { DEFAULT_GAP_MINUTES, MIN_GAP_MINUTES, waitRange } from "./queue";
+import { DEFAULT_GAP_MINUTES } from "./demoTimes";
+import { MIN_GAP_MINUTES, waitRange } from "./queue";
 import type { Site, VisitStatus } from "./visit";
 
 /** One row from get_patient_visit (supabase/migrations/20261110061049_patient_functions.sql). */

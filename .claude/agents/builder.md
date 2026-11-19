@@ -13,7 +13,7 @@ Before you start:
 
 While you work:
 - Change only what the brief asks. If the brief is unclear or needs a file it does not name, stop and say so.
-- Follow CLAUDE.md: screens in app/, shared pieces in components/, saving and loading in data/, rules in lib/ with tests. One job per file. No file over 300 lines. Check whether something already exists before you write it.
+- Follow CLAUDE.md: screens in app/, shared pieces in components/, saving and loading in data/, rules in lib/ with tests. A rule is any function that decides something, also a 3-line one in a component (a plural word, a filter); put it in lib/ with a test, and reuse a lib/ helper of the same kind if one exists (for example lib/patientCount.ts). One job per file. No file over 300 lines. Check whether something already exists before you write it.
 - Never commit, push, install packages, change the database or edit settings files.
 - Never open .env.local or print a key, token or password.
 

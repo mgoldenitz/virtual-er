@@ -32,7 +32,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 
 ## Hard rules
 
-1. Store no real personal or health information. A visit has two identifiers. The display code is 6 characters (letters and digits, no look-alike characters such as O/0 or I/1) so people can read it aloud or type it at the desk. The access token is long and random (at least 128 bits, for example 22 or more random URL-safe characters); the QR code and the link saved on the phone carry the token, and only the token opens a visit on a patient's phone. Only logged-in staff can look up a visit by its short code. Patients open a visit only with the token: the link saved on their phone or the QR code on a desk slip. No names, health card numbers, phone numbers or symptoms are stored.
+1. Store no real personal or health information. A visit has two identifiers. The display code is 6 characters (letters and digits, no look-alike characters such as O/0 or I/1) so people can read it aloud or type it at the desk. The access token is long and random (at least 128 bits, for example 22 or more random URL-safe characters); the QR code and the link saved on the phone carry the token, and only the token opens a visit on a patient's phone. Only logged-in staff can look up a visit by its short code. Patients open a visit only with the token: the link saved on their phone or the QR code on a desk slip. No names, health card numbers, phone numbers or symptoms are stored. The Pushover recall alert goes through the Pushover server, so it carries only the display code and the site: never the token, a link, the language or the CTAS level.
 2. The app never makes clinical decisions. Staff choose the CTAS level and confirm eligibility. No symptom checker, no AI triage.
 3. Every patient screen, in every state and every language, shows: "If your symptoms get worse, call 911 or come back to the emergency department now."
 4. Visits older than 24 hours are deleted automatically. Just before a visit is deleted, add its contribution to a daily_stats table, counting each number on the date of its own event (survey responses count on the closed_at date). No survey can arrive after deletion, so no day ever needs reprocessing; do not use a once-a-night summary job. The dashboard shows a day as its daily_stats totals plus the visits still in the visits table. daily_stats holds only totals (no codes, tokens or single-visit times).
@@ -62,7 +62,7 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 - "I'm on my way" button after the patient is called.
 - Every 30 minutes while waiting off-site, an "I'm still here" button appears. A missed tap (no tap within 10 minutes of the prompt) flags the patient on the staff screen. "I'm still here" only tells staff the patient is still following the visit; it is not a clinical reassessment, and neither the patient screen nor the staff screen may describe it as one. If symptoms change, the 911 line applies.
 - The first time the called screen is shown, the page records seen_at. This means the screen was displayed in an open browser, not that the patient read it or is coming; staff still wait for "I'm on my way" and arrival. Sent, seen, on my way and arrived are tracked separately.
-- While called but unconfirmed, the screen alerts with sound and vibration where the phone allows. These are on-screen demo alerts: they work only while the page is open and the phone is unlocked, and the demo must say so. Do not claim the app can wake a locked phone. A hospital version would use text messages or push notifications (iPhones allow web push only for sites added to the home screen). After the 20-minute step it shows: "Please return now. Staff will review your visit if you do not respond."
+- While called but unconfirmed, the screen alerts with sound and vibration where the phone allows. These are on-screen demo alerts: they work only while the page is open and the phone is unlocked, and the demo must say so. Do not claim the app can wake a locked phone. A hospital version would use text messages or push notifications (iPhones allow web push only for sites added to the home screen). The demo has one extra alert that can reach a locked phone: a Pushover message to the owner's own phone when staff recall a real visit (see the Phase 4 line near the end). After the 20-minute step it shows: "Please return now. Staff will review your visit if you do not respond."
 - Language switch: English, French, Urdu, Arabic and Mandarin (Simplified Chinese) (owner, 2026-11-10). Urdu and Arabic are right-to-left, so their screens flip. All text comes from one translation file so it can be checked by a fluent speaker.
 - Text size control. Works on a small phone. Screen-reader labels on all controls.
 - Screen readers announce meaningful status changes (for example "You have been called back") through a polite live region, or an assertive one for the call-back. The wait range and any countdown are not announced on every update.
@@ -93,23 +93,25 @@ App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
 
 ### /dashboard (staff login required)
 
-Numbers for the current day:
+A "Show" switch with two buttons, Real (first, and on when the page opens; not saved) and Demo. Real and demo visits are never mixed; daily_stats keeps them apart through its is_demo key. Demo Site A and Demo Site B are two columns; on a phone they stack.
 
-- Patients waiting off-site now, and patients called but not yet arrived
-- Eligible patients offered the option (percentage), and how many declined
-- Average minutes from call-back to arrival
-- No-shows and patients marked unable to reach
-- Visits started from home, and how many of those arrived at triage
-- Survey: number of responses, average score, and share scoring 9 or 10
+"Now" (the visits in the table at this moment):
 
-Definitions ("today" means since midnight, America/Toronto time; demo visits count only in demo mode, and daily_stats keeps them apart through its is_demo key):
+- Waiting off-site: status waiting.
+- Recalled, not yet arrived: status called or on_the_way.
+- Back for reassessment: status needs_reassessment.
 
-- Waiting off-site now: visits with status waiting. Called but not arrived: status called or on_the_way.
-- Offered (percentage): visits with offered_at today, divided by visits triaged today as CTAS 4 or 5 minus those marked not_eligible. Declined: status declined.
-- Average minutes from call-back to arrival: arrived_at minus called_at, averaged over visits that were called and arrived today.
-- No-shows: status removed with removed_reason no_show. Unable to reach: status unable_to_reach (nurse-confirmed).
-- Visits started from home: source home, created today; of those, arrived at triage means triaged_at is set.
-- Survey: responses are visits whose closed_at is today and that have a survey_score; report the count beside the average and the share scoring 9 or 10.
+"Today (since midnight, Toronto time)". Each number counts a visit on the America/Toronto date of its own event, and adds the daily_stats row for (today, site, is_demo) (hard rule 4):
+
+- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today. Triage and offer are saved in the same step, so the share cannot go over 100%.
+- Accepted: "6 of 8 offered (75%)". Accepted is offered minus declined.
+- Declined: status declined, on offered_at.
+- Average minutes from recall to arrival: "14 (5 visits)". arrived_at minus called_at, over visits with status arrived and called_at set, on arrived_at. A desk arrival with no called_at stays out.
+- No-shows (status removed, removed_reason no_show), Unable to reach (nurse confirmed) (status unable_to_reach), Left (status removed, removed_reason left): on closed_at.
+- Started from home: source home, on created_at. Reached triage: those of them with triaged_at set.
+- Survey responses, Average score (0 to 10), Scored 9 or 10: visits with a survey_score, on closed_at.
+
+Percentages and minutes round to whole numbers; the average score rounds to one decimal place. A share or average whose bottom number is 0 shows "-" on screen, with the screen-reader text "no data yet". (Owner, 2026-11-18, the Gemini metric review and the dashboard plan: replaces the earlier list, whose offered percentage was always 100%.)
 
 ### Demo mode (staff only)
 
@@ -135,4 +137,4 @@ Add other fields only if a phase needs them, and tell me why.
 4. Dashboard, survey and demo mode.
 5. Testing with real people and a README explaining how to run the project.
 
-Optional after Phase 5: a Twilio trial that texts only my own verified phone number when a patient is called.
+Phase 4 (owner, 2026-11-19, replaces the Twilio trial): when staff recall a real visit (not `is_demo`), the server sends one Pushover message to the owner's own phone only, never to patients (Pushover replaced ntfy on 2026-11-19). The two settings `PUSHOVER_APP_TOKEN` and `PUSHOVER_USER_KEY` are in .env.local and the Vercel settings; with one of them missing, nothing is sent.

@@ -14,8 +14,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # v7 of both runs on Node.js 24 (v4 ran on Node.js 20, which GitHub deprecated).
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

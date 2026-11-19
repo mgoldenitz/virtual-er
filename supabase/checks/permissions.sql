@@ -12,13 +12,15 @@
 -- authenticated nothing either: their table has no rights for them, and their functions are
 -- revoked from them, so the list stays the same. 20261118010000_clear_demo_data.sql gives
 -- authenticated EXECUTE on clear_demo_data (staff only, the function checks is_staff), so that
--- one line is added to the list:
+-- one line is added to the list. 20261118120000_daily_stats_staff_read.sql gives authenticated
+-- SELECT on daily_stats (the policy lets only staff see rows), so that line is added too:
 --   anon           table     change_signal       SELECT
 --   anon           function  confirm_on_my_way   EXECUTE
 --   anon           function  get_patient_visit   EXECUTE
 --   anon           function  record_seen         EXECUTE
 --   anon           function  record_still_here   EXECUTE
 --   authenticated  table     change_signal       SELECT
+--   authenticated  table     daily_stats         SELECT
 --   authenticated  table     site_settings       SELECT, UPDATE
 --   authenticated  table     visits              INSERT, SELECT, UPDATE
 --   authenticated  function  clear_demo_data     EXECUTE
