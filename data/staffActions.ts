@@ -23,7 +23,7 @@ import {
   type Closure,
   type DeskOutcome,
 } from "@/lib/visitActions";
-import { switchToOffsite } from "@/lib/switchToOffsite";
+import { switchToOffsite, undoSwitch } from "@/lib/switchToOffsite";
 import { serverNow } from "./serverClock";
 import { reloadSitePauses } from "./sitePauses";
 import { supabaseBrowser } from "./supabaseBrowser";
@@ -170,14 +170,22 @@ export async function recallAll(ids: string[]): Promise<RecallAllResult> {
 
 /**
  * A declined patient changed their mind: switch them to off-site waiting, at their original
- * place in line. On "saved", `onSaved` gets the visit, so the screen can show its slip.
+ * place in line, in the language chosen at the switch. On "saved", `onSaved` gets the visit, so
+ * the screen can show its slip.
  */
-export async function switchVisitToOffsite(id: string, onSaved: (visit: Visit) => void): Promise<ChangeResult> {
-  const result = await changeVisit(id, (v) => switchToOffsite(v, serverNow()));
+export async function switchVisitToOffsite(
+  id: string,
+  language: string,
+  onSaved: (visit: Visit) => void,
+): Promise<ChangeResult> {
+  const result = await changeVisit(id, (v) => switchToOffsite(v, serverNow(), language));
   const updated = cachedVisit(id);
   if (result === "saved" && updated) onSaved(updated);
   return result;
 }
+
+/** Undo a switch made by mistake: back to "offered, declined", only before the recall. */
+export const undoSwitchVisit = (id: string) => changeVisit(id, (v) => undoSwitch(v, serverNow()));
 
 /** Record one simulated phone call ("Phoned, answered" or "Phoned, no answer"). */
 export const recordPhoneCallFor = (id: string, result: "answered" | "no_answer") =>

@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSitePauses } from "@/data/sitePauses";
-import { reloadVisits, switchVisitToOffsite } from "@/data/staffActions";
+import { reloadVisits, switchVisitToOffsite, undoSwitchVisit } from "@/data/staffActions";
 import { useVisits } from "@/data/useVisits";
 import { homeCheckInProblem } from "@/lib/homeCheckIn";
 import { activeLine } from "@/lib/queue";
@@ -127,12 +127,14 @@ export default function StaffPage() {
               site={site}
               now={now}
               offsitePaused={paused}
-              save={(id, onSaved) => {
+              save={(id, language, onSaved) => {
                 // Hide the last patient's slip first, so a failed save never leaves it on screen.
                 setSlip(null);
-                return switchVisitToOffsite(id, onSaved);
+                return switchVisitToOffsite(id, language, onSaved);
               }}
+              undo={undoSwitchVisit}
               onSwitched={showSlip}
+              onUndone={() => setSlip(null)}
             />
           )}
         </div>
