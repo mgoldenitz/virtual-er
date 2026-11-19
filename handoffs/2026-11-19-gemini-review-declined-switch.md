@@ -516,3 +516,24 @@ Gemini Hydrogen 4, High, 2026-11-19 (pasted by the owner, verbatim):
    * What goes wrong: Because `declined` stays in the `"Waiting on-site: offered, declined"` list for a full 6 hours and has no `"Mark arrived / seen"` or `"Left"` action, patients who have already been called into an exam room or left the ER remain mixed in with patients still waiting in the lobby.
    * Concrete case: Over a busy afternoon, 18 patients decline off-site waiting; 14 have already been seen and discharged, but all 18 remain listed under `"Waiting on-site: offered, declined"` until 6 hours pass.
    * Smallest fix: Either provide a `"Mark seen / close"` action on `WaitingOnSite` rows or add a note under the heading clarifying that the list shows all declined visits from the last 6 hours regardless of whether they were already called inside.
+
+## Check (Claude, 2026-11-19)
+
+Each point checked against the code on `declined-to-offsite` (`213be49`).
+
+1.1 Double click. Not valid as described. Each click is its own browser event, and React draws the `saving` state before the next click arrives, so the second click returns at `if (saving) return`. `CheckInPanel.finish()` uses the same guard. No change.
+1.2 Window ends while the checklist is open. Valid, minor: the nurse is told another screen changed the visit. Fix: check `canSwitchToOffsite` with the server clock before saving and say the 6 hours have passed.
+1.3 Pause while the checklist is open. Valid: the checklist vanishes, focus is lost, and old ticks come back after a resume. Fix: close the checklist and clear the ticks when the switch stops being offered, focus the heading.
+1.4 Sort on time text. Valid (the same problem `lib/queue.ts` already handles). Fix: compare `Date.parse` values, then the text, then the id, as `byTriage` does.
+2.1 `last_still_here_at` set at the switch. Valid; noted in decisions.md as a trade-off. Owner decision needed (see below).
+2.2 and 5.2 Place 1 at once. Valid as a desk need; the place itself is the owner's decision. Fix: show the triage time and the place in line the patient would get on the row and in the checklist.
+2.3 24-hour cleanup. Valid edge case, already true for any visit waiting near 24 hours. No change; one line in docs/known-issues.md.
+3.1 Trigger does not check the 6 hours. Partly valid: staff are trusted and every other move has the same reach, but the limit is cheap to enforce. Fix: the trigger refuses `declined` to `waiting` unless `old.closed_at` is under 6 hours old and `old.triaged_at` is set (`ctas_level` is already limited to 4 or 5 by the table check).
+3.2 `closed_at` left set. Valid, minor. Fix: the trigger refuses `declined` to `waiting` unless `new.closed_at is null`. Only on this move, since every other move into `waiting` already clears it.
+4.1 Focus on open and Cancel. Valid. Fix: focus the first checkbox when the checklist opens; Cancel returns focus to that row's switch button.
+4.2 Focus after a failed checklist. Valid. Fix: focus the first unticked box.
+4.3 Heading focus and the slip. Not valid: `VisitSlip` does not take focus, and the heading is the place the other lists use. No change.
+4.4 Partly valid. `DemoTag` already adds a space and ", Demo visit" for screen readers; the "·" separator is the same as in `ExpectedArrivals`; "Saving..." is the same as in `CheckInPanel`. Fix only: Cancel gets the hidden words "switch for visit CODE".
+5.1 No Undo. Valid. Owner decision needed (see below).
+5.3 Language. Valid: the slip opens in the language recorded at triage. Fix: a language choice in the checklist, saved with the switch.
+5.4 Patients already seen stay listed. Valid; the app does not track on-site patients after they decline. Owner decision needed (see below).
