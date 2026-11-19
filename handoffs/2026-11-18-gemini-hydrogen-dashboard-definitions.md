@@ -13,12 +13,10 @@ For each problem, give: the label, what is unclear or wrong, an example visit or
 Points to look at (not a full list):
 
 1. "Now" counts have no date test. A visit left `waiting` from yesterday still counts. Is that clear from "Now"?
-2. Each "Today" number counts on the date of its own event (offered on `offered_at`, declined on `offered_at`, arrivals on `arrived_at`, no-shows on `closed_at`, started from home on `created_at`). So "Offered" can include a visit triaged yesterday, and "12 of 14 triaged" can mix two groups of visits. Can the share go over 100%? Is it read correctly?
-3. "Accepted" is offered minus declined, so a visit that was offered and then left or was a no-show still counts as accepted.
-4. "Reached triage" sits under "Started from home" in the list, with no visible tie to it.
-5. "Average minutes from recall to arrival" leaves out an arrival with no `called_at` (a patient who came back before the recall).
-6. Survey numbers count on `closed_at`, not on the time the patient answered.
-7. The rounding: halves round up (12.5 minutes shows 13; 6.75 shows 6.8).
+2. "Reached triage" sits under "Started from home" in the list, with no visible tie to it.
+3. "Average minutes from recall to arrival" leaves out an arrival with no `called_at` (a patient who came back before the recall).
+4. Survey numbers count on `closed_at`, not on the time the patient answered.
+5. The rounding: halves round up (12.5 minutes shows 13; 6.75 shows 6.8).
 
 ## Checked (output in this session or in docs/progress.md)
 
@@ -36,6 +34,11 @@ Points to look at (not a full list):
 
 A Gemini review of the metric definitions ran before the build (2026-11-18). Its outcome is the SPEC text below. Settled by the owner, so do not report these as faults: the Real / Demo switch, never mixed; the share offered uses CTAS 4 or 5 triaged today as its bottom number; a share with a bottom number of 0 shows "-"; "Left" counts on `closed_at`; the labels listed in the SPEC.
 
+Also settled on 2026-11-18, after the build:
+
+- The offered share cannot go over 100%. Triage and offer are saved in the same step: `applyTriage()` in `lib/visitActions.ts` sets `triaged_at` and `offered_at` to the same time, the database trigger sets both to `now()` in one statement, and an offer needs CTAS 4 or 5. So each visit offered today is also in "triaged today" (a reassessed visit moves both times together). Do not report a visit triaged yesterday and offered today; it cannot happen.
+- "Accepted" is offered minus declined, so a patient who said yes and later left or did not come back still counts as accepted (owner). Those patients show in "Left" and "No-shows".
+
 ## SPEC text: /dashboard
 
 ```
@@ -49,7 +52,7 @@ A "Show" switch with two buttons, Real (first, and on when the page opens; not s
 
 "Today (since midnight, Toronto time)". Each number counts a visit on the America/Toronto date of its own event, and adds the daily_stats row for (today, site, is_demo) (hard rule 4):
 
-- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today.
+- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today. Triage and offer are saved in the same step, so the share cannot go over 100%.
 - Accepted: "6 of 8 offered (75%)". Accepted is offered minus declined.
 - Declined: status declined, on offered_at.
 - Average minutes from recall to arrival: "14 (5 visits)". arrived_at minus called_at, over visits with status arrived and called_at set, on arrived_at. A desk arrival with no called_at stays out.

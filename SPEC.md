@@ -102,7 +102,7 @@ A "Show" switch with two buttons, Real (first, and on when the page opens; not s
 
 "Today (since midnight, Toronto time)". Each number counts a visit on the America/Toronto date of its own event, and adds the daily_stats row for (today, site, is_demo) (hard rule 4):
 
-- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today.
+- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today. Triage and offer are saved in the same step, so the share cannot go over 100%.
 - Accepted: "6 of 8 offered (75%)". Accepted is offered minus declined.
 - Declined: status declined, on offered_at.
 - Average minutes from recall to arrival: "14 (5 visits)". arrived_at minus called_at, over visits with status arrived and called_at set, on arrived_at. A desk arrival with no called_at stays out.
