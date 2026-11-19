@@ -1,6 +1,8 @@
 # Known issues and gotchas
 
-- Norton re-signs HTTPS. Node in the owner's own terminal fails server-side Supabase calls (and the ntfy.sh call in `/api/recall-alert`) without --use-system-ca; `npm run dev` adds it (scripts/dev.mjs). Claude's Bash shell already trusts the certificate, which hides the problem.
+- Norton re-signs HTTPS. Node in the owner's own terminal fails server-side Supabase calls (and the Pushover call in `/api/recall-alert`) without --use-system-ca; `npm run dev` adds it (scripts/dev.mjs). Claude's Bash shell already trusts the certificate, which hides the problem.
+- The recall alert route answers `204` and sends nothing when `PUSHOVER_APP_TOKEN` or `PUSHOVER_USER_KEY` is missing or misnamed, so a wrong name in .env.local or Vercel gives no error (2026-11-19). Test the keys first with a direct POST to the Pushover API from PowerShell; `"status": 1` means they work.
+- ntfy on iPhone did not show messages on a locked phone, only with the app open (2026-11-19). A `200` from ntfy.sh means sent, not delivered. Replaced by Pushover.
 - Python here: `python -I` ignores PYTHONIOENCODING. Use `python -I -X utf8` for Urdu, Arabic, Chinese or symbols. Long heredoc scripts get mangled; write the script to a file first. Put code text that holds a backslash (a regex such as \bmin\b) in a raw string (r'''...'''), or Python changes \b into a backspace.
 - Do not edit text that has backslashes (regex, escapes) with `sed` or `printf` in the Bash tool; the shell removes or changes them (`printf` turns `\201` into one byte). Use Edit, or a quoted heredoc (`cat > file <<'EOF'`) for a temporary file.
 - Claude Code keeps per-project settings (switched-off MCP servers) under the folder path in ~/.claude.json. Moving the project folder loses them.
