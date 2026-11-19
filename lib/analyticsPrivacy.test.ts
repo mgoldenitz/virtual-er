@@ -1,7 +1,7 @@
-// Checks that privateAddress() keeps only the site and the path of a page address, so a patient token in the "#" part never goes to analytics.
+// Checks that privateAddress() and privateEvent() keep only the site and the path of a page address, so a patient token in the "#" part never goes to analytics.
 
 import { describe, expect, it } from "vitest";
-import { privateAddress } from "./analyticsPrivacy";
+import { privateAddress, privateEvent } from "./analyticsPrivacy";
 
 const SITE = "https://virtual-er.example";
 
@@ -41,5 +41,18 @@ describe("privateAddress", () => {
     for (const input of inputs) {
       expect(privateAddress(input) ?? "").not.toContain("ABC123SECRET");
     }
+  });
+});
+
+describe("privateEvent", () => {
+  it("keeps the event type and replaces the url with the site and the path", () => {
+    expect(privateEvent({ type: "pageview", url: `${SITE}/patient#t=ABC123SECRET&l=fr` })).toEqual({
+      type: "pageview",
+      url: `${SITE}/patient`,
+    });
+  });
+
+  it("drops the event when the address cannot be read", () => {
+    expect(privateEvent({ type: "pageview", url: "ABC123SECRET" })).toBeNull();
   });
 });
