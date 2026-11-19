@@ -10,7 +10,7 @@ To do in Phase 3 (from Grok's pass):
 
 ## Session log
 
-- 2026-11-18 (GitHub Actions v7): run 44443926798 warned that `actions/checkout@v4` and `actions/setup-node@v4` run on deprecated Node.js 20. `.github/workflows/checks.yml` now uses `@v7` of both (`using: node24`; breaking changes in v6 and v7 do not touch this file). Checks after `958604d`: 72 test files, 417 tests pass; lint passed; build passed. Not checked: a GitHub run with v7 (not pushed). Gemini review handoff: `handoffs/2026-11-18-gemini-review-actions-v7.md`.
+- 2026-11-18 (GitHub Actions v7): run 44443926798 warned that `actions/checkout@v4` and `actions/setup-node@v4` run on deprecated Node.js 20. `.github/workflows/checks.yml` now uses `@v7` of both (`using: node24`; breaking changes in v6 and v7 do not touch this file). Checks after `958604d`: 72 test files, 417 tests pass; lint passed; build passed. Pushed the branch (owner approved); GitHub checks with v7 passed (run 44445773244, 57 s), no Node.js 20 warning. "Where to pick up" rewritten for Phase 4 (owner asked). Gemini review handoff: `handoffs/2026-11-18-gemini-review-actions-v7.md`.
 
 One dated line per session, newest first.
 
@@ -55,39 +55,36 @@ One dated line per session, newest first.
 
 - 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim merged into main and pushed.
 
-## Where to pick up (updated 2026-11-18: Phase 3 closed, Phase 4 next)
+## Where to pick up (updated 2026-11-18: Phase 4 in progress, dashboard next)
 
 Links (share only these two):
-- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. Last app change pushed: `c5dc1fb` (2026-11-18, all of Phase 3).
+- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. `main` is at `a70a09a` (2026-11-18: Phase 3, the demo simulator, Demo tag, "Clear demo data" and Web Analytics).
 - **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. Pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
 State on 2026-11-18:
-- **Phase 3 is closed** (tag `savepoint-2026-11-18-phase3`) and live on `main`. Next: Phase 4, first the demo simulator (see the Phase 4 list).
-- **Phase 2 is closed** (`803fb2b`). Phase 3 details are in the Phase 3 section below.
-- Phase 3 done so far: package update; patient wording; all patient text in `lib/text/`; five languages with draft notices and a language switch; "I'm still here"; the no-response steps after "Recall patient"; "Recall all off-site patients"; "Pause off-site waiting" per site; folder-by-folder cleanup; `npm run dev` with the Norton fix. All are pushed and live.
-- 335 unit tests, lint and build pass (2026-11-17, branch `phase3-review-fixes`; pushed to the branch, owner approved, 2026-11-17, up to the reflow review fixes). The live app does not have the branch changes yet; merge at the end of Phase 3. axe-core (WCAG 2.2 AA rules), 2026-11-17: no failures on every patient screen, /login and /staff at phone, tablet and laptop size, 100% and 200% text (see the session log).
-- Test visits EZRRSQ and two from the recall-all test may still be in the `visits` table; the owner can delete them.
-- Pause-switch review done (`handoffs/archive/2026-11-12-gemini-review-pause-switch.md`). The Vercel firewall rule for GET `/api/site-status` is skipped (owner, 2026-11-18: stays on Hobby; see `docs/known-issues.md`).
+- **Phase 4 is in progress** on branch `phase4-dashboard` (pushed; it is 2 save points ahead of `main`: `958604d` GitHub Actions v7 and `a70dc57` its log line and handoff). GitHub checks on the branch passed with v7 (run 44445773244), with no Node.js 20 warning.
+- Phase 4 done: the demo simulator (`simulate_demo_tick`, `pg_cron` every 5 minutes), the Demo tag on staff rows, "Clear demo data", the dashboard metric definitions (decisions.md, 2026-11-18 "Dashboard numbers"), Vercel Web Analytics with private page addresses. All are on `main` and live.
+- **Phase 3 is closed** (tag `savepoint-2026-11-18-phase3`); details in the Phase 3 section below. **Phase 2 is closed** (`803fb2b`).
+- Last checks (2026-11-18, after `958604d`): 72 test files, 417 tests pass; lint passed; build passed.
+- Open handoff: `handoffs/2026-11-18-gemini-review-actions-v7.md`.
+- The Vercel firewall rule for GET `/api/site-status` is skipped (owner, 2026-11-18: stays on Hobby; see `docs/known-issues.md`).
 - Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
 - The untracked `.codex/` and `.agents/` files are the owner's Codex copies of the agents, hooks and reflect skill; leave them (owner, 2026-11-16).
 
-**Next: the rest of Phase 3** (SPEC Phase 3 list):
-- Item A (done; now on branch `phase3-review-fixes`):
-  - (a) Offline banner: done (`components/patient/OfflineBanner.tsx`, `data/useOnline.ts`).
-  - (b) Text size control: done (`components/patient/TextSizeSwitch.tsx`, `data/savedTextSize.ts`, `lib/textSize.ts`). Checked at 390 px with Extra large in all five languages (no sideways scroll).
-  - (c) Sound and vibration on the called screen: done (`lib/calledAlert.ts`, `components/patient/SoundSwitch.tsx`, `components/patient/alertSound.ts`). Still to do: the owner's test on a real iPhone (Wi-Fi address of the computer on port 3000, or a deployment after an approved push).
-  - (d) Staff "Issue a new link" (lost or stolen phone): done (`lib/visitActions.ts` issueNewLink, `data/staffActions.ts` issueNewVisitLink, `components/staff/VisitRow.tsx`). Checked in the browser with the owner.
-  - Combined Gemini review done: `handoffs/archive/2026-11-14-gemini-review-patient-extras.md`. Its fixes and the later reviews are in the session log (2026-11-15 and 2026-11-16).
-- Push notifications in the demo (owner wants them, 2026-11-14): moved to Phase 4 (owner, 2026-11-17), so they are not part of closing Phase 3. Needs its own plan, a SPEC change (SPEC says the alerts work only while the page is open), a service worker, stored subscriptions, VAPID keys in a settings page (never in chat), and a Gemini review. iPhone shows web push only for a site added to the Home Screen (iOS 16.4 or later).
-- 24-hour deletion with the `daily_stats` table (SPEC hard rule 4): done 2026-11-16 (see the log).
-- Step checks in the database and `seen_at` in `confirm_on_my_way`: done 2026-11-16 (see the log); Gemini review open.
-- Straight-quotes cleanup: done 2026-11-17. Only 4 staff texts were left (earlier work had cleaned the rest), plus SPEC.md line 83. `lib/straightQuotes.test.ts` now stops curly quotes in app/, components/, data/ and lib/; `lib/text/zh.ts` keeps its Chinese quote marks. The translations stay with the fluent reviewers.
-- Closing Phase 3: WCAG 2.2 AA check (axe-core at phone and laptop size, 200% text), /security-review over all Phase 3 changes, Gemini Hydrogen 4 (High, new chats) reviews equity and accessibility, then workflow and screen consistency (tell Gemini the translations are drafts, not reviewed yet); the fluent review moved to the end of Phase 4 (owner, 2026-11-17); list any open handoff before the closing save point.
+**Next: the rest of Phase 4** (details in the Phase 4 list below):
+1. The dashboard: `app/dashboard/page.tsx` is still a placeholder. Build it to the 2026-11-18 "Dashboard numbers" decision. It touches more than one folder, so it starts in plan mode. After it is built: Gemini 3.6 Flash, High, writes 15 to 20 synthetic visits with their expected numbers; after the Playwright checks, Gemini Hydrogen 4, High, checks each number's definition (CLAUDE.md).
+2. Realistic simulated wait range from demo data.
+3. Push notifications in the demo (owner wants them, 2026-11-14; moved to Phase 4 on 2026-11-17). Needs its own plan, a SPEC change (SPEC says the alerts work only while the page is open), a service worker, stored subscriptions, VAPID keys in a settings page (never in chat), and a Gemini review. iPhone shows web push only for a site added to the Home Screen (iOS 16.4 or later).
+4. Fluent review of the translations, at the end of Phase 4, after the push notification text is written.
+5. Simulator dates: running by 2026-11-30, frozen by 2026-12-04, switched off with "Clear demo data" before the Phase 5 testers.
 
 Waiting on the owner (none block the next steps):
-1. Fluent reviewers for French, Urdu, Arabic and Mandarin, safety messages first, at the end of Phase 4 (owner, 2026-11-17) (notes for them at the top of `handoffs/archive/2026-11-10-gemini-translations-phase3.md`).
-2. Confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` ran (daily at 12:00 UTC). The MCP cannot list cron jobs.
-3. Optional: leaked password protection (Supabase dashboard > Authentication).
+1. Switch the simulator on: `update public.demo_settings set running = true;` in the SQL Editor, then look at the demo rows after about 1 hour. Not recorded as done.
+2. Fluent reviewers for French, Urdu, Arabic and Mandarin, safety messages first, at the end of Phase 4 (owner, 2026-11-17) (notes for them at the top of `handoffs/archive/2026-11-10-gemini-translations-phase3.md`).
+3. Sound and vibration on the called screen on a real iPhone (Wi-Fi address of the computer on port 3000, or the live link).
+4. Confirm in Vercel (virtual-er-izpf > Settings > Cron Jobs) that `/api/keep-alive` ran (daily at 12:00 UTC). The MCP cannot list cron jobs.
+5. Optional: leaked password protection (Supabase dashboard > Authentication).
+6. Optional: delete test visit EZRRSQ and the two from the recall-all test, if they are still in the `visits` table.
 
 Not checked yet:
 - The start route's "paused" and "busy" answers on purpose (need database changes or 20 test visits; ask the owner).
@@ -96,9 +93,8 @@ Not checked yet:
 
 Carry into later steps:
 - The single `change_signal` row is fine at demo size; Supabase Realtime Broadcast could replace it later.
-- Analytics (Vercel Web Analytics, Speed Insights) only after a privacy review.
+- Speed Insights (`@vercel/speed-insights`, installed, not used in code) only after a privacy review. Web Analytics is live with private page addresses (2026-11-18).
 - A Nastaliq font for Urdu: ask the Urdu reviewer.
-- Phase 4 list (below): realistic simulated wait range from demo data.
 
 Working notes for a new session:
 - Models: Gemini only (CLAUDE.md). Handoffs: one file per review in `handoffs/`, the answer goes at the bottom with Claude's check, then the file moves to `handoffs/archive/`.
@@ -142,7 +138,7 @@ Started 2026-11-10 (evening).
 
 ## Phase 4: to do (list started 2026-11-11)
 
-- **Demo simulator, the first Phase 4 item (built 2026-11-18: simulator, Demo tag and "Clear demo data"; see the session log; plan: [docs/2026-11-18-demo-simulator-plan.md](2026-11-18-demo-simulator-plan.md)).** A scheduled job, with no AI model, plays the staff and patient sides so both sites look like a normal evening; it takes the place of SPEC's "Demo mode" button. Decided (owner, 2026-11-18): simulated visits use sites A and B, tagged `is_demo`. Still open: where it runs, Supabase `pg_cron` (option 1, Claude's recommendation) or GitHub Actions (option 2). Before building: the owner approves the SPEC "Demo mode" change. Start only after the Phase 3 closing save point. Aim to have it running by 2026-11-30, freeze it by 2026-12-04, switch it off and run "Clear demo data" before the Phase 5 testers.
+- **Demo simulator, the first Phase 4 item (built 2026-11-18: simulator, Demo tag and "Clear demo data"; see the session log; plan: [docs/2026-11-18-demo-simulator-plan.md](2026-11-18-demo-simulator-plan.md)).** A scheduled job, with no AI model, plays the staff and patient sides so both sites look like a normal evening; it takes the place of SPEC's "Demo mode" button. Decided (owner, 2026-11-18): simulated visits use sites A and B, tagged `is_demo`. It runs in Supabase with `pg_cron` (option 1, owner, 2026-11-18; decisions.md), and the SPEC "Demo mode" change is approved (`b9d3d6e`). Aim to have it running by 2026-11-30, freeze it by 2026-12-04, switch it off and run "Clear demo data" before the Phase 5 testers.
 
 - **Fluent review of the translations, at the end of Phase 4 (owner, 2026-11-17).** One fluent reviewer each for French, Urdu, Arabic and Mandarin, safety messages first, after the push notification text is written, so one review covers all patient text. Each approved language gets `approved: true` in `lib/text/languages.ts`. Must be done before the Phase 5 real testers start. Notes for the reviewers are at the top of `handoffs/archive/2026-11-10-gemini-translations-phase3.md`.
 
