@@ -61,26 +61,26 @@ One dated line per session, newest first.
 
 - 2026-11-13: context trim (CLAUDE.md, the three docs, 15 plugins off); orchestrator setup (builder and reviewer agents on Haiku, reflect skill); subagents set to Haiku in the user settings. Branch context-trim merged into main and pushed.
 
-## Where to pick up (updated 2026-11-19: Phase 4 in progress, Pushover alert works on localhost)
+## Where to pick up (updated 2026-11-19: Phase 4 in progress, Pushover alert live on production)
 
 Links (share only these two):
-- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. `main` is at `a70a09a` (2026-11-18: Phase 3, the demo simulator, Demo tag, "Clear demo data" and Web Analytics).
+- **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. `main` is at `f80f0d0` (2026-11-19: everything below up to the Pushover alert, plus PR #4, the staff switch from `declined` to off-site waiting with Undo).
 - **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. Pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
-State on 2026-11-18:
-- **Phase 4 is in progress** on branch `phase4-dashboard` (pushed; it is 2 save points ahead of `main`: `958604d` GitHub Actions v7 and `a70dc57` its log line and handoff). GitHub checks on the branch passed with v7 (run 44445773244), with no Node.js 20 warning.
-- Phase 4 done: the demo simulator (`simulate_demo_tick`, `pg_cron` every 5 minutes), the Demo tag on staff rows, "Clear demo data", the dashboard metric definitions (decisions.md, 2026-11-18 "Dashboard numbers"), Vercel Web Analytics with private page addresses. All are on `main` and live.
+State on 2026-11-19:
+- **Phase 4 is in progress** on branch `phase4-dashboard` (pushed at `d736638`; it has `main` merged in at `ca1d545`, and is ahead of `main` only by progress.md log commits). GitHub checks on the branch passed (run 44613251147).
+- Phase 4 done: the demo simulator (`simulate_demo_tick`, `pg_cron` every 5 minutes), the Demo tag on staff rows, "Clear demo data", the dashboard and its metric definitions (decisions.md, 2026-11-18 "Dashboard numbers"), Vercel Web Analytics with private page addresses, the Pushover recall alert, the staff switch from `declined` to off-site waiting (PR #4). All are on `main` and live.
 - **Phase 3 is closed** (tag `savepoint-2026-11-18-phase3`); details in the Phase 3 section below. **Phase 2 is closed** (`803fb2b`).
-- Last checks (2026-11-18, after `2d870bc`): 79 test files, 458 tests pass; lint passed; build passed.
+- Last checks (2026-11-19, after `ca1d545`): 84 test files, 511 tests pass; lint passed; build passed.
 - No open handoffs in `handoffs/`.
 - The Vercel firewall rule for GET `/api/site-status` is skipped (owner, 2026-11-18: stays on Hobby; see `docs/known-issues.md`).
 - Orchestrator setup (2026-11-13): Claude plans and checks; `builder` and `reviewer` workers on Haiku in `.claude/agents/`; the `reflect` skill at the end of each session (CLAUDE.md).
 - The untracked `.codex/` and `.agents/` files are the owner's Codex copies of the agents, hooks and reflect skill; leave them (owner, 2026-11-16).
 
 **Next: the rest of Phase 4** (details in the Phase 4 list below):
-1. The dashboard is built (2026-11-18, steps 1 to 6, `2d870bc` and the docs commit after it; not pushed). Synthetic visits done (2026-11-18, `lib/dashboardSynthetic.test.ts`, a separate file so `lib/dashboardNumbers.test.ts` stays under 300 lines). Playwright check with demo data done (2026-11-18). Gemini definitions review skipped by the owner (2026-11-18, `handoffs/archive/2026-11-18-gemini-hydrogen-dashboard-definitions.md`).
+1. Done. The dashboard is built (2026-11-18, steps 1 to 6, `2d870bc` and the docs commit after it; on `main` since 2026-11-19). Synthetic visits done (2026-11-18, `lib/dashboardSynthetic.test.ts`, a separate file so `lib/dashboardNumbers.test.ts` stays under 300 lines). Playwright check with demo data done (2026-11-18). Gemini definitions review skipped by the owner (2026-11-18, `handoffs/archive/2026-11-18-gemini-hydrogen-dashboard-definitions.md`).
 2. Realistic simulated wait range from demo data: done in code and tests (2026-11-18). Not checked in a browser (a patient screen needs a visit token, so a check makes a new real visit).
-3. Recall alert to a locked phone: a Pushover message to the owner's phone (ntfy replaced on 2026-11-19; decisions.md). Works on localhost: a real recall showed on the owner's locked iPhone (2026-11-19). Works on the Vercel Preview too (2026-11-19, `0e45771`). Works on the production site (2026-11-19, `3274252`). Not done yet: delete `NTFY_TOPIC` from .env.local and Vercel (optional, no effect). Done: `FK35MA` marked arrived (owner); Gemini review closed with fixes 2 and 3 (`964393c`). Pushover trial ends about 2026-12-19; then a one-time fee.
+3. Done. Recall alert to a locked phone: a Pushover message to the owner's phone (ntfy replaced on 2026-11-19; decisions.md). Works on localhost: a real recall showed on the owner's locked iPhone (2026-11-19). Works on the Vercel Preview too (2026-11-19, `0e45771`). Works on the production site (2026-11-19, `3274252`). Not done yet: delete `NTFY_TOPIC` from .env.local and Vercel (optional, no effect). Done: `FK35MA` marked arrived (owner); Gemini review closed with fixes 2 and 3 (`964393c`). Pushover trial ends about 2026-12-19; then a one-time fee.
 4. Fluent review of the translations, at the end of Phase 4. The recall alert has no patient text, so the review can start now.
 5. Simulator dates: running by 2026-11-30, frozen by 2026-12-04, switched off with "Clear demo data" before the Phase 5 testers.
 
