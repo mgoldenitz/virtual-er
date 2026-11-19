@@ -426,3 +426,47 @@ index 0000000..e7374c9
 +  return `${rows.length} visits are called back: ${list}.`;
 +}
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-19 (pasted by the owner):
+
+### 1. Can a caller who is not staff make the route send a message?
+
+No problem found that lets a non-staff caller trigger a Pushover alert. Missing or empty `Bearer` tokens return `401` (`app/api/recall-alert/route.ts:22-23`), invalid/anon tokens fail PostgREST `visits` permissions (`revoke all on public.visits from anon`), and signed-in non-staff JWTs receive `0` rows under the `"Staff can read visits"` RLS policy (`app_metadata.role = 'staff'`), exiting at `nothing_to_send` (`route.ts:47-48`). (Note: add a test with a real non-staff `authenticated` JWT, as noted under "Not checked"; see also Finding 6 below on returning `500` instead of `401`/`403` for bad tokens.)
+
+### 2. Can the message, a log line or an answer leak the Supabase token, the Pushover app token or the user key?
+
+No problem found. Neither `PUSHOVER_APP_TOKEN` nor `PUSHOVER_USER_KEY` has a `NEXT_PUBLIC_` prefix, neither is placed in `message`, `title`, or the Pushover request URL (`lib/pushover.ts:12-16`, `app/api/recall-alert/route.ts:51-54`), `route.ts` logs nothing and catches all errors without binding the error object (`route.ts:30, 56`), and every HTTP response returns only static `result` strings with `Cache-Control: no-store` (`route.ts:13-15, 20`).
+
+### 3. Can repeat or forged requests spam the phone?
+
+Old recalls (`called_at` older than 2 minutes) and forged IDs (non-existent UUIDs, `is_demo: true`, or statuses other than `"called"`) are blocked by `alertsToSend` (`lib/recallAlert.ts:35-40`). However, repeat requests with the same ID(s) can spam the phone:
+
+- Problem 1: No deduplication/idempotency per recall (replay within the 2-minute window sends repeated high-priority alerts). File and line: `app/api/recall-alert/route.ts:41-55` and `lib/recallAlert.ts:35-40`. Concrete request: a real visit is recalled at 14:59:30Z; a caller with a valid staff Bearer token sends `POST /api/recall-alert` with that id 20 times between 14:59:30Z and 15:01:30Z. The route never records that an alert was sent, so every request sends a new `priority: "1"` alert. Smallest fix: add a nullable `recall_alerted_at timestamptz` column to `visits` (reset to null in `visits_before_write` when status goes back to `waiting` on Undo) and atomically claim unalerted rows with an UPDATE ... WHERE recall_alerted_at IS NULL ... RETURNING id, code, site (or a staff-callable RPC `claim_recall_alerts(p_ids uuid[])`), calling Pushover only when rows come back.
+
+### 4. Does the message carry anything more than the display code and the site?
+
+No problem found. `route.ts:43` does not select `access_token`, `language`, or `ctas_level`, and `recallAlertText` outputs only the visit count, `code`, and `site`.
+
+### 5. Can an alert failure change or block the saved recall?
+
+No problem found. Both `callBackVisit` and `recallAll` commit the update and update the local cache first, call `void sendRecallAlert(...)` without `await`, and `sendRecallAlert` swallows all exceptions.
+
+### Anything else found
+
+- Problem 2: `recallAll` silently drops alerts when more than 50 visits are recalled at once. `data/staffActions.ts:169`, `data/recallAlert.ts:12-16`, `lib/recallAlert.ts:18, 29`. 50 demo visits and 1 real visit are waiting; "Recall all" posts 51 ids; `parseRecallAlertBody` rejects more than 50 with 400; the owner gets no alert for the real visit. Smallest fix: chunk ids into slices of 50 in `data/recallAlert.ts`.
+- Problem 3: the outbound `fetch(PUSHOVER_URL)` has no timeout (`route.ts:51-54`). A stalled api.pushover.net makes the function hang until the platform kills it. Smallest fix: `signal: AbortSignal.timeout(5_000)`.
+- Problem 4: invalid or anon Bearer tokens return 500 instead of 401/403 (`route.ts:22-23, 41-45`). `Bearer not-a-jwt` or the publishable key passes the regex, fails in PostgREST and returns 500 `error`, which hides real database outages. Smallest fix: `asCaller.auth.getUser(token)` first; 401 when no user, 403 when `app_metadata.role` is not staff.
+- Problem 5: batch messages of about 48 to 50 real visits cut the last codes mid-string (`lib/recallAlert.ts:46-47`, `lib/pushover.ts:13-14`). 50 visits make about 1,082 characters; the cut at 1,021 plus "..." breaks a code. Smallest fix: cap the list in `recallAlertText` on a whole-item boundary and add ", and N more."
+
+Note: the answer above is the owner's paste with the long example requests made shorter; the files, lines and fixes are as Gemini gave them.
+
+## Claude's check (2026-11-19)
+
+- Questions 1, 2, 4 and 5 (no problem found): agree. The route selects only `id, code, site, status, called_at, is_demo`, and it logs nothing.
+- Problem 1 (repeat requests within 2 minutes): true, but only for a caller who is already staff and sends the request by hand. The app itself sends once per recall: `callBack` in lib/visitActions.ts:115 returns null unless the visit is `waiting`, and `recallAll` updates only rows with `status = 'waiting'`. The fix needs a new column and a migration. Proposal: write it as a known limit, no fix.
+- Problem 2 (more than 50 ids): true. Today there are 10 demo visits waiting at each site (database, 2026-11-19), so a "Recall all" with many demo visits and 1 real visit can go over 50. Proposal: a smaller fix than chunks: the browser sends only the ids of real visits (a new function in lib/recallAlert.ts with a test), because demo visits never send.
+- Problem 3 (no timeout): true. Proposal: fix, `signal: AbortSignal.timeout(5_000)`, a 5-second limit.
+- Problem 4 (500 instead of 401 for a bad token): true (an invalid token fails in PostgREST and the route gives `error`, 500). No message is sent, so it is not a security fault. Proposal: known limit, no fix (the fix adds one more network call to each alert).
+- Problem 5 (codes cut mid-string): true only with 48 or more real visits recalled at once, which the demo does not do. Proposal: known limit, no fix.
