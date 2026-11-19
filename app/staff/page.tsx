@@ -1,11 +1,11 @@
 "use client";
 
-// The staff screen: check patients in (new at the desk, or expected from home), see who is
-// waiting off-site, and call them back.
+// The staff screen: check patients in (new at the desk, or expected from home), switch a patient
+// who declined to off-site waiting, see who is waiting off-site, and call them back.
 
 import { useEffect, useRef, useState } from "react";
 import { useSitePauses } from "@/data/sitePauses";
-import { reloadVisits } from "@/data/staffActions";
+import { reloadVisits, switchVisitToOffsite } from "@/data/staffActions";
 import { useVisits } from "@/data/useVisits";
 import { homeCheckInProblem } from "@/lib/homeCheckIn";
 import { activeLine } from "@/lib/queue";
@@ -20,6 +20,7 @@ import { RecentlyClosed } from "@/components/staff/RecentlyClosed";
 import { SignOutButton } from "@/components/staff/SignOutButton";
 import { VisitRow } from "@/components/staff/VisitRow";
 import { VisitSlip } from "@/components/staff/VisitSlip";
+import { WaitingOnSite } from "@/components/staff/WaitingOnSite";
 import { StaffShell } from "@/components/staff/StaffShell";
 import { Button } from "@/components/Button";
 import { useNow } from "@/components/useNow";
@@ -63,7 +64,8 @@ export default function StaffPage() {
     homeVisit && visits && now
       ? homeCheckInProblem(homeVisit, visits.find((v) => v.id === homeVisit.id) ?? null, now)
       : null;
-  // Show a slip only for a visit that is waiting off-site; declined and not-eligible get none.
+  // Show a slip only for a visit that is waiting off-site; declined and not-eligible get none
+  // (a declined patient who switches to off-site waiting gets one then).
   const showSlip = (visit: Visit) => setSlip(visit.status === "waiting" || visit.called_at ? visit : null);
 
   return (
@@ -118,6 +120,21 @@ export default function StaffPage() {
             onHomeDone={() => setHomeVisit(null)}
           />
           {slip && <VisitSlip code={slip.code} token={slip.access_token} language={slip.language} onClose={() => setSlip(null)} />}
+          {visits && now && (
+            <WaitingOnSite
+              key={`onsite-${site}`}
+              visits={visits}
+              site={site}
+              now={now}
+              offsitePaused={paused}
+              save={(id, onSaved) => {
+                // Hide the last patient's slip first, so a failed save never leaves it on screen.
+                setSlip(null);
+                return switchVisitToOffsite(id, onSaved);
+              }}
+              onSwitched={showSlip}
+            />
+          )}
         </div>
 
         <section aria-labelledby="list-heading" className="glass-panel space-y-3">

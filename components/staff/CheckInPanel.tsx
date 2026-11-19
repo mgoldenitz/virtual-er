@@ -11,12 +11,8 @@ import type { DeskOutcome } from "@/lib/visitActions";
 import { LANGUAGES, menuLabel } from "@/lib/text/languages";
 import { Button } from "@/components/Button";
 import { PAUSED_NOT_SAVED, STALE_READ, onSiteOnlyText } from "./checkInText";
+import { CHECKLIST } from "./eligibility";
 
-const CHECKLIST = [
-  { id: "phone", label: "Has a phone with them" },
-  { id: "return", label: "Can return within 20 minutes" },
-  { id: "agrees", label: "Agrees to wait off-site" },
-] as const;
 
 type Props = {
   site: Site;

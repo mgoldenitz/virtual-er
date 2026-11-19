@@ -20,6 +20,8 @@ export const ALLOWED_MOVES: Partial<Record<VisitStatus, VisitStatus[]>> = {
   // Undo: back to the status before the closure.
   arrived: ["waiting", "called", "on_the_way"],
   removed: ["waiting", "called", "on_the_way"],
+  // Changed their mind: a patient who declined at triage switches to off-site waiting (lib/switchToOffsite.ts).
+  declined: ["waiting"],
 };
 
 /** The statuses a new visit may start in (desk check-in, or start from home). */
@@ -30,6 +32,12 @@ export const START_STATUSES: VisitStatus[] = ["pre_arrival", "waiting", "decline
  * waiting, so the database refuses it while the site is paused. Undo back to waiting does not.
  */
 export const TRIAGE_STATUSES: VisitStatus[] = ["pre_arrival", "needs_reassessment"];
+
+/**
+ * The statuses a move to waiting starts off-site waiting from: a triage, or a declined patient
+ * who switches to off-site waiting. The database refuses these moves while the site is paused.
+ */
+export const OFFSITE_START_STATUSES: VisitStatus[] = [...TRIAGE_STATUSES, "declined"];
 
 /** True if a visit may move from one status to another. Staying in the same status is always allowed. */
 export function isAllowedMove(from: VisitStatus, to: VisitStatus): boolean {
