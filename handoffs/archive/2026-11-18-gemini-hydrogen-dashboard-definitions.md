@@ -389,3 +389,7 @@ export function SiteNumbers({ site, numbers: n }: Props) {
 }
 ```
 
+
+## Response
+
+Skipped by the owner on 2026-11-18. The two main points (Offered share, Accepted) were settled first; see docs/decisions.md, 2026-11-18 "Offered and Accepted stay as built".
