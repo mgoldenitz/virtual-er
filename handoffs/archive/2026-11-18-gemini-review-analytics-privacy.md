@@ -82,3 +82,7 @@ Questions:
 ## Bring back
 
 Paste Gemini's full answer here under "Response".
+
+## Response
+
+Skipped (owner, 2026-11-18). Reason: small diff, tests and a localhost check cover it, and the open question (what the production script sends) cannot be answered from the repo. Planned check instead: on the live site, the Analytics page list must show `/patient` only, with no `#t=` text.
