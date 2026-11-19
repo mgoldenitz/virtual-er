@@ -3,6 +3,12 @@
 
 /** The site and the path of `url` (for example "https://site/patient"), or null if `url` is not a full address. */
 export function privateAddress(url: string): string | null {
-  // TODO(human): keep only the site and the path; return null for an address that cannot be read.
-  return url;
+  try {
+    // URL splits the address into parts, so the "?" and "#" parts are simply left out.
+    const address = new URL(url);
+    return `${address.origin}${address.pathname}`;
+  } catch {
+    // Not a full address: drop the event. A lost page view is safer than a leaked token.
+    return null;
+  }
 }

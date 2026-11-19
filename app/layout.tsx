@@ -1,9 +1,10 @@
-// The frame around every page: language, page title and the disclaimer footer.
+// The frame around every page: language, page title, the disclaimer footer and private analytics.
 
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { InlineScript } from "@/components/InlineScript";
+import { PrivateAnalytics } from "@/components/PrivateAnalytics";
 import { textSizeScript } from "@/lib/textSize";
 import "./globals.css";
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-full flex-col bg-canvas text-ink" suppressHydrationWarning>
         <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
+        <PrivateAnalytics />
       </body>
     </html>
   );
