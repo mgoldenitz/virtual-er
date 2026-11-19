@@ -51,6 +51,8 @@ export async function POST(request: Request): Promise<Response> {
     const sent = await fetch(PUSHOVER_URL, {
       method: "POST",
       body: new URLSearchParams(pushoverBody(appToken, userKey, recallAlertText(rows))),
+      // Stop after 5 seconds, so a slow Pushover server cannot keep this function open.
+      signal: AbortSignal.timeout(5_000),
     });
     return sent.ok ? answer("sent", 200) : answer("alert_failed", 502);
   } catch {

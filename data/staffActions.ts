@@ -6,6 +6,7 @@
 
 import { changedFields } from "@/lib/changedFields";
 import { makeAccessToken, makeUniqueDisplayCode, normalizeDisplayCode } from "@/lib/codes";
+import { alertIdsFor } from "@/lib/recallAlert";
 import type { RecallAllResult } from "@/lib/recallAll";
 import { resultForError } from "@/lib/saveResult";
 import type { ChangeResult, Site, Visit } from "@/lib/visit";
@@ -166,7 +167,7 @@ export async function recallAll(ids: string[]): Promise<RecallAllResult> {
       .select();
     if (error || !Array.isArray(data)) return { recalled: 0, changed: 0, notSaved: true };
     (data as StoredVisit[]).forEach(putVisit);
-    void sendRecallAlert((data as StoredVisit[]).map((v) => v.id));
+    void sendRecallAlert(alertIdsFor(data as StoredVisit[]));
     if (data.length < ids.length) void loadVisits();
     return { recalled: data.length, changed: ids.length - data.length, notSaved: false };
   } catch {

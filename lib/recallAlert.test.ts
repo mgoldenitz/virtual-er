@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsToSend, parseRecallAlertBody, recallAlertText, type RecallAlertRow } from "./recallAlert";
+import { alertIdsFor, alertsToSend, MAX_ALERT_IDS, parseRecallAlertBody, recallAlertText, type RecallAlertRow } from "./recallAlert";
 
 const now = new Date("2026-11-19T15:00:00Z");
 const ID = "0b9f3c1e-2a4d-4f6b-8c7e-1d2a3b4c5d6e";
@@ -69,5 +69,25 @@ describe("recall alert text", () => {
 
   it("never carries the visit id (the same rule keeps the token out: the row has no token)", () => {
     expect(recallAlertText([row(), row({ code: "DEF567" })])).not.toContain(ID);
+  });
+});
+
+describe("alertIdsFor", () => {
+  it("leaves out demo visits", () => {
+    const visits = [
+      { id: "real-1", is_demo: false },
+      { id: "demo-1", is_demo: true },
+      { id: "real-2", is_demo: false },
+    ];
+    expect(alertIdsFor(visits)).toEqual(["real-1", "real-2"]);
+  });
+
+  it("gives an empty list when all visits are demo visits", () => {
+    expect(alertIdsFor([{ id: "demo-1", is_demo: true }])).toEqual([]);
+  });
+
+  it("gives at most 50 ids, so the route does not refuse the request", () => {
+    const visits = Array.from({ length: 60 }, (_, i) => ({ id: `real-${i}`, is_demo: false }));
+    expect(alertIdsFor(visits)).toHaveLength(MAX_ALERT_IDS);
   });
 });

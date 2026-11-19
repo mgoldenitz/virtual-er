@@ -46,3 +46,11 @@ export function recallAlertText(rows: RecallAlertRow[]): string {
   const list = rows.map((r) => `${r.code} (Demo Site ${r.site})`).join(", ");
   return `${rows.length} visits are called back: ${list}.`;
 }
+
+/**
+ * The ids the staff browser sends after a recall: only real visits (demo visits never send),
+ * and at most 50, so a "Recall all" with many demo visits is not refused by the route.
+ */
+export function alertIdsFor(visits: { id: string; is_demo: boolean }[]): string[] {
+  return visits.filter((v) => !v.is_demo).map((v) => v.id).slice(0, MAX_ALERT_IDS);
+}
