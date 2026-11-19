@@ -8,6 +8,7 @@ import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from 
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
 import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
+import { switchedAt } from "@/lib/switchToOffsite";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
 import { Duration } from "./Duration";
@@ -30,6 +31,16 @@ const CHANGED = "The list just changed. Check this patient again.";
 function progress(visit: Visit, now: Date): ReactNode {
   if (visit.status === "waiting") {
     // "I'm still here" only shows the patient is still following the visit; never a health check.
+    // A declined patient switched at the desk: the clock starts at the switch, not at a tap.
+    const switched = switchedAt(visit);
+    if (switched) {
+      return (
+        <>
+          {"Waiting off-site · switched to off-site "}
+          <Duration minutes={minutesBetween(switched, now)} /> ago
+        </>
+      );
+    }
     const lastTap = lastTapThisWait({ triagedAt: visit.triaged_at, lastStillHereAt: visit.last_still_here_at });
     if (!lastTap) return "Waiting off-site";
     return (

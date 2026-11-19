@@ -8,15 +8,11 @@ import { useState, type FormEvent } from "react";
 import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
 import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
-import { LANGUAGES, menuLabel } from "@/lib/text/languages";
 import { Button } from "@/components/Button";
 import { PAUSED_NOT_SAVED, STALE_READ, onSiteOnlyText } from "./checkInText";
+import { CHECKLIST } from "./eligibility";
+import { LanguageSelect } from "./LanguageSelect";
 
-const CHECKLIST = [
-  { id: "phone", label: "Has a phone with them" },
-  { id: "return", label: "Can return within 20 minutes" },
-  { id: "agrees", label: "Agrees to wait off-site" },
-] as const;
 
 type Props = {
   site: Site;
@@ -215,20 +211,7 @@ export function CheckInPanel({
         </div>
       </fieldset>
 
-      <label className="block">
-        <span className="font-semibold">Language</span>
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="mt-2 block min-h-11 max-w-full rounded-lg border-2 border-control px-3"
-        >
-          {LANGUAGES.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.approved ? menuLabel(l) : `${menuLabel(l)}, draft until checked`}
-            </option>
-          ))}
-        </select>
-      </label>
+      <LanguageSelect value={language} onChange={setLanguage} />
 
       {!homeProblem && (
         <div className="flex flex-wrap gap-3">

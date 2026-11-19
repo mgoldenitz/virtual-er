@@ -2,6 +2,7 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { switchToOffsite } from "@/lib/switchToOffsite";
 import { callBack, checkInAtDesk } from "@/lib/visitActions";
 import { VisitRow } from "./VisitRow";
 
@@ -51,5 +52,21 @@ describe("VisitRow demo tag", () => {
 
   it("shows no Demo tag for a real visit", () => {
     expect(render(checkInAtDesk({ ...input, is_demo: false }, "waiting", minutesAgo(10)))).not.toContain("demo-tag");
+  });
+});
+
+describe("VisitRow after a switch from declined", () => {
+  it("says when the patient was switched, not that they tapped I'm still here", () => {
+    const declined = checkInAtDesk(input, "declined", minutesAgo(60));
+    const switchedVisit = switchToOffsite(declined, minutesAgo(12))!;
+    const html = render(switchedVisit);
+    expect(html).toContain(`switched to off-site ${shown("12 min", "12 minutes")} ago`);
+    expect(html).not.toContain("last &quot;I&#x27;m still here&quot;");
+  });
+
+  it("shows the patient's own tap once there is one", () => {
+    const switchedVisit = switchToOffsite(checkInAtDesk(input, "declined", minutesAgo(60)), minutesAgo(12))!;
+    const tapped = { ...switchedVisit, last_still_here_at: minutesAgo(3).toISOString() };
+    expect(render(tapped)).not.toContain("switched to off-site");
   });
 });
