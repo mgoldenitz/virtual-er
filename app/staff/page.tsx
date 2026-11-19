@@ -11,6 +11,7 @@ import { homeCheckInProblem } from "@/lib/homeCheckIn";
 import { activeLine } from "@/lib/queue";
 import type { Site, Visit } from "@/lib/visit";
 import { CheckInPanel } from "@/components/staff/CheckInPanel";
+import { ClearDemoData } from "@/components/staff/ClearDemoData";
 import { ExpectedArrivals } from "@/components/staff/ExpectedArrivals";
 import { PauseSwitch } from "@/components/staff/PauseSwitch";
 import { ProgressAnnouncer } from "@/components/staff/ProgressAnnouncer";
@@ -149,6 +150,12 @@ export default function StaffPage() {
           {visits && <ProgressAnnouncer visits={visits} site={site} />}
         </section>
       </div>
+
+      <section aria-labelledby="demo-heading" className="glass-panel space-y-3">
+        <h2 id="demo-heading" className="text-xl font-bold">Demo data</h2>
+        <p>For the demo only. Clear demo data before real testers start.</p>
+        <ClearDemoData />
+      </section>
     </main>
     </StaffShell>
   );

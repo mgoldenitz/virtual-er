@@ -112,7 +112,7 @@ Definitions ("today" means since midnight, America/Toronto time; demo visits cou
 
 ### Demo mode (staff only)
 
-One button that creates 15 to 20 fake visits spread over the last few hours and moves some of them through the statuses, so the screens look like a busy evening. A second button clears all demo data, including demo rows in daily_stats.
+A scheduled simulator (no AI model) plays the staff and patient sides at Demo Site A and B, so the screens look like a normal evening. It makes only moves the app allows, and it reads or changes only visits with is_demo = true. It aims for about 9 demo visits waiting off-site per site and call-backs about 15 minutes apart. Demo visits show a "Demo" tag on the staff screen. A staff action "Clear demo data" switches the simulator off and deletes all demo visits and demo rows in daily_stats; it must run before real testers start. (Owner, 2026-11-18: replaces the one-button demo mode, because the database sets every time to now(), so a button cannot make visits spread over the last few hours.)
 
 ## Data (one main table)
 

@@ -53,6 +53,12 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
     window.setTimeout(() => (resumeButton.current ?? pauseButton.current)?.focus(), 0);
   };
 
+  // Cancel does nothing while a save runs: aria-disabled does not stop a click.
+  const cancel = () => {
+    if (saving) return;
+    close();
+  };
+
   const save = async (pause: boolean) => {
     if (saving) return;
     if (!pause && !checked) {
@@ -118,7 +124,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
             <Button variant="danger" aria-disabled={saving} onClick={() => save(true)}>
               {saving ? "Saving…" : "Yes, pause off-site waiting"}
             </Button>
-            <Button variant="secondary" aria-disabled={saving} onClick={close}>
+            <Button variant="secondary" aria-disabled={saving} onClick={cancel}>
               Cancel
             </Button>
           </div>
@@ -138,7 +144,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
             <Button aria-disabled={saving || !checked} onClick={() => save(false)}>
               {saving ? "Saving…" : "Yes, turn it back on"}
             </Button>
-            <Button variant="secondary" aria-disabled={saving} onClick={close}>
+            <Button variant="secondary" aria-disabled={saving} onClick={cancel}>
               Cancel
             </Button>
           </div>

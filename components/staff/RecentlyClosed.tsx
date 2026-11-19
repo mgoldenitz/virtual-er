@@ -10,6 +10,7 @@ import { reopenVisit, undoCloseVisit } from "@/data/staffActions";
 import { CLOSED_PAGE_SIZE, closedLabel, recentlyClosed } from "@/lib/recentlyClosed";
 import type { Site, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
+import { DemoTag } from "./DemoTag";
 
 type Props = {
   visits: Visit[];
@@ -79,7 +80,8 @@ export function RecentlyClosed({ visits, site, onUndoResult, onReopened }: Props
           <li key={visit.id} tabIndex={-1} className="rounded-lg border-2 border-slate-300 bg-white p-3" data-testid={`closed-${visit.code}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>
-                <span className="font-mono font-bold tracking-widest">{visit.code}</span> {closedLabel(visit)}
+                <span className="font-mono font-bold tracking-widest">{visit.code}</span>
+                <DemoTag isDemo={visit.is_demo} /> {closedLabel(visit)}
               </p>
               <Button variant="secondary" aria-disabled={savingId !== null} onClick={() => undo(visit)}>
                 {savingId === visit.id ? "Saving…" : visit.status === "unable_to_reach" ? "Reopen" : "Undo"}
