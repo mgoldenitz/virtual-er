@@ -140,3 +140,15 @@ All metrics computed on 2026-11-18 in America/Toronto (UTC-05:00) for is_demo fa
 - visits[16]: startedFromHome +1 only.
 - visits[17], [19]: demo, nothing.
 - visits[18]: recalledNow, offered, accepted +1; triaged stays 0, so offeredShare is null.
+
+## Claude's check (2026-11-18)
+
+Checked by hand, visit by visit, against `lib/dashboardNumbers.ts`, `lib/torontoDay.ts` and `lib/dashboardShare.ts`: all 17 counts and all 5 shown values for both sites agree with Gemini. No number had to change.
+
+- Midnight cases hold: visit 0 is 23:10 to 23:58 on 2026-11-17 in Toronto; visit 1 arrives at 00:02:30 on 2026-11-18 (750 s after the call); visit 15 is 23:30 and 23:50 on 2026-11-18; visit 14 is 00:01 on 2026-11-19.
+- Visit 11 (`not_eligible` with CTAS 5, triaged today) counts in `triaged`, as the rule says (CTAS 4 or 5, triaged today, any status).
+- Rounding: 12.5 minutes gives 13 and 6.75 gives 6.8 with `Math.round` (both exact in binary, so no float drift).
+- Weak points in the data, not errors: visits 12 and 13 are called about 22 and 18 hours after triage (not realistic, but the "now" counts have no date check); visit 0 is a no-show who still gave a survey score. No `daily_stats` rows (the handoff did not ask for them; `lib/dashboardNumbers.test.ts` covers them).
+- Added `lib/dashboardSynthetic.test.ts`: the 20 visits, both sites' counts, the shown values, and a Demo-switch check that I added (only visits 17 and 19 count: 7200 s at site A, 1 waiting and 1 triaged at site B). 462 tests, lint and build pass.
+
+Closed and archived.
