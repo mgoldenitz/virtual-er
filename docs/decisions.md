@@ -2,6 +2,8 @@
 
 One line each: date, decision, who decided, where it is written.
 
+- 2026-11-19: The recall alert to a locked phone is an ntfy message to the owner's own phone, in Phase 4. Not the Twilio trial (template text only, 100 texts, stops after 30 days, verified numbers only) and not web push (service worker, stored subscriptions, Home Screen install on iPhone). Only real visits send (the simulator recalls demo visits all day); the route reads the visits with the staff sign-in token, so row-level security decides who can send; a recall more than 2 minutes old sends nothing. Owner chose ntfy; Claude chose the route over a pg_net trigger (no extension or migration, the rule is in lib/ with tests). SPEC.md Phase 4 line, lib/recallAlert.ts, app/api/recall-alert/route.ts.
+
 - 2026-11-14: Called-screen sound and vibration are on-page demo alerts after a "Turn on sound" tap: beep and vibrate only while called, sound on and page visible, every 30 seconds; the choice is not saved (a reload needs a new tap). Owner approved the plan. lib/calledAlert.ts, components/patient/SoundSwitch.tsx.
 - 2026-11-14: Push notifications go in the demo as a later item with their own plan, SPEC change and Gemini review, not in item A. Owner. docs/progress.md, "Next".
 - 2026-11-14: Gemini Hydrogen 4 replaces Gemini 3.1 Pro for every handoff. Owner. CLAUDE.md, "Remind me when another model or agent is due".
