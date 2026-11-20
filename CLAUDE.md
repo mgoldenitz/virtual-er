@@ -46,7 +46,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 - Before you report any task done, run `npm test`, `npm run lint` and `npm run build`, and paste the last lines of each (for `npm test`, use `npm test 2>&1 | grep -E "Test Files|Tests "`, because the last lines show only timing). A worker's "Done when:" check comes on top of these, not instead.
 - If a test fails, fix the code, not the test. Never skip, delete or weaken a test to make it pass.
-- For a bug: first write a test in lib/ that shows the bug, run it and see it fail, make a save point, then fix the code without changing that test.
+- For a bug: first write a test in lib/ that shows the bug, run it and see it fail, make a save point, then fix the code without changing that test. If the bug is in a React effect, the test renders the page in `<StrictMode>` (pattern: `app/patient/page.click.test.tsx`).
 - For a change that touches more than one folder, or the database: start in plan mode and get my OK on a plan that names the files, the order of the work, and the tests that prove it.
 - Before you write the plan, search the tests for the behaviour that the plan changes, and name each test that must change in the plan. Name each new function that decides something, and put it in lib/ with a test, also when it is only 3 lines in a component (for example a `beforeSend` filter).
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
