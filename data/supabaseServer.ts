@@ -1,6 +1,7 @@
 // The Supabase connection that uses the secret key. It runs only on the server (the first
 // line makes the build fail if a browser file ever imports it). Only the start-a-visit route
-// (data/startHomeVisit.ts) and the site-status route (data/siteStatusRead.ts) use it. The secret key is read from .env.local (or Vercel's settings), never from code.
+// (data/startHomeVisit.ts), the site-status route (data/siteStatusRead.ts) and the daily
+// demo-plan job (data/demoPlanSave.ts) use it. The secret key is read from .env.local (or Vercel's settings), never from code.
 
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
