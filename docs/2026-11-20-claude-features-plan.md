@@ -62,7 +62,7 @@ Tests that must change: none in `lib/`. `supabase/checks/demo_tick.sql` gets new
 2. Feature 1 lib files and tests (builder worker, Haiku), then I run the tests.
 3. TODO(human) in `lib/summaryPrompt.ts` for Michael.
 4. Feature 1 route, data, component. Run the three checks. Save point.
-5. Model handoff: Gemini Hydrogen 4, High, reviews feature 1 (round 1: `handoffs/archive/2026-11-20-gemini-review-dashboard-summary.md`; round 2 on the fixes: `handoffs/2026-11-20-gemini-review-dashboard-summary-fixes.md`).
+5. Model handoff: Gemini Hydrogen 4, High, reviews feature 1 (round 1: `handoffs/archive/2026-11-20-gemini-review-dashboard-summary.md`; round 2 on the fixes: `handoffs/archive/2026-11-20-gemini-review-dashboard-summary-fixes.md`; no round 3, owner's choice).
 6. Feature 2 lib file and test, route, `vercel.json`. Save point.
 7. Migration SQL shown to Michael; he runs it; I run `supabase/checks/demo_tick.sql` only after his OK.
 8. SPEC and decisions lines after his OK. Save point.
