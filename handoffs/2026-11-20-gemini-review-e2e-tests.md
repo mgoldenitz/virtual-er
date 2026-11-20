@@ -1117,3 +1117,129 @@ if (deleteLine === null) {
   console.log(`\n3. After the count is 0, delete ${FILE}.`);
 }
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-20. Pasted by the owner, verbatim.
+
+### 1. Gaps in `visit-lifecycle.html` and screen coverage
+
+* **`pre_arrival` expiry (`expired`) and `"Not eligible"` check-in have no test**
+* **File and line:** `e2e/home-start.spec.ts`, lines 26–31.
+* **What can go wrong:** A patient who starts a visit from home (`pre_arrival`) and never arrives within 6 hours transitions to `expired` ("Your visit request has expired" on `/` and "This visit request has expired" on `/patient`), and staff checking in an expected arrival can reject them with `"Not eligible"`. Neither path is tested, so a broken `expired` screen or a bug where `"Not eligible"` fails on a `pre_arrival` row goes undetected.
+* **Smallest fix:** Add a second test in `e2e/home-start.spec.ts` that checks in a `pre_arrival` visit as `"Not eligible"` (verifying it leaves `Expected arrivals` and does not enter `Waiting off-site`), and add an expiry case in `e2e/timed-steps.spec.ts` advancing `patient.clock` past 6 hours on a `pre_arrival` visit.
+
+* **Direct arrival (`waiting -> arrived` and `called -> arrived`) and `"Recall all"` are never tested**
+* **File and line:** `e2e/recall-arrive.spec.ts`, lines 11–44.
+* **What can go wrong:** `recall-arrive.spec.ts` only tests the sequential chain `waiting -> called -> on_the_way -> arrived`. If a patient walks back to the desk before being recalled (`waiting -> arrived`) or without tapping `"I'm on my way"` (`called -> arrived`), or if staff use `"Call all off-site patients back"` (`RecallAllPanel`), any broken database transition or UI handler on those paths passes unnoticed.
+* **Smallest fix:** Add a test in `e2e/recall-arrive.spec.ts` where staff click `"Mark arrived"` directly on a `waiting` row and verify `patient` transitions straight to `"Status: Ready at the desk"`.
+
+* **Reassessment ending in `"Not eligible"` (and `Reopen` on a `removed` visit) are never tested**
+* **File and line:** `e2e/timed-steps.spec.ts`, lines 154–162; `e2e/remove-undo.spec.ts`, lines 28–31.
+* **What can go wrong:** When a closed visit is reopened to `needs_reassessment` and staff click `"Triage again"`, `timed-steps.spec.ts` only tests returning the patient to `"Start off-site waiting"`. If a nurse decides during reassessment that the patient is `"Not eligible"` (for example, vitals worsened), that exit from `needs_reassessment` is untested. Likewise, `Reopen` is tested only on `unable_to_reach`, never on a visit removed as `Left` or `No-show`.
+* **Smallest fix:** In `e2e/remove-undo.spec.ts`, add a check clicking `"Reopen"` on a removed visit and completing `"Triage again"` with `"Not eligible"`, verifying the visit leaves `"Back for reassessment"` and the patient sees the ended screen.
+
+* **Patient offline banner, sound switch, text-size switch, and `/` saved-visit cards have zero e2e coverage**
+* **File and line:** `e2e/home-start.spec.ts`, lines 34–40; `e2e/recall-arrive.spec.ts`, lines 23–27.
+* **What can go wrong:** Four core patient-screen features—going offline (`OfflineBanner`), enabling audio alerts (`SoundSwitch`), enlarging text to `Extra large` (`TextSizeSwitch` + `axeFaults` reflow/contrast), and returning to `/` while an open or ended visit is saved in `localStorage`—have no browser test. A runtime error in `useOnline` or `TextSizeSwitch` would ship with `npm run e2e` green.
+* **Smallest fix:** Add a `patient-controls.spec.ts` (or steps in `recall-arrive.spec.ts`) that toggles `TextSizeSwitch` to `"Extra large"` and runs `axeFaults`, clicks `"Turn on sound"` and asserts `"Sound is on"`, toggles `patient.context().setOffline(true)` to assert the offline banner appears and clears on reconnect, and opens `/` to verify `"You have an open visit on this phone"`.
+
+* **Urdu (`ur`), Mandarin (`zh`), and patient-side language switching are never tested**
+* **File and line:** `e2e/languages.spec.ts`, lines 17–20.
+* **What can go wrong:** `CASES` tests only `fr` and `ar` set by staff at check-in. Urdu (`ur`, the second RTL language) and Mandarin (`zh`) are never rendered in a real browser, and changing the language via `"Select language"` on `/` or `/patient` (where `localStorage` overrides or interacts with the visit language) is never tested.
+* **Smallest fix:** Add `ur` (`dir: "rtl"`) and `zh` (`dir: "ltr"`) to `CASES` in `e2e/languages.spec.ts`, and assert that changing `"Select language"` on `/patient` updates `main[lang]` and `main[dir]`.
+
+### 2. Weak checks that can pass while the app is wrong
+
+* **Queue position and wait-time range are never checked for actual numbers**
+* **File and line:** `e2e/home-start.spec.ts`, lines 36–37; `e2e/desk-checkin.spec.ts`, line 19.
+* **What can go wrong:** Asserting only `getByText("Your place in line:")` and `getByText("Estimated time until you're called back:")` passes even if the RPC returns `null` or `NaN` and the screen renders `"Your place in line: "` or `"undefined to undefined minutes"`.
+* **Smallest fix:** Assert `/Your place in line:\s*[1-9]\d*/` and `/\d+\s+to\s+\d+\s+minutes/` on `patient.locator("main")`.
+
+* **`"not eligible: no slip"` never checks that the visit stayed out of both waiting lists**
+* **File and line:** `e2e/desk-checkin.spec.ts`, lines 42–50.
+* **What can go wrong:** The test checks only `expect(staff.locator("#slip-heading")).toHaveCount(0)`. If a bug recorded `"Not eligible"` visits in `Waiting on-site: offered, declined` (`onsite-${code}`) or in the off-site queue (`row-${code}`), the test would still pass.
+* **Smallest fix:** Capture `const code = await codeFromMessage(staff, "not eligible");` on line 48 and assert `await expect(staffRow(staff, code)).toHaveCount(0)` and `await expect(staff.getByTestId(\`onsite-${code}`)).toHaveCount(0)`.
+
+* **`"Undo switch"` and `"Undo"` after arrival never check the patient's phone**
+* **File and line:** `e2e/declined-switch.spec.ts`, lines 40–43; `e2e/recall-arrive.spec.ts`, lines 41–43.
+* **What can go wrong:** Both tests keep `patient` open right beside `staff`, yet after clicking `"Undo switch"` or `"Undo"`, they check only the staff list. If `"Undo switch"` left the patient's phone stuck on `"Status: Waiting"` instead of switching to `"Status: Waiting in the emergency department"`, or if `"Undo"` after arrival left the patient on `"Status: Ready at the desk"`, both tests would still pass.
+* **Smallest fix:** Assert `await expect(patient.getByRole("heading", { name: "Status: Waiting in the emergency department" })).toBeVisible()` at line 43 of `e2e/declined-switch.spec.ts`, and `await expect(patient.getByRole("heading", { name: "Status: Waiting" })).toBeVisible()` at line 43 of `e2e/recall-arrive.spec.ts`.
+
+* **Dashboard `"Demo"` toggle passes even if real visits (or all zeros) are shown**
+* **File and line:** `e2e/dashboard.spec.ts`, lines 53–57.
+* **What can go wrong:** Checking `toHaveText(/^\d+$/)` on `"Waiting off-site"` passes if `"Demo"` renders `"0"` for every metric or fails to switch away from real visits.
+* **Smallest fix:** Assert that seeded demo metrics are non-zero when `"Demo"` is active (for example, `expect(await rowNumber(section, "Triaged")).toBeGreaterThan(0)` for both sites).
+
+* **`new-link.spec.ts` never checks that the revoked token is cleared on reload or `/**`
+* **File and line:** `e2e/new-link.spec.ts`, lines 31–35.
+* **What can go wrong:** `oldPhone` only checks the live-poll transition to `DEAD_LINK_HEADING`. If `oldPhone` leaves the dead token in `localStorage`, reloading `/patient` or opening `/` later shows a broken `"We cannot open the saved visit on this phone"` / `"No visit found"` state instead of a clean start screen.
+* **Smallest fix:** After line 34, navigate `oldPhone` to `/` (`await oldPhone.goto("/")`) and assert `await expect(oldPhone.getByRole("button", { name: "Start a visit" })).toBeVisible()`.
+
+* **`pause.spec.ts` never submits `"Waits on-site"` while Site B is paused**
+* **File and line:** `e2e/pause.spec.ts`, lines 46–48.
+* **What can go wrong:** The test checks that the `"Waits on-site"` button is visible, but never clicks it. If submitting `"Waits on-site"` while paused fails validation or opens a slip, the test passes anyway.
+* **Smallest fix:** Click `staff.getByRole("button", { name: "Waits on-site" })`, record the visit code with `codeFromMessage` so cleanup deletes it, and assert `await expect(staff.locator("#slip-heading")).toHaveCount(0)`.
+
+* **`languages.spec.ts` never checks the draft-translation notice or staff row language label**
+* **File and line:** `e2e/languages.spec.ts`, lines 25–39.
+* **What can go wrong:** Non-English patient screens must display `text.language.draftNotice` ("This translation is a draft..."), and staff rows must show the patient's selected language so nurses know an interpreter is needed before phoning. Neither is checked.
+* **Smallest fix:** Assert `await expect(patient.getByText(text.language.draftNotice)).toBeVisible()` on `/patient` and check the language badge on `staffRow(staff, visitCode)`.
+
+### 3. Unstable tests (timing, `page.clock`, shared state, test order)
+
+* **`timed-steps.spec.ts` subtracts wall-clock setup time from `page.clock.fastForward`, making the 10- and 40-minute checks flaky**
+* **File and line:** `e2e/timed-steps.spec.ts`, lines 60–71 and lines 98–107.
+* **What can go wrong:** `page.clock.install()` freezes the page's clock at the moment `openMovableStaff` runs ($t_0$). Meanwhile, `deskCheckIn`, `patient.goto`, `axeFaults`, and clicking `"I'm still here"` or `"Yes, recall patient"` take 3–8 real seconds before Postgres writes `last_still_here_at = now()` or `called_at = now()` ($t_0 + 6\text{s}$). When the test then calls `staff.clock.fastForward("40:00")` (line 70) or `staff.clock.fastForward("10:00")` (line 104), `staff`'s clock lands at $t_0 + 40\text{m}$ or $t_0 + 10\text{m}$, so elapsed time since the database timestamp is only `39m 54s` or `9m 54s`—short of the 40- and 10-minute thresholds whenever setup takes more than 0 seconds.
+* **Smallest fix:** Sync `staff`'s clock to `new Date()` right before fast-forwarding from a newly written database timestamp (e.g., `await staff.clock.setSystemTime(new Date()); await staff.clock.fastForward("40:00");` at line 70, and the same before line 104).
+
+* **`page.clock.install()` freezes background 15-second polling on `patient`, causing line 140 to flake if Realtime is delayed**
+* **File and line:** `e2e/timed-steps.spec.ts`, lines 17–20 and lines 130–140.
+* **What can go wrong:** `page.clock.install()` pauses all `setInterval`/`setTimeout` timers on `patient` unless `fastForward` or `runFor` is called. At line 136, staff confirm `"Yes, unable to reach"`, and line 140 expects `patient` to show `"Your off-site wait has ended"` within 5 seconds. Because `patient`'s 15-second fallback polling timer is frozen, any dropped or slow Supabase Realtime packet hangs `patient` forever and fails the test.
+* **Smallest fix:** In `makeClockMovable` (line 19), call `await page.clock.resume()` right after `await page.clock.install()` (or call `await patient.clock.runFor(16_000)` after line 136) so timers keep ticking naturally between `fastForward` jumps.
+
+* **Global 5-second `expect` timeout is shorter than the app's 15-second fallback poll**
+* **File and line:** `playwright.config.ts`, line 14 (`expect: { timeout: 5_000 }`); `e2e/home-start.spec.ts`, line 34; `e2e/recall-arrive.spec.ts`, lines 25, 31, 36; `e2e/remove-undo.spec.ts`, lines 22, 29; `e2e/new-link.spec.ts`, line 32.
+* **What can go wrong:** Both `/patient` and `/staff` fall back to a 15-second poll whenever Supabase Realtime `change_signal` takes longer than a couple of seconds (for example during a cold Next.js dev compile or transient WebSocket hiccup). A 5-second `expect` timeout fails before the first 15-second poll can fire.
+* **Smallest fix:** Increase `expect: { timeout: 20_000 }` in `playwright.config.ts` line 14 (it adds zero wait time when Realtime delivers updates immediately, while covering one full 15-second poll cycle on slow runs).
+
+* **`pause.spec.ts` fails immediately if a previous aborted run left Site B paused**
+* **File and line:** `e2e/pause.spec.ts`, lines 33–36.
+* **What can go wrong:** If a prior test run was interrupted (`Ctrl+C` or killed process) before `finally` executed, Site B remains paused in the shared `site_settings` table. On the next run, line 34 (`await pauseButton(staff).click()`) times out because `"Turn off-site waiting back on…"` is shown instead.
+* **Smallest fix:** Call `await turnSiteBOnIfPaused(staff);` at the start of `try` (line 33) as well as inside `finally`.
+
+### 4. Clean-up (`rememberCode` and `e2e-cleanup.mjs`)
+
+* **Storing `e2e-codes.txt` inside Playwright's `test-results/` directory wipes un-cleaned codes on a second run**
+* **File and line:** `e2e/helpers/visitCodes.ts`, line 5 (`export const CODES_FILE = "test-results/e2e-codes.txt";`); `scripts/e2e-cleanup.mjs`, line 7.
+* **What can go wrong:** Playwright automatically deletes and recreates `test-results/` (its default `outputDir`) at the start of every `npx playwright test` run. If the owner runs `npm run e2e` and then re-runs `npm run e2e` (or runs a single spec file) before running `npm run e2e:cleanup`, Playwright deletes `test-results/e2e-codes.txt`, permanently orphaning all 28 test visits from the first run in Supabase.
+* **Smallest fix:** Move `CODES_FILE` outside `test-results/` (for example `".e2e-codes.txt"`, added to `.gitignore`) and import `CODES_FILE` in `scripts/e2e-cleanup.mjs` so multiple test runs append safely until `npm run e2e:cleanup` is run.
+
+* **`readSlip` records the code after reading `href`, losing the code if `href` fails**
+* **File and line:** `e2e/helpers/flows.ts`, lines 51–53.
+* **What can go wrong:** `code` is read from the DOM on line 51 (after the database has already created the visit), but `rememberCode(code)` is not called until line 53 after `getAttribute("href")`. If `getAttribute("href")` fails or times out, the visit exists in Supabase without its code in `CODES_FILE`.
+* **Smallest fix:** Call `if (code) rememberCode(code);` immediately after line 51 before reading `link`.
+
+### 5. Safety
+
+* **`trace: "retain-on-failure"` writes plaintext `E2E_STAFF_EMAIL` and `E2E_STAFF_PASSWORD` into `trace.zip**`
+* **File and line:** `playwright.config.ts`, lines 6 and 21; `e2e/helpers/staff.ts`, lines 20–21.
+* **What can go wrong:** Although `playwright.config.ts` line 6 notes *"The values are never printed"*, `trace: "retain-on-failure"` (line 21) records every `fill()` input value, DOM snapshot, and auth request body into `test-results/.../trace.zip` whenever any test using `openStaff` fails. Sharing or archiving a failure trace exposes the test staff password and session token in plain text.
+* **Smallest fix:** Authenticate once in a setup project with `use: { trace: "off" }` that saves `storageState` to a git-ignored file (e.g., `.auth/staff.json`), and load that `storageState` in `openStaff` (`browser.newContext({ storageState: ".auth/staff.json" })`) so login credentials never enter a traced context (and tests skip 15+ redundant UI logins).
+
+### 6. Readability for a beginner
+
+* **`e2e/helpers/flows.ts` combines four unrelated jobs while `patient.ts` is nearly empty**
+* **File and line:** `e2e/helpers/flows.ts`, lines 1–79; `e2e/helpers/patient.ts`, lines 1–19.
+* **What can go wrong:** `flows.ts` mixes patient-screen actions (`startFromHome`, `patientCode`), staff check-in actions (`chooseSite`, `fillCheckIn`, `deskCheckIn`), DOM message parsers (`readSlip`, `codeFromMessage`), and queue locators (`staffRow`), making a beginner hunt across `patient.ts`, `staff.ts`, and `flows.ts` to find a helper.
+* **Smallest fix:** Move `startFromHome` and `patientCode` into `e2e/helpers/patient.ts` and the staff helpers into `e2e/helpers/staff.ts`, removing `flows.ts` (or keeping `flows.ts` strictly for multi-screen flows).
+
+* **`readSlip` hides a file-write side effect inside a `read*` function**
+* **File and line:** `e2e/helpers/flows.ts`, lines 48–55; `e2e/new-link.spec.ts`, line 28.
+* **What can go wrong:** A function named `readSlip` sounds read-only, yet it appends to `CODES_FILE` every time it is called (including in `new-link.spec.ts` line 28 when re-reading the slip after issuing a new link for an existing visit).
+* **Smallest fix:** Have `readSlip` only read `{ code, link }`, and call `rememberCode(slip.code)` explicitly in `deskCheckIn` and `declined-switch.spec.ts` where a visit is created or switched.
+
+* **Misleading comments and shadowed variable name (`code`)**
+* **File and line:** `e2e/helpers/patient.ts`, line 6 (`{ storageState: undefined }`); `e2e/timed-steps.spec.ts`, lines 63–64; `e2e/languages.spec.ts`, line 15 (`code: string`).
+* **What can go wrong:** `{ storageState: undefined }` in `patient.ts` is a no-op (`browser.newContext()` is already empty) that suggests `undefined` is required to clear state; the comment on `timed-steps.spec.ts` line 63 wrongly says the `"I'm still here"` prompt is "due again" right after tapping it; and `code` in `languages.spec.ts` means language code (`"fr"`) whereas `code` in every other test means the 6-character visit code.
+* **Smallest fix:** Use `browser.newContext()` with no options in `patient.ts` line 6, update the comment on `timed-steps.spec.ts` line 63 to explain that `backToRealTime` aligns `patient`'s clock with `staff` before the 40-minute missed check, and rename `code` to `lang` in `e2e/languages.spec.ts` line 15.
