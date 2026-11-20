@@ -1,24 +1,12 @@
 // Desk check-in: a visit checked in with the three ticks gets a slip, and a patient who is offered or not eligible gets none.
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { axeFaults } from "./helpers/axe";
-import { chooseSite, deskCheckIn, fillCheckIn, staffRow } from "./helpers/flows";
+import { chooseSite, codeFromMessage, deskCheckIn, fillCheckIn, staffRow } from "./helpers/flows";
 import { openPatient } from "./helpers/patient";
 import { openStaff } from "./helpers/staff";
-import { rememberCode } from "./helpers/visitCodes";
 
 const EMERGENCY = "If your symptoms get worse, call 911 or come back to the emergency department now.";
-
-/** The code in the check-in message (for example "Visit ABC123 recorded as offered, declined."), written down for cleanup. */
-async function codeFromMessage(staff: Page, outcome: string): Promise<string> {
-  const message = staff.getByText(new RegExp(`Visit [A-Z0-9]{6} recorded as ${outcome}`));
-  await expect(message).toBeVisible();
-  const text = (await message.textContent()) ?? "";
-  const match = /Visit ([A-Z0-9]{6}) recorded/.exec(text);
-  if (!match) throw new Error(`No visit code found in the check-in message: ${text}`);
-  rememberCode(match[1]);
-  return match[1];
-}
 
 test("a desk check-in gives a slip, and the slip link opens a waiting visit", async ({ browser }) => {
   const staff = await openStaff(browser);

@@ -61,6 +61,17 @@ export async function deskCheckIn(staff: Page, site: Site, language?: string): P
   return readSlip(staff);
 }
 
+/** The code in the check-in message (for example "Visit ABC123 recorded as offered, declined."), written down for cleanup. */
+export async function codeFromMessage(staff: Page, outcome: string): Promise<string> {
+  const message = staff.getByText(new RegExp(`Visit [A-Z0-9]{6} recorded as ${outcome}`));
+  await expect(message).toBeVisible();
+  const text = (await message.textContent()) ?? "";
+  const match = /Visit ([A-Z0-9]{6}) recorded/.exec(text);
+  if (!match) throw new Error(`No visit code found in the check-in message: ${text}`);
+  rememberCode(match[1]);
+  return match[1];
+}
+
 /** The staff row of a visit in the off-site line. */
 export function staffRow(staff: Page, code: string): Locator {
   return staff.getByTestId(`row-${code}`);
