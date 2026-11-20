@@ -1243,3 +1243,19 @@ Gemini Hydrogen 4, High, new chat, 2026-11-20. Pasted by the owner, verbatim.
 * **File and line:** `e2e/helpers/patient.ts`, line 6 (`{ storageState: undefined }`); `e2e/timed-steps.spec.ts`, lines 63–64; `e2e/languages.spec.ts`, line 15 (`code: string`).
 * **What can go wrong:** `{ storageState: undefined }` in `patient.ts` is a no-op (`browser.newContext()` is already empty) that suggests `undefined` is required to clear state; the comment on `timed-steps.spec.ts` line 63 wrongly says the `"I'm still here"` prompt is "due again" right after tapping it; and `code` in `languages.spec.ts` means language code (`"fr"`) whereas `code` in every other test means the 6-character visit code.
 * **Smallest fix:** Use `browser.newContext()` with no options in `patient.ts` line 6, update the comment on `timed-steps.spec.ts` line 63 to explain that `backToRealTime` aligns `patient`'s clock with `staff` before the 40-minute missed check, and rename `code` to `lang` in `e2e/languages.spec.ts` line 15.
+
+## Check of the response (Claude, 2026-11-20)
+
+Accepted (the code shows the fault):
+- 4a `CODES_FILE` in `test-results/`: Playwright empties its `outputDir` (default `test-results/`) at the start of each run. A second `npm run e2e` before `npm run e2e:cleanup` loses the codes of the first run. Real risk.
+- 4b `readSlip`: `rememberCode` comes after `getAttribute("href")` (flows.ts line 52 to 53). Small, real.
+- 3d `pause.spec.ts`: a run stopped before `finally` leaves site B paused, and the next run fails at `pauseButton(staff).click()`. Call `turnSiteBOnIfPaused` first.
+- 5 trace: a trace records each `fill()` value, so a failed staff test writes the test password into `trace.zip` under `test-results/`. Git ignores that folder, so the risk is only when a trace is shared.
+- 2 weak checks: all 7 are real gaps in the checks. `text.language.draftNotice` exists (lib/text/en.ts line 175, shown by components/LanguageSwitch.tsx line 41).
+- 6 readability: `{ storageState: undefined }` is a no-op; rename `code` to `lang` in languages.spec.ts; split flows.ts.
+- 1 gaps: all 5 are real gaps in coverage. They are new tests, not fixes.
+
+Rejected:
+- 3a fastForward lag and 3b frozen patient poll: `page.clock.install()` with no `pauseAt` lets time flow at real speed, and timers still fire. So the staff clock is at real time when `fastForward` starts, and the 10 and 40 minute checks land after the database time. The tests passed on every run in this session.
+- 3c `expect` timeout 5 s to 20 s: SPEC.md line 135 says the two screens update each other "within about 2 seconds". A 20 s timeout would let a broken realtime link pass on the 15 s poll. Keep 5 s.
+- 6 the comment at timed-steps.spec.ts line 63 is correct: after the tap, the patient clock is still 31 minutes ahead of the tap time, so the prompt is due again until `backToRealTime`.
