@@ -13,4 +13,12 @@ describe("demo day plan prompt", () => {
   it("says the visits are made up", () => {
     expect(demoPlanSystemPrompt()).toContain("made up");
   });
+
+  it("asks for a theme for the day, so days differ", () => {
+    expect(demoPlanSystemPrompt()).toContain("theme");
+  });
+
+  it("has no TODO left in the rules", () => {
+    expect(demoPlanSystemPrompt()).not.toContain("TODO");
+  });
 });
