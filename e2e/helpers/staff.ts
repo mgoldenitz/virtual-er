@@ -21,6 +21,7 @@ export async function openStaff(browser: Browser): Promise<Page> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/staff/, { timeout: 15_000 });
+  // Wait for the path itself: the sign-in address "/login?next=/staff" also contains "/staff".
+  await expect(page).toHaveURL((url) => url.pathname === "/staff", { timeout: 15_000 });
   return page;
 }
