@@ -1,0 +1,452 @@
+<title>Virtual ER Visit Lifecycle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column, a state diagram on top, then one row per status with patient | staff | dashboard columns. */
+:root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --fg: #141a2a;
+  --muted: #545d73;
+  --rule: #d5dae6;
+  --accent: #1f4fd1;
+  --line-bg: #e3ebff;
+  --closed-bg: #eceef3;
+  --closed: #6b7285;
+  --pre: #8a5a00;
+  --pre-bg: #fff6e0;
+  --new: #b4237a;
+  --new-bg: #fbe6f2;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1320; --surface: #171c2c; --fg: #e8ebf4; --muted: #a3abc2; --rule: #2c3449;
+    --accent: #8aa8ff; --line-bg: #1d2a4d; --closed-bg: #22283a; --closed: #9aa1b5;
+    --pre: #f0b850; --pre-bg: #2e2510; --new: #ff7cc4; --new-bg: #3a1830; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1320; --surface: #171c2c; --fg: #e8ebf4; --muted: #a3abc2; --rule: #2c3449;
+  --accent: #8aa8ff; --line-bg: #1d2a4d; --closed-bg: #22283a; --closed: #9aa1b5;
+  --pre: #f0b850; --pre-bg: #2e2510; --new: #ff7cc4; --new-bg: #3a1830; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+}
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-block: 32px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 32px;
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 2.1rem; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .code { font-family: var(--font-mono); font-size: 0.82em; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 10px; }
+header .lede { max-width: 66ch; color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.links a {
+  display: inline-flex; flex-direction: column; gap: 0; text-decoration: none;
+  border: 1.5px solid var(--rule); background: var(--surface); border-radius: 10px;
+  padding: 8px 12px; min-width: 0;
+}
+.links a:hover { border-color: var(--accent); }
+.links .path { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; }
+.links .what { font-size: 0.8rem; color: var(--muted); }
+
+figure { margin: 0; display: grid; gap: 12px; }
+.diagram {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 14px;
+  overflow-x: auto; padding: 12px;
+}
+.diagram svg { display: block; width: 100%; min-width: 860px; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 0.92rem; max-width: 80ch; }
+
+/* SVG parts, styled from the page tokens so both themes work */
+.n rect { stroke-width: 1.5; }
+.n-line rect { fill: var(--line-bg); stroke: var(--accent); }
+.n-closed rect { fill: var(--closed-bg); stroke: var(--closed); }
+.n-pre rect { fill: var(--pre-bg); stroke: var(--pre); stroke-dasharray: 5 4; }
+.n-step rect { fill: var(--surface); stroke: var(--fg); }
+.t-l { font-family: var(--font-body); font-size: 13px; font-weight: 700; fill: var(--fg); }
+.t-c { font-family: var(--font-mono); font-size: 10.5px; fill: var(--muted); }
+.t-a { font-family: var(--font-body); font-size: 11px; fill: var(--muted); }
+.t-new { font-family: var(--font-body); font-size: 11px; font-weight: 700; fill: var(--new); }
+.ar { stroke: var(--fg); stroke-width: 1.5; fill: none; }
+.ar-undo { stroke-dasharray: 5 4; }
+.ar-new { stroke: var(--new); stroke-width: 2; fill: none; }
+.mk { fill: var(--fg); }
+.mk-new { fill: var(--new); }
+
+/* Steps */
+.steps { display: grid; gap: 14px; }
+.step {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 14px;
+  padding: 18px; display: grid; gap: 14px;
+}
+.step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.pill {
+  font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; border: 1.5px solid currentColor; white-space: nowrap;
+}
+.pill.line { color: var(--accent); background: var(--line-bg); }
+.pill.closed { color: var(--closed); background: var(--closed-bg); }
+.pill.pre { color: var(--pre); background: var(--pre-bg); }
+.pill.new { color: var(--new); background: var(--new-bg); }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.col { min-width: 0; display: grid; gap: 6px; align-content: start; }
+.col h4 { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.col ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.col li { font-size: 0.95rem; }
+.q { font-style: italic; }
+.ladder {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+  border-top: 2px solid var(--accent); margin-top: 4px;
+}
+.ladder div { padding: 8px 10px 0 0; font-size: 0.88rem; min-width: 0; }
+.ladder b { display: block; font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); }
+.note { font-size: 0.88rem; color: var(--muted); }
+.switch { border-color: var(--new); }
+.rules { display: grid; gap: 8px; max-width: 80ch; }
+.rules ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.sources { font-size: 0.85rem; color: var(--muted); max-width: 90ch; }
+
+@media (max-width: 760px) {
+  h1 { font-size: 1.7rem; }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Virtual ER Waiting Room · concept prototype · synthetic data</p>
+    <h1>Visit lifecycle</h1>
+    <p class="lede">Every status a visit can have, from "checked in from home" to closed, and what the patient's phone, the staff screen and the dashboard show at each one. Times on this page are the demo settings in the app; a hospital's clinical lead would set the real ones.</p>
+    <nav class="links" aria-label="Live screens">
+      <a href="https://virtual-er-izpf.vercel.app/" target="_blank" rel="noopener"><span class="path">/</span><span class="what">Start page, no login</span></a>
+      <a href="https://virtual-er-izpf.vercel.app/patient" target="_blank" rel="noopener"><span class="path">/patient</span><span class="what">Opens the visit saved on this phone</span></a>
+      <a href="https://virtual-er-izpf.vercel.app/staff" target="_blank" rel="noopener"><span class="path">/staff</span><span class="what">Staff sign-in</span></a>
+      <a href="https://virtual-er-izpf.vercel.app/dashboard" target="_blank" rel="noopener"><span class="path">/dashboard</span><span class="what">Staff sign-in</span></a>
+    </nav>
+  </header>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 1150 520" role="img" aria-label="State diagram of a Virtual ER visit. A visit starts from home (pre_arrival) or at the desk, goes through nurse triage, then waits off-site, is recalled, confirms on the way and arrives. Triage can end in declined or not eligible. A declined patient can switch to off-site waiting within 6 hours, and staff can undo the switch before a recall. Recalled or on-the-way patients can be removed as left or no-show. A recalled patient who cannot be reached for 30 minutes is closed as unable to reach after a nurse confirms, and can be reopened for reassessment, which goes back to triage. Undo after arrived or removed returns the visit to the line.">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path class="mk" d="M0,0 L10,5 L0,10 z"/>
+          </marker>
+          <marker id="arr-new" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path class="mk-new" d="M0,0 L10,5 L0,10 z"/>
+          </marker>
+        </defs>
+
+        <!-- arrows first, so boxes sit on top -->
+        <!-- from home to triage -->
+        <line class="ar" x1="95" y1="115" x2="250" y2="203" marker-end="url(#arr)"/>
+        <text class="t-a" x="178" y="168" text-anchor="end">within 6 h</text>
+        <!-- desk to triage -->
+        <line class="ar" x1="135" y1="230" x2="213" y2="230" marker-end="url(#arr)"/>
+        <text class="t-a" x="175" y="221" text-anchor="middle">QR or code</text>
+        <!-- triage to waiting -->
+        <line class="ar" x1="335" y1="230" x2="413" y2="230" marker-end="url(#arr)"/>
+        <text class="t-a" x="375" y="221" text-anchor="middle">3 ticks</text>
+        <!-- waiting to called -->
+        <line class="ar" x1="535" y1="230" x2="613" y2="230" marker-end="url(#arr)"/>
+        <text class="t-a" x="575" y="221" text-anchor="middle">Recall</text>
+        <!-- called to on the way -->
+        <line class="ar" x1="735" y1="230" x2="813" y2="230" marker-end="url(#arr)"/>
+        <text class="t-a" x="775" y="221" text-anchor="middle">on my way</text>
+        <!-- on the way to arrived -->
+        <line class="ar" x1="935" y1="230" x2="1013" y2="230" marker-end="url(#arr)"/>
+        <text class="t-a" x="975" y="221" text-anchor="middle">at the desk</text>
+        <!-- undo arrived -->
+        <path class="ar ar-undo" d="M1075,204 C1060,160 890,160 877,202" marker-end="url(#arr)"/>
+        <text class="t-a" x="976" y="160" text-anchor="middle">Undo</text>
+        <!-- called to unable to reach -->
+        <line class="ar" x1="675" y1="205" x2="675" y2="117" marker-end="url(#arr)"/>
+        <text class="t-a" x="683" y="158">30 min, no answered call,</text>
+        <text class="t-a" x="683" y="172">nurse confirms</text>
+        <!-- unable to reach to reassessment -->
+        <line class="ar" x1="615" y1="90" x2="537" y2="90" marker-end="url(#arr)"/>
+        <text class="t-a" x="576" y="81" text-anchor="middle">reopen</text>
+        <!-- reassessment back to triage -->
+        <line class="ar" x1="450" y1="115" x2="300" y2="203" marker-end="url(#arr)"/>
+        <text class="t-a" x="398" y="166">triage again</text>
+        <!-- triage to not eligible -->
+        <line class="ar" x1="275" y1="255" x2="275" y2="373" marker-end="url(#arr)"/>
+        <text class="t-a" x="267" y="320" text-anchor="end">not offered</text>
+        <!-- triage to declined -->
+        <line class="ar" x1="310" y1="255" x2="443" y2="373" marker-end="url(#arr)"/>
+        <text class="t-a" x="372" y="336" text-anchor="end">said no</text>
+        <!-- new: switch and undo switch -->
+        <line class="ar-new" x1="490" y1="375" x2="490" y2="258" marker-end="url(#arr-new)"/>
+        <line class="ar-new ar-undo" x1="460" y1="256" x2="460" y2="372" marker-end="url(#arr-new)"/>
+        <text class="t-new" x="500" y="300">switch, within 6 h</text>
+        <text class="t-new" x="500" y="316">of declining</text>
+        <text class="t-new" x="452" y="318" text-anchor="end">Undo</text>
+        <text class="t-a" x="500" y="340">Undo only until</text>
+        <text class="t-a" x="500" y="354">the recall</text>
+        <!-- removed bus -->
+        <polyline class="ar" points="675,255 675,320 875,320 875,255"/>
+        <line class="ar" x1="775" y1="320" x2="775" y2="373" marker-end="url(#arr)"/>
+        <text class="t-a" x="785" y="350">Left or No-show</text>
+        <text class="t-a" x="775" y="444" text-anchor="middle">Undo puts it back in the line</text>
+
+        <!-- boxes: row 1 -->
+        <g class="n n-pre"><rect x="15" y="65" width="120" height="50" rx="8"/>
+          <text class="t-l" x="75" y="87" text-anchor="middle">From home</text>
+          <text class="t-c" x="75" y="104" text-anchor="middle">pre_arrival</text></g>
+        <g class="n n-pre"><rect x="415" y="65" width="120" height="50" rx="8"/>
+          <text class="t-l" x="475" y="87" text-anchor="middle">Reassessment</text>
+          <text class="t-c" x="475" y="104" text-anchor="middle">needs_reassessment</text></g>
+        <g class="n n-closed"><rect x="615" y="65" width="120" height="50" rx="8"/>
+          <text class="t-l" x="675" y="87" text-anchor="middle">Unable to reach</text>
+          <text class="t-c" x="675" y="104" text-anchor="middle">unable_to_reach</text></g>
+        <!-- row 2 -->
+        <g class="n n-step"><rect x="15" y="205" width="120" height="50" rx="25"/>
+          <text class="t-l" x="75" y="227" text-anchor="middle">At the desk</text>
+          <text class="t-c" x="75" y="244" text-anchor="middle">no visit yet</text></g>
+        <g class="n n-step"><rect x="215" y="205" width="120" height="50" rx="25"/>
+          <text class="t-l" x="275" y="227" text-anchor="middle">Nurse triage</text>
+          <text class="t-c" x="275" y="244" text-anchor="middle">CTAS 4 or 5</text></g>
+        <g class="n n-line"><rect x="415" y="205" width="120" height="50" rx="8"/>
+          <text class="t-l" x="475" y="227" text-anchor="middle">Waiting off-site</text>
+          <text class="t-c" x="475" y="244" text-anchor="middle">waiting</text></g>
+        <g class="n n-line"><rect x="615" y="205" width="120" height="50" rx="8"/>
+          <text class="t-l" x="675" y="227" text-anchor="middle">Recalled</text>
+          <text class="t-c" x="675" y="244" text-anchor="middle">called</text></g>
+        <g class="n n-line"><rect x="815" y="205" width="120" height="50" rx="8"/>
+          <text class="t-l" x="875" y="227" text-anchor="middle">On the way</text>
+          <text class="t-c" x="875" y="244" text-anchor="middle">on_the_way</text></g>
+        <g class="n n-closed"><rect x="1015" y="205" width="120" height="50" rx="8"/>
+          <text class="t-l" x="1075" y="227" text-anchor="middle">Arrived</text>
+          <text class="t-c" x="1075" y="244" text-anchor="middle">arrived</text></g>
+        <!-- row 3 -->
+        <g class="n n-closed"><rect x="215" y="375" width="120" height="50" rx="8"/>
+          <text class="t-l" x="275" y="397" text-anchor="middle">Not eligible</text>
+          <text class="t-c" x="275" y="414" text-anchor="middle">not_eligible</text></g>
+        <g class="n n-closed"><rect x="415" y="375" width="120" height="50" rx="8"/>
+          <text class="t-l" x="475" y="397" text-anchor="middle">Declined</text>
+          <text class="t-c" x="475" y="414" text-anchor="middle">declined</text></g>
+        <g class="n n-closed"><rect x="715" y="375" width="120" height="50" rx="8"/>
+          <text class="t-l" x="775" y="397" text-anchor="middle">Removed</text>
+          <text class="t-c" x="775" y="414" text-anchor="middle">removed</text></g>
+
+        <!-- legend -->
+        <g transform="translate(15,482)">
+          <g class="n n-pre"><rect x="0" y="0" width="26" height="16" rx="4"/></g>
+          <text class="t-a" x="34" y="12">not in the line yet</text>
+          <g class="n n-line"><rect x="150" y="0" width="26" height="16" rx="4"/></g>
+          <text class="t-a" x="184" y="12">in the off-site line</text>
+          <g class="n n-closed"><rect x="310" y="0" width="26" height="16" rx="4"/></g>
+          <text class="t-a" x="344" y="12">closed: virtual waiting ended (closed_at set)</text>
+          <line class="ar-new" x1="610" y1="8" x2="640" y2="8"/>
+          <text class="t-a" x="648" y="12">added 2026-11-19 (PR #4)</text>
+          <line class="ar ar-undo" x1="800" y1="8" x2="830" y2="8"/>
+          <text class="t-a" x="838" y="12">Undo</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>A visit only joins the line at nurse triage, and its place is set by the triage time, never by when it was started at home. Waiting patients can also be removed as Left or No-show; the drawing shows the bus from Recalled and On the way only, to keep it readable. Closed means virtual waiting ended, not that care is finished.</figcaption>
+  </figure>
+
+  <section class="steps" aria-labelledby="steps-h">
+    <h2 id="steps-h">Step by step</h2>
+
+    <article class="step">
+      <div class="step-head"><h3>Checked in from home</h3><code>pre_arrival</code><span class="pill pre">not in the line</span></div>
+      <div class="cols">
+        <div class="col"><h4>Patient phone (/ then /patient)</h4><ul>
+          <li>Start box: <span class="q">"Starting here does not hold a place in line. Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first."</span> The phone saves the visit, so reopening the site brings it back.</li>
+          <li>Heading <span class="q">"Status: Started from home, not seen by a nurse yet"</span>, then <span class="q">"Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first." "This app does not check you in at the hospital or let you wait away from the hospital." "When you get to the emergency department, check in at the front desk and show this visit code. Only staff can let you wait away from the hospital."</span></li>
+          <li>While a site is paused: <span class="q">"Off-site waiting is paused right now. Please come to the emergency department and wait there."</span></li>
+          <li>Not triaged within 6 hours: <span class="q">"This visit request has expired" "You started this visit over 6 hours ago. No nurse saw you for this visit. Staff no longer expect you to arrive." "If you still need care, please go to the emergency department desk." "Or start a new demo visit on the start page."</span></li>
+        </ul></div>
+        <div class="col"><h4>Staff screen (/staff)</h4><ul>
+          <li>Expected arrivals list, with a Check in button per visit and a Visit code box for the code the patient reads out.</li>
+          <li>Drops off the list after 6 hours without triage.</li>
+        </ul></div>
+        <div class="col"><h4>Dashboard</h4><ul>
+          <li>Started from home</li>
+          <li>Reached triage, once a nurse checks it in</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="step-head"><h3>Nurse triage (the check-in)</h3><span class="pill pre">a step, not a status</span></div>
+      <div class="cols">
+        <div class="col"><h4>Patient phone</h4><ul>
+          <li>Home patients show their QR code; desk patients get a printed slip with a QR code, the 6-character code and the full link under <span class="q">"Or type this link into your phone's browser:"</span></li>
+          <li>Only the long token in the QR code or link opens a visit. Typing the short code on /patient does not.</li>
+        </ul></div>
+        <div class="col"><h4>Staff screen</h4><ul>
+          <li>Check-in form: CTAS 4 or 5 (the nurse decides, never the app), the eligibility checklist (has a phone, can return within 20 minutes, agrees to wait off-site) and the language.</li>
+          <li>Three buttons: Start off-site waiting (needs all three ticks), Offered, declined, and Not eligible.</li>
+          <li>Start off-site waiting shows the slip.</li>
+        </ul></div>
+        <div class="col"><h4>Dashboard</h4><ul>
+          <li>Offered off-site waiting, shown as "12 of 14 triaged (86%)"</li>
+          <li>Accepted, shown as "11 of 12 offered (92%)"</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="step-head"><h3>Waiting off-site</h3><code>waiting</code><span class="pill line">in the line</span></div>
+      <div class="cols">
+        <div class="col"><h4>Patient phone</h4><ul>
+          <li>Heading <span class="q">"Status: Waiting"</span>, then <span class="q">"Your place in line:"</span> with the number.</li>
+          <li class="q">"Your place can change if more urgent patients arrive. The most urgent patients are always seen first."</li>
+          <li><span class="q">"Estimated time until you're called back:"</span> a range such as "40 to 60 minutes", then <span class="q">"This estimate is simulated for the demo."</span></li>
+          <li>30 minutes after triage or the last tap: <span class="q">"Are you still following your visit?"</span>, the <span class="q">"I'm still here"</span> button and <span class="q">"This tells staff you are still waiting. It is not a check of your health."</span> After a tap: <span class="q">"Thank you."</span></li>
+        </ul></div>
+        <div class="col"><h4>Staff screen</h4><ul>
+          <li>Off-site list, ordered by triage time: code, CTAS level, minutes waited.</li>
+          <li>A missed "I'm still here" (10 minutes after the prompt) flags the row.</li>
+          <li>Recall button per patient, plus "Recall all off-site patients" with a confirmation step.</li>
+          <li>Remove from list (Left or No-show) sits inside a section that must be opened first.</li>
+        </ul></div>
+        <div class="col"><h4>Dashboard</h4><ul>
+          <li>Waiting off-site (Now)</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="step-head"><h3>Recalled</h3><code>called</code><span class="pill line">in the line</span></div>
+      <div class="cols">
+        <div class="col"><h4>Patient phone</h4><ul>
+          <li>Heading <span class="q">"Please head back now"</span>, then <span class="q">"Please go back to the emergency department desk."</span> and the <span class="q">"I'm on my way"</span> button.</li>
+          <li>Sound box: <span class="q">"This demo can play a sound when you are called. It also vibrates if your phone allows it. Alerts work only while this page is open and your phone is unlocked. Take your phone off silent so you can hear it."</span></li>
+          <li>Screen readers hear <span class="q">"It is your turn. Please come back to the emergency department now."</span></li>
+          <li>The first time this screen is shown, the visit records seen_at.</li>
+        </ul></div>
+        <div class="col"><h4>Staff screen</h4><ul>
+          <li>Progress line, for example <span class="q">"Called 3 min ago · Seen (screen shown, not necessarily read) · On the way"</span>.</li>
+          <li>Phoned, answered and Phoned, no answer buttons (calls are simulated; no phone numbers are stored). An answered call pauses the ladder for 10 minutes.</li>
+        </ul></div>
+        <div class="col"><h4>Dashboard</h4><ul>
+          <li>Recalled, not yet arrived (Now)</li>
+        </ul></div>
+      </div>
+      <div>
+        <h4 class="eyebrow" style="margin:0 0 4px">No-response ladder, minutes after the recall</h4>
+        <div class="ladder" role="list">
+          <div role="listitem"><b>0</b>Alert on the patient screen.</div>
+          <div role="listitem"><b>10</b>Phone: "Please come back to the emergency department right now. Staff may phone you." Staff flag: "Phone this patient".</div>
+          <div role="listitem"><b>20</b>Phone: "We have not heard from you. Please return now. Staff will review your visit if you do not respond." Staff flag: "Phone a second time".</div>
+          <div role="listitem"><b>30</b>"Review: unable to reach". Stays in the line until a nurse confirms. After an answered call it says "Contacted, not yet arrived" instead.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="step-head"><h3>On the way</h3><code>on_the_way</code><span class="pill line">in the line</span></div>
+      <div class="cols">
+        <div class="col"><h4>Patient phone</h4><ul>
+          <li>Same screen as Recalled (<span class="q">"Please head back now" "Please go back to the emergency department desk."</span>), with the button replaced by <span class="q">"Thank you. Staff know you are on your way."</span> The 10 and 20 minute messages stop.</li>
+        </ul></div>
+        <div class="col"><h4>Staff screen</h4><ul>
+          <li>"On the way" in the progress line, announced once to screen readers.</li>
+          <li>30 minutes after confirming with no arrival: flag "On the way, not arrived". The visit is never removed automatically.</li>
+          <li>Mark arrived button.</li>
+        </ul></div>
+        <div class="col"><h4>Dashboard</h4><ul>
+          <li>Recalled, not yet arrived (Now)</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="step-head"><h3>Closed outcomes</h3><span class="pill closed">closed</span></div>
+      <p class="note">Each of these sets closed_at in the same save. The 911 line stays on the patient phone in every case.</p>
+      <div class="cols">
+        <div class="col"><h4>Arrived <code>arrived</code></h4><ul>
+          <li>Phone: <span class="q">"Status: Ready at the desk" "Staff know you are back. Please stay in the waiting area until you are called."</span></li>
+          <li>Survey, for patients who waited off-site and arrived: <span class="q">"How would you rate your waiting experience?"</span> from <span class="q">"0 = Very poor"</span> to <span class="q">"10 = Excellent"</span>, with <span class="q">"Answering is optional. Your name is not stored."</span></li>
+          <li>Staff: moves to Recently closed, with Undo.</li>
+          <li>Dashboard: Average minutes from recall to arrival; Survey responses, Average score, Scored 9 or 10.</li>
+        </ul></div>
+        <div class="col"><h4>Removed <code>removed</code></h4><ul>
+          <li>Reason Left or No-show.</li>
+          <li>Phone: <span class="q">"Your off-site wait has ended" "Staff have ended off-site waiting for this visit. If you still need care, please come to the emergency department desk."</span></li>
+          <li>Staff: Recently closed, with Undo. A stale Undo button cannot reverse a newer action.</li>
+          <li>Dashboard: Left; No-shows.</li>
+        </ul></div>
+        <div class="col"><h4>Unable to reach <code>unable_to_reach</code></h4><ul>
+          <li>Only after the 30-minute flag and a nurse's confirmation. Not recorded as left without being seen.</li>
+          <li>Phone: <span class="q">"Your off-site wait has ended" "Staff could not reach you, so this visit has left the off-site line. If you still need care, please come to the emergency department desk."</span></li>
+          <li>If the patient arrives later, staff reopen it: Reassessment, then triage again.</li>
+          <li>Dashboard: Unable to reach (nurse confirmed).</li>
+        </ul></div>
+        <div class="col"><h4>Declined <code>declined</code></h4><ul>
+          <li>Offered off-site waiting and said no; waits inside as usual.</li>
+          <li>Desk patients get no slip. A patient who started from home sees <span class="q">"Status: Waiting in the emergency department" "You are waiting inside the hospital. Staff will call you when they are ready."</span></li>
+          <li>Staff: "Waiting on-site: offered, declined" list for 6 hours (see below).</li>
+          <li>Dashboard: Declined.</li>
+        </ul></div>
+        <div class="col"><h4>Not eligible <code>not_eligible</code></h4><ul>
+          <li>Not offered; waits inside as usual. Final: it cannot switch.</li>
+          <li>Phone (home starts only): the same on-site message as Declined.</li>
+          <li>Dashboard: taken out of the base for Offered off-site waiting (SPEC definition).</li>
+        </ul></div>
+        <div class="col"><h4>Back for reassessment <code>needs_reassessment</code></h4><ul>
+          <li>Not closed: a reopened unable-to-reach visit, waiting for triage again.</li>
+          <li>Phone: <span class="q">"Please go to the triage desk" "A nurse needs to check you again before you go back in line."</span></li>
+          <li>Dashboard: Back for reassessment (Now).</li>
+        </ul></div>
+      </div>
+    </article>
+
+    <article class="step switch">
+      <div class="step-head"><h3>Declined, then switched to off-site</h3><code>declined → waiting</code><span class="pill new">added 2026-11-19, PR #4</span></div>
+      <div class="cols">
+        <div class="col"><h4>Rules</h4><ul>
+          <li>Only within 6 hours of declining, and only while the site is not paused. The database refuses it otherwise.</li>
+          <li>The patient keeps the place in line from the original triage time, because they have been waiting inside since then.</li>
+          <li>The "I'm still here" clock starts at the switch, so the first prompt comes 30 minutes later.</li>
+        </ul></div>
+        <div class="col"><h4>Staff screen</h4><ul>
+          <li>"Waiting on-site: offered, declined" list: code, CTAS level, how long ago they declined, and the place they would get.</li>
+          <li>Switch to off-site waiting opens the same 3-item checklist and the language; Start off-site waiting saves it and shows the slip.</li>
+          <li>Undo switch puts it back to declined, until the patient is recalled.</li>
+        </ul></div>
+        <div class="col"><h4>Patient phone and dashboard</h4><ul>
+          <li>Phone: scans the new slip and sees the <span class="q">"Status: Waiting"</span> screen. Screen readers hear <span class="q">"You are now in the off-site line. This page shows your place in line."</span></li>
+          <li>Dashboard: the visit counts as offered and accepted, no longer as declined.</li>
+        </ul></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="rules" aria-labelledby="rules-h">
+    <h2 id="rules-h">True at every step</h2>
+    <ul>
+      <li>Every patient screen shows <span class="q">"If your symptoms get worse, call 911 or come back to the emergency department now."</span></li>
+      <li>Every page shows <span class="q">"Concept prototype. Not affiliated with or endorsed by Trillium Health Partners. Demo data only."</span></li>
+      <li>No names, health card numbers, phone numbers or symptoms are stored. A visit has a 6-character code and a long secret token.</li>
+      <li>Visits are deleted after 24 hours; their numbers move into the daily totals the dashboard reads.</li>
+      <li>The app never makes a clinical decision. Staff choose the CTAS level and eligibility.</li>
+    </ul>
+  </section>
+
+  <p class="sources">Built 2026-11-19 from SPEC.md, the code study guide (sections 1 and 6), the 2026-11-16 readiness review, lib/switchToOffsite.ts and the switch migration on branch declined-to-offsite, and the Phase 4 dashboard screenshots. Patient wording is quoted word for word from lib/text/en.ts and components/patient/PatientStatus.tsx in the local repo (branch phase4-dashboard), read 2026-11-19.</p>
+</div>
