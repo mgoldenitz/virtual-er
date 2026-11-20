@@ -8,6 +8,12 @@ export type CallerCheck = "staff" | "not_staff" | "not_signed_in" | "error";
 
 /** user and error are what auth.getUser(token) gives back; only error.status is read. */
 export function callerCheck(user: StaffClaims, error: { status?: number } | null): CallerCheck {
-  if (error || !user) return "not_staff";
+  if (error) {
+    // 401 and 403 mean Supabase refused the token. Any other status, or none (a network fault),
+    // is a problem on Supabase's side, so asking staff to sign in again would not help.
+    const refused = error.status === 401 || error.status === 403;
+    return refused ? "not_signed_in" : "error";
+  }
+  if (!user) return "not_signed_in";
   return isStaffAccount(user) ? "staff" : "not_staff";
 }

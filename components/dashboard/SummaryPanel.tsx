@@ -18,14 +18,20 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
   const [resting, setResting] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
+  // When the dashboard closes, stop the 30-second timer.
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, []);
 
   async function writeSummary() {
+    // One lock for Real and Demo together: it is the guard against two paid calls in 30 seconds.
+    if (waiting || resting) return;
     setWaiting(true);
     setResting(true);
     setShown(null);
+    if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setResting(false), WAIT_BETWEEN_CLICKS_MS);
     const forDemo = isDemo;
     setShown({ forDemo, message: await fetchDashboardSummary(forDemo) });

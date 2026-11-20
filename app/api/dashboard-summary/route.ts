@@ -19,7 +19,8 @@ function answer(body: Record<string, string>, status: number): Response {
 export async function POST(request: Request): Promise<Response> {
   if (!claudeIsSetUp()) return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 
-  const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
+  const authorization = request.headers.get("authorization") ?? "";
+  const token = authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : "";
   if (!token) return answer({ result: "not_signed_in" }, 401);
 
   let body: unknown;
@@ -34,6 +35,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!wanted) return answer({ result: "bad_request" }, 400);
 
   const rows = await readSummaryRows(token, wanted.isDemo);
+  if (rows === "not_signed_in") return answer({ result: "not_signed_in" }, 401);
   if (rows === "not_staff") return answer({ result: "not_staff" }, 403);
   if (rows === "error") return answer({ result: "error" }, 500);
 
@@ -41,9 +43,10 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     // Opus 5.5 always thinks, so there is no thinking setting; "low" effort keeps this short and cheap.
+    // max_tokens counts the thinking too, so it is well above what 3 sentences need.
     const reply = await claudeClient().messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 400,
+      max_tokens: 1024,
       output_config: { effort: "low" },
       system: summarySystemPrompt(),
       messages: [{ role: "user", content: summaryUserMessage(input) }],

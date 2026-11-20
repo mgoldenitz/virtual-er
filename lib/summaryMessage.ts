@@ -17,7 +17,8 @@ const FALLBACK = "The summary could not be written just now. The numbers above a
 /** status is the HTTP status; body is the parsed JSON, or null when there was none or it did not parse. */
 export function summaryMessage(status: number, body: unknown): SummaryMessage {
   if (status === 204) return { kind: "note", text: NOTES.off };
-  const { result, text } = (typeof body === "object" && body !== null ? body : {}) as { result?: unknown; text?: unknown };
+  if (typeof body !== "object" || body === null) return { kind: "note", text: FALLBACK };
+  const { result, text } = body as { result?: unknown; text?: unknown };
   if (result === "text" && typeof text === "string" && text.trim() !== "") return { kind: "text", text: text.trim() };
   if (typeof result === "string" && Object.hasOwn(NOTES, result)) return { kind: "note", text: NOTES[result] };
   return { kind: "note", text: FALLBACK };
