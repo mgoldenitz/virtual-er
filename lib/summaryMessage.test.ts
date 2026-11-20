@@ -32,5 +32,6 @@ describe("summary message", () => {
     expect(summaryMessage(500, null).text).toBe(fallback);
     expect(summaryMessage(200, { result: "text", text: "   " }).text).toBe(fallback);
     expect(summaryMessage(200, { result: "toString" }).text).toBe(fallback);
+    expect(summaryMessage(200, []).text).toBe(fallback);
   });
 });

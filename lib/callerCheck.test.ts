@@ -18,6 +18,11 @@ describe("caller check", () => {
     expect(callerCheck(null, { status: 403 })).toBe("not_signed_in");
   });
 
+  it("says not_signed_in for a token Supabase refuses as bad (400 or 422)", () => {
+    expect(callerCheck(null, { status: 400 })).toBe("not_signed_in");
+    expect(callerCheck(null, { status: 422 })).toBe("not_signed_in");
+  });
+
   it("says not_signed_in when Supabase finds no user and gives no error", () => {
     expect(callerCheck(null, null)).toBe("not_signed_in");
   });
