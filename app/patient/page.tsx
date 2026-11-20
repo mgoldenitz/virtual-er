@@ -15,6 +15,7 @@ import { OfflineBanner } from "@/components/patient/OfflineBanner";
 import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { VisitScreen } from "@/components/patient/VisitScreen";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
+import { brokenLinkAfterRead } from "@/lib/brokenLink";
 import { isDeadToken } from "@/lib/deadToken";
 import { textFor } from "@/lib/text";
 import { languageInfo, patientLanguage } from "@/lib/text/languages";
@@ -35,7 +36,7 @@ export default function PatientPage() {
       // A desk QR link carries the visit's language: remember it, so it shows before the visit loads.
       if (link.language) chooseLanguage(link.language);
       setToken(link.token);
-      setBrokenLink(link.brokenLink);
+      setBrokenLink((previous) => brokenLinkAfterRead(previous, link));
       setNotSaved(false);
     };
     readLink();
