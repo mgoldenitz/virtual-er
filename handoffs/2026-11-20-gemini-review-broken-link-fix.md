@@ -147,3 +147,13 @@ Paste Gemini's full answer here under "Response".
 * No e2e check for Back / Forward navigation after a broken link (`## Not checked` in `2026-11-20-gemini-review-broken-link-fix.md`):
 * **Concrete case that passes with a bug:** Navigating `/` → `/patient#t=NOTAREALTOKEN` → Back → Forward leaves the user on `"No visit found on this phone"` instead of `"This link did not work"`, while `desk-checkin.spec.ts` stays green.
 * **Smallest fix:** Add a Back/Forward navigation assertion to `e2e/desk-checkin.spec.ts` after visiting `/patient#t=NOTAREALTOKEN`.
+
+## Claude's check
+
+- 1, `hashchange` with no `t=` after a broken link (also Back to `#l=fr`): accepted. The page uses the same rule for every read, so this read keeps the broken-link screen. The correct screen is "No visit found on this phone". The case is rare (the patient changes the address by hand or goes Back), but the rule is wrong for it.
+- 1, Back from a broken link to a good link, and Back then Forward: rejected for this fix. `takeTokenFromLink` forgets the saved token on a damaged link and removes the token from the address on purpose (comment in `data/savedToken.ts`: "so neither now nor after a refresh does the phone quietly show an older visit"). Both "No visit found" and "This link did not work" link to the start page (docs/decisions.md, 2026-11-18), so the patient gets the same help.
+- 2, a ref so that the first read runs one time: accepted as the better fix. Checked in the code: the double read happens because the first read changes the address and the storage, so a second read cannot give the same answer. A ref guard stops the second read, so `token`, `brokenLink` and `language` all keep the first answer, and the `hashchange` handler can use `link.brokenLink` directly. It needs a decision from the owner, because it makes `lib/brokenLink.ts` and its 5 tests unused.
+- 3, `setToken(null)` on the second read when storage is blocked: accepted. Run 1 saves nothing, run 2 finds no saved token, so a good 26-character link shows "No visit found on this phone". This is in the dev server only, but the fix in point 2 also fixes it.
+- 4, "npm run e2e runs against a build that executes useEffect once": rejected. `playwright.config.ts` line 29 starts `node scripts/dev.mjs`, the dev server, which runs the effect two times. That is why the e2e test failed before the fix.
+- 4, a page test in React `<StrictMode>`: accepted. Cases: a damaged link (with and without `&l=fr`), a `hashchange` to `#l=fr` after a broken link, a `hashchange` from a visit to a damaged link, and a good 26-character link with blocked storage.
+- 4, Back and Forward in e2e: rejected, see point 1.
