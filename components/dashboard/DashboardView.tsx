@@ -8,6 +8,7 @@ import { useDashboard } from "@/data/useDashboard";
 import { dashboardNumbers } from "@/lib/dashboardNumbers";
 import { ModeSwitch } from "@/components/dashboard/ModeSwitch";
 import { SiteNumbers } from "@/components/dashboard/SiteNumbers";
+import { SummaryPanel } from "@/components/dashboard/SummaryPanel";
 
 export function DashboardView() {
   const [isDemo, setIsDemo] = useState(false);
@@ -30,10 +31,13 @@ export function DashboardView() {
       )}
 
       {counts ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <SiteNumbers site="A" numbers={counts.A} />
-          <SiteNumbers site="B" numbers={counts.B} />
-        </div>
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            <SiteNumbers site="A" numbers={counts.A} />
+            <SiteNumbers site="B" numbers={counts.B} />
+          </div>
+          <SummaryPanel isDemo={isDemo} />
+        </>
       ) : outOfDate ? (
         <p>No numbers to show yet.</p>
       ) : (

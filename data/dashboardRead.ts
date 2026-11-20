@@ -4,6 +4,7 @@
 
 import type { DailyStatsRow, DashboardVisit } from "@/lib/dashboardNumbers";
 import { torontoDay } from "@/lib/torontoDay";
+import { DASHBOARD_VISIT_FIELDS } from "./dashboardFields";
 import { keepFresh } from "./keepFresh";
 import { serverNow } from "./serverClock";
 import { supabaseBrowser } from "./supabaseBrowser";
@@ -18,9 +19,6 @@ export type DashboardData = {
 
 export const EMPTY_DASHBOARD: DashboardData = { visits: null, stats: [], today: "", outOfDate: false };
 
-// Only these visit fields are read. Nothing here may name access_token or code.
-const VISIT_FIELDS =
-  "site, source, ctas_level, status, removed_reason, created_at, triaged_at, offered_at, called_at, arrived_at, closed_at, survey_score, is_demo";
 const REREAD_MS = 15_000; // in case a live update was missed
 
 type Store = {
@@ -66,7 +64,7 @@ export async function loadDashboard(isDemo: boolean): Promise<void> {
     const today = torontoDay(serverNow().toISOString());
     const db = supabaseBrowser();
     const [visitRead, statsRead] = await Promise.all([
-      db.from("visits").select(VISIT_FIELDS).eq("is_demo", isDemo),
+      db.from("visits").select(DASHBOARD_VISIT_FIELDS).eq("is_demo", isDemo),
       db.from("daily_stats").select("*").eq("is_demo", isDemo).eq("day", today),
     ]);
     if (!visitRead.error && !statsRead.error && Array.isArray(visitRead.data) && Array.isArray(statsRead.data)) {

@@ -1,0 +1,54 @@
+"use client";
+
+// The "Write a short summary" button under the dashboard numbers. It asks the server for 2 or 3
+// sentences about today's totals and shows them with a line that an AI model wrote them.
+// The button stays off for 30 seconds after a click, so a double click does not pay twice.
+
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/Button";
+import { fetchDashboardSummary } from "@/data/dashboardSummary";
+import type { SummaryMessage } from "@/lib/summaryMessage";
+
+const WAIT_BETWEEN_CLICKS_MS = 30_000;
+
+export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
+  // The summary keeps the mode it was written for; after a Real or Demo switch it is hidden.
+  const [shown, setShown] = useState<{ forDemo: boolean; message: SummaryMessage } | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const [resting, setResting] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  async function writeSummary() {
+    setWaiting(true);
+    setResting(true);
+    setShown(null);
+    timer.current = setTimeout(() => setResting(false), WAIT_BETWEEN_CLICKS_MS);
+    const forDemo = isDemo;
+    setShown({ forDemo, message: await fetchDashboardSummary(forDemo) });
+    setWaiting(false);
+  }
+
+  const message = shown && shown.forDemo === isDemo ? shown.message : null;
+
+  return (
+    <section aria-label="Summary" className="space-y-3 rounded-lg border-2 border-slate-300 bg-white p-4">
+      <Button variant="secondary" onClick={writeSummary} disabled={waiting || resting}>
+        Write a short summary
+      </Button>
+      {waiting && <p role="status">Writing the summary...</p>}
+      {message?.kind === "text" && (
+        <>
+          <p>{message.text}</p>
+          <p className="text-sm text-slate-700">
+            {"Written by an AI model from today's totals. Check the numbers above."}
+          </p>
+        </>
+      )}
+      {message?.kind === "note" && <p role="status">{message.text}</p>}
+    </section>
+  );
+}
