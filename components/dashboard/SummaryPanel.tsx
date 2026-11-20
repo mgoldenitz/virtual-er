@@ -22,17 +22,21 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
   useEffect(() => {
     return () => {
       if (timer.current) clearTimeout(timer.current);
+      timer.current = null;
     };
   }, []);
 
   async function writeSummary() {
     // One lock for Real and Demo together: it is the guard against two paid calls in 30 seconds.
-    if (waiting || resting) return;
+    // The timer ref changes at once, so it also stops a second click that comes before React redraws.
+    if (waiting || resting || timer.current !== null) return;
     setWaiting(true);
     setResting(true);
     setShown(null);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setResting(false), WAIT_BETWEEN_CLICKS_MS);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      setResting(false);
+    }, WAIT_BETWEEN_CLICKS_MS);
     const forDemo = isDemo;
     setShown({ forDemo, message: await fetchDashboardSummary(forDemo) });
     setWaiting(false);
