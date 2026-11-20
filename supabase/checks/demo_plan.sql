@@ -1,7 +1,7 @@
 -- Check for the day plan (migration 20261120000000_demo_plan.sql).
 -- Run the whole file at once in the Supabase SQL Editor, after that migration. It saves nothing:
 -- everything happens inside "begin ... rollback". After it, run supabase/checks/demo_tick.sql again:
--- the default plan keeps the old numbers, so its 13 expected rows stay the same.
+-- it sets the normal plan (the old numbers) for its own run, so its 13 expected rows stay the same.
 --
 -- Expected result (10 rows):
 --   01 plan with a number too high refused     1
