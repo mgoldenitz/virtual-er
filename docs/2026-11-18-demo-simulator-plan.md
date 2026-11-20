@@ -53,7 +53,7 @@ Option 1 has none. For option 2, Michael adds them himself on GitHub (repository
 
 ## Cost
 
-No model is called, so there is no AI cost. Option 1 runs on the Supabase free plan: a few hundred small rows and one realtime signal per run (every open screen re-reads once). Vercel is not involved. Option 2 is free on a public repository. On a private repository the free plan includes 2,000 Actions minutes a month and each run is billed as at least one minute, so every 15 minutes (about 2,880 runs a month) would go over, and every 30 minutes (about 1,440) would fit, leaving roughly 560 minutes for the checks workflow. I could not check from here whether the repository is public.
+Update 2026-11-20: Claude now writes the day plan once a day (one call, `max_tokens` 1024), so the AI cost is one small call a day; see the Claude Console usage page. The 5-minute tick still calls no model. Before that: no model was called, so there was no AI cost. Option 1 runs on the Supabase free plan: a few hundred small rows and one realtime signal per run (every open screen re-reads once). Vercel is not involved. Option 2 is free on a public repository. On a private repository the free plan includes 2,000 Actions minutes a month and each run is billed as at least one minute, so every 15 minutes (about 2,880 runs a month) would go over, and every 30 minutes (about 1,440) would fit, leaving roughly 560 minutes for the checks workflow. I could not check from here whether the repository is public.
 
 ## Timing
 

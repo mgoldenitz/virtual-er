@@ -115,7 +115,7 @@ Percentages and minutes round to whole numbers; the average score rounds to one 
 
 ### Demo mode (staff only)
 
-A scheduled simulator (no AI model) plays the staff and patient sides at Demo Site A and B, so the screens look like a normal evening. It makes only moves the app allows, and it reads or changes only visits with is_demo = true. It aims for about 9 demo visits waiting off-site per site and call-backs about 15 minutes apart. Demo visits show a "Demo" tag on the staff screen. A staff action "Clear demo data" switches the simulator off and deletes all demo visits and demo rows in daily_stats; it must run before real testers start. (Owner, 2026-11-18: replaces the one-button demo mode, because the database sets every time to now(), so a button cannot make visits spread over the last few hours.)
+A scheduled simulator plays the staff and patient sides at Demo Site A and B, so the screens look like a normal evening. It makes only moves the app allows, and it reads or changes only visits with is_demo = true. It aims for about 9 demo visits waiting off-site per site and call-backs about 15 minutes apart. Once a day, an AI model sets the simulator's chances (tap rates, how often a recall comes early, the language mix) within fixed limits; it never sets a CTAS level or a time limit, and never sees a visit. Demo visits show a "Demo" tag on the staff screen. A staff action "Clear demo data" switches the simulator off and deletes all demo visits and demo rows in daily_stats; it must run before real testers start. (Owner, 2026-11-18: replaces the one-button demo mode, because the database sets every time to now(), so a button cannot make visits spread over the last few hours.)
 
 ## Data (one main table)
 
