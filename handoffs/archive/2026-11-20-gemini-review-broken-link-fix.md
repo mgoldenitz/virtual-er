@@ -157,3 +157,8 @@ Paste Gemini's full answer here under "Response".
 - 4, "npm run e2e runs against a build that executes useEffect once": rejected. `playwright.config.ts` line 29 starts `node scripts/dev.mjs`, the dev server, which runs the effect two times. That is why the e2e test failed before the fix.
 - 4, a page test in React `<StrictMode>`: accepted. Cases: a damaged link (with and without `&l=fr`), a `hashchange` to `#l=fr` after a broken link, a `hashchange` from a visit to a damaged link, and a good 26-character link with blocked storage.
 - 4, Back and Forward in e2e: rejected, see point 1.
+
+## Result
+
+- Done 2026-11-20. Owner chose the ref guard. Page test in `<StrictMode>` with the 5 accepted cases (`3ffaf50`: 2 failed, 3 passed first), then the guard in `app/patient/page.tsx` (`b5cf5b2`: 5 passed). `lib/brokenLink.ts` and its test deleted.
+- Checks: 86 test files, 525 tests pass; lint passed; build passed; full e2e 35 passed, 2 failed (the survey, not built yet).
