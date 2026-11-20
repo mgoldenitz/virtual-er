@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Checks the patient page when the link changes while the page is open (a new #t=... or #l=... part),
-// and when the phone cannot save the link's token. Cases 3 and 5 fail until the app is fixed.
+// and when the phone cannot save the link's token. StrictMode runs the page's effects twice, as the dev server does.
 
 import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
