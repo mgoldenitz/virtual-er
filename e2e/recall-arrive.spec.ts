@@ -42,6 +42,10 @@ test("recall, on the way, arrived, then undo the arrival", async ({ browser }) =
     // Undo in Recently closed: the row shows on the list again.
     await staff.getByTestId(`closed-${code}`).getByRole("button", { name: "Undo" }).click();
     await expect(row).toBeVisible();
+
+    // Undo puts the visit back to on_the_way, so the phone shows the called screen again.
+    await expect(patient.getByRole("heading", { name: "Please head back now" })).toBeVisible();
+    await expect(patient.getByRole("heading", { name: "Status: Ready at the desk" })).toHaveCount(0);
   } finally {
     await staff.context().close();
     await patient.context().close();

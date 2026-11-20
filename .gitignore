@@ -29,6 +29,10 @@ supabase/.branches/
 /blob-report/
 /playwright/.cache/
 .playwright-mcp/
+# Visit codes the e2e tests made, for npm run e2e:cleanup.
+/.e2e-codes.txt
+# The signed-in test staff session the e2e setup saves.
+/.auth/
 
 # ── Logs and system files ─────────────────────────────────────────────
 npm-debug.log*

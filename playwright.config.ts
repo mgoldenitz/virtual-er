@@ -20,8 +20,10 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "phone", use: { browserName: "chromium", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
-    { name: "laptop", use: { browserName: "chromium", viewport: { width: 1280, height: 800 } } },
+    // The setup signs in once with tracing off, so no trace holds the password.
+    { name: "setup", testMatch: /auth\.setup\.ts/, use: { trace: "off" } },
+    { name: "phone", dependencies: ["setup"], use: { browserName: "chromium", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: "laptop", dependencies: ["setup"], use: { browserName: "chromium", viewport: { width: 1280, height: 800 } } },
   ],
   webServer: {
     command: `node scripts/dev.mjs -p ${PORT}`, // dev.mjs keeps the Norton fix (--use-system-ca).

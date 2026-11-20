@@ -1259,3 +1259,11 @@ Rejected:
 - 3a fastForward lag and 3b frozen patient poll: `page.clock.install()` with no `pauseAt` lets time flow at real speed, and timers still fire. So the staff clock is at real time when `fastForward` starts, and the 10 and 40 minute checks land after the database time. The tests passed on every run in this session.
 - 3c `expect` timeout 5 s to 20 s: SPEC.md line 135 says the two screens update each other "within about 2 seconds". A 20 s timeout would let a broken realtime link pass on the 15 s poll. Keep 5 s.
 - 6 the comment at timed-steps.spec.ts line 63 is correct: after the tap, the patient clock is still 31 minutes ahead of the tap time, so the prompt is due again until `backToRealTime`.
+
+Owner decisions (2026-11-20): do the accepted fixes and the weak checks now; the 5 new test groups (section 1) and the flows.ts split go to a later Phase 5 step. Trace: sign in once in a setup project with trace off, and the staff tests load the saved session from `.auth/staff.json` (git ignored).
+
+Weak checks not done now:
+- Demo numbers greater than 0: demo visits are database rows that "Clear demo data" deletes, so 0 is a valid state. Rejected.
+- Staff row language label: components/staff/VisitRow.tsx shows no language, and SPEC.md does not ask for one. Not a test fault; rejected for this review.
+- `new-link.spec.ts` old phone at `/`: what `/` shows with a dead saved link is part of the broken-link fault (Part B fix a). Moved there.
+- `readSlip` side effect: kept in `readSlip`, with `rememberCode` moved before the link read (4b), so a failed link read cannot lose the code.

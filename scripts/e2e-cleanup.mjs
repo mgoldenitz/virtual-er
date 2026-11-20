@@ -3,10 +3,9 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { cleanupSql, countSql } from "../lib/e2eCleanup.ts";
+import { CODES_FILE } from "../e2e/helpers/visitCodes.ts";
 
-const FILE = "test-results/e2e-codes.txt";
-
-const codes = existsSync(FILE) ? readFileSync(FILE, "utf8").split(/\r?\n/) : [];
+const codes = existsSync(CODES_FILE) ? readFileSync(CODES_FILE, "utf8").split(/\r?\n/) : [];
 const deleteLine = cleanupSql(codes);
 
 if (deleteLine === null) {
@@ -16,5 +15,5 @@ if (deleteLine === null) {
   console.log(deleteLine);
   console.log("\n2. Then run this. It must give 0:\n");
   console.log(countSql(codes));
-  console.log(`\n3. After the count is 0, delete ${FILE}.`);
+  console.log(`\n3. After the count is 0, delete ${CODES_FILE}.`);
 }
