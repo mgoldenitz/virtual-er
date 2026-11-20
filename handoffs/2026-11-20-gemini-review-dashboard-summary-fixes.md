@@ -235,3 +235,63 @@ index 12b4c24..7aa161d 100644
    if (typeof result === "string" && Object.hasOwn(NOTES, result)) return { kind: "note", text: NOTES[result] };
    return { kind: "note", text: FALLBACK };
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-20, pasted by the owner. Copied as pasted (blank lines removed).
+
+1. Refused tokens returning HTTP `400` or `422` (including `AuthSessionMissingError` and malformed-claim `AuthApiError`) are misclassified as `500 error`
+   - File: `lib/callerCheck.ts`
+   - Line: 14 (`const refused = error.status === 401 || error.status === 403;`)
+   - What goes wrong: `callerCheck` treats only HTTP `401` and `403` as `"not_signed_in"` and maps every other error status to `"error"` (`500`). In `@supabase/auth-js`, `AuthSessionMissingError` sets `status: 400`, and `AuthApiError` from `getUser(token)` can also carry `status: 400` or `422` when Supabase Auth rejects a token with missing/invalid claims or a non-existent user (`bad_jwt`, `validation_failed`, `user_not_found`). Those rejected-token errors return `500` (`"error"`) instead of `401` (`"not_signed_in"`), and `lib/callerCheck.test.ts` (lines 16-19) only tests `401` and `403`. (Network failures via `AuthRetryableFetchError` with `status: 0` or `undefined`, as well as `408`, `429`, and `5xx`, still have other statuses and will continue to return `"error"`.)
+   - Smallest fix: Include `400` and `422` in the refused-token status check in `lib/callerCheck.ts` line 14 (and add cases for `400` and `422` in `lib/callerCheck.test.ts`):
+     ```ts
+     const refused =
+       error.status === 400 || error.status === 401 || error.status === 403 || error.status === 422;
+     ```
+
+2. Rapid double-click (or double Enter/Space) bypasses `if (waiting || resting) return` before React re-renders and sends two paid Claude calls
+   - File: `components/dashboard/SummaryPanel.tsx`
+   - Line: 30-35 (`if (waiting || resting) return;` through `timer.current = setTimeout(...)`)
+   - What goes wrong: `waiting` and `resting` are React state values captured in the render closure, so `setWaiting(true)` and `setResting(true)` do not update them synchronously. If a user double-clicks the button (or presses Space/Enter twice) before React commits the re-render, both calls read `waiting === false` and `resting === false`, both pass line 30, and both invoke `fetchDashboardSummary(forDemo)`, sending two paid Claude API requests at once. In addition, `timer.current` is never reset to `null` when the 30-second timeout finishes, and line 34 (`if (timer.current) clearTimeout(timer.current);`) reads as contradictory to a beginner right after line 30's `resting` guard.
+   - Smallest fix: Use the existing `timer` ref as a synchronous lock by checking `timer.current !== null` in the guard and resetting `timer.current = null` when the timer expires or unmounts:
+     ```tsx
+     if (waiting || resting || timer.current !== null) return;
+     setWaiting(true);
+     setResting(true);
+     setShown(null);
+     timer.current = setTimeout(() => {
+       timer.current = null;
+       setResting(false);
+     }, WAIT_BETWEEN_CLICKS_MS);
+     ```
+     (and set `timer.current = null` inside the `useEffect` cleanup on line 24)
+
+3. `Authorization` scheme check is case-sensitive and allows whitespace inside the token
+   - File: `app/api/dashboard-summary/route.ts`
+   - Line: 23 (`const token = authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : "";`)
+   - What goes wrong: Per HTTP authentication specs (RFC 9110 / RFC 6750), the `Bearer` scheme is case-insensitive (`bearer <token>`), so a valid token sent with a lowercase `bearer ` prefix is rejected with `401 not_signed_in`. Also, if a header contains internal spaces (such as `Bearer two words`), `.trim()` keeps `"two words"` and passes it into `createClient(..., { global: { headers: { Authorization: `Bearer ${token}` } } })` in `data/summaryRead.ts` (line 22); if `fetch`/`Headers` throws on a malformed header and `@supabase/auth-js` wraps it in `AuthRetryableFetchError` (`status: 0`), the route returns `500 error` instead of `401 not_signed_in`.
+   - Smallest fix: Match the `Bearer` scheme case-insensitively and reject tokens containing whitespace in `app/api/dashboard-summary/route.ts` line 23:
+     ```ts
+     const match = authorization.match(/^bearer\s+(\S+)$/i);
+     const token = match ? match[1] : "";
+     ```
+
+4. `summaryMessage` uses an inline TypeScript `as` object cast on untrusted JSON instead of property narrowing
+   - File: `lib/summaryMessage.ts`
+   - Line: 20-21 (`if (typeof body !== "object" || body === null) ...` and `const { result, text } = body as { result?: unknown; text?: unknown };`)
+   - What goes wrong: A beginner reading `summaryMessage` has to parse a TypeScript `as` type assertion (`body as { result?: unknown; text?: unknown }`) on an `unknown` parameter, and `typeof body !== "object"` on line 20 does not exclude arrays (`[]`) before destructuring.
+   - Smallest fix: Exclude arrays on line 20 and read `result` and `text` with `"in"` narrowing instead of `as`:
+     ```ts
+     if (typeof body !== "object" || body === null || Array.isArray(body)) return { kind: "note", text: FALLBACK };
+     const result = "result" in body ? body.result : undefined;
+     const text = "text" in body ? body.text : undefined;
+     ```
+
+## Check of the response (Claude, 2026-11-20)
+
+1. Accept. A status 400 or 422 from `getUser(token)` means Supabase refused the token, so "sign in again" is the right note. The error stays `"error"` for status 0, none, 408, 429 and 5xx. I add the 400 and 422 cases to `lib/callerCheck.test.ts` first, see them fail, make a save point, and then change line 14.
+2. Accept the fix, not the full claim. React 19 runs a click handler's state updates before the next click event, so two clicks on a real button are not likely to both pass. But the ref is set at once, so it is a sure lock at no cost. I use the suggested code, set `timer.current = null` in the cleanup, and remove line 34, because the new guard makes it dead code.
+3. Reject. Only our own `data/dashboardSummary.ts` calls this route, and it always sends `Bearer ` with a capital B. A token with spaces in it does not throw: a space is legal in a header value, and Supabase refuses the token, so the answer is 401. Round 1 removed a regex from this line because the owner reads the code as a beginner. Not checked: a live call with `Bearer two words`.
+4. Reject as a bug. For `[]`, `result` is `undefined`, so the function returns `FALLBACK`, which is correct. I add one test that `[]` gives `FALLBACK`, so this stays true. I keep the `as` line: the `in` form is not shorter or clearer.
+
