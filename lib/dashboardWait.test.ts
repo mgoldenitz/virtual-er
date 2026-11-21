@@ -1,5 +1,6 @@
 // The recall and off-site wait numbers (SPEC: Recalled, Average minutes from offer to recall, Wait bands).
-// The same rules as delete_old_visits() in 20261120030000_wait_and_recall_stats.sql.
+// The same rules as delete_old_visits() in 20261121010000_wait_stats_on_triage_day.sql
+// (first made in 20261120030000_wait_and_recall_stats.sql).
 import { describe, expect, it } from "vitest";
 import { dashboardNumbers, type DailyStatsRow, type DashboardVisit } from "./dashboardNumbers";
 
