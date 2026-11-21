@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { recordStillHere } from "@/data/patientVisit";
 import type { PatientView } from "@/lib/patientView";
-import { stillHereState } from "@/lib/stillHere";
+import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import { textFor } from "@/lib/text";
 import { Button } from "@/components/Button";
 import { useNow } from "@/components/useNow";
@@ -49,7 +49,13 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
     };
   }, [showing, t.announce.stillHere]);
 
-  const tapped = view.lastStillHereAt ? new Date(view.lastStillHereAt).getTime() : null;
+  // A switch to off-site waiting stamps the same moment in last_still_here_at: lastTapThisWait skips it.
+  const tapAt = lastTapThisWait({
+    triagedAt: view.triagedAt,
+    lastStillHereAt: view.lastStillHereAt,
+    offeredAt: view.offeredAt,
+  });
+  const tapped = tapAt ? new Date(tapAt).getTime() : null;
   const thanking = !showing && now !== null && tapped !== null && now.getTime() - tapped < THANKS_MS;
 
   // After a few seconds the hidden box goes empty, so a swipe reads the thank-you only on the card.

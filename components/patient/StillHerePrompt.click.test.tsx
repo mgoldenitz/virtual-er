@@ -31,6 +31,7 @@ const due: PatientView = {
   waitHigh: 40,
   calledAt: null,
   lastStillHereAt: null,
+  offeredAt: null,
   triagedAt: "2026-11-16T11:29:00Z",
   seen: false,
   closed: false,
@@ -125,6 +126,16 @@ describe("StillHerePrompt tap", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("does not thank a patient for the switch to off-site waiting, which is not a tap", () => {
+    const switched: PatientView = {
+      ...due,
+      offeredAt: "2026-11-16T11:59:55Z",
+      lastStillHereAt: "2026-11-16T11:59:55Z",
+    };
+    show(switched);
+    expect(container.textContent).not.toContain(s.thanks);
   });
 
   it("leaves focus on the page after a phone tap that did not focus the button", async () => {

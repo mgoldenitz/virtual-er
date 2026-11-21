@@ -12,6 +12,7 @@ const view = (over: Partial<PatientView>): PatientView => ({
   waitHigh: 20,
   calledAt: null,
   lastStillHereAt: null,
+  offeredAt: null,
   triagedAt: null,
   seen: false,
   closed: false,

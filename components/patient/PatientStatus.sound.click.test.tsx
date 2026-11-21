@@ -29,6 +29,7 @@ const view: PatientView = {
   waitHigh: null,
   calledAt: "2026-11-15T18:00:00Z",
   lastStillHereAt: null,
+  offeredAt: null,
   triagedAt: "2026-11-15T17:00:00Z",
   seen: true,
   closed: false,

@@ -24,6 +24,7 @@ const { KNOWN_TOKEN, waiting, NOW } = vi.hoisted(() => {
     waitHigh: 40,
     calledAt: null,
     lastStillHereAt: null,
+    offeredAt: null,
     triagedAt: "2026-11-16T11:50:00Z",
     seen: false,
     closed: false,

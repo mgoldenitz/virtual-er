@@ -23,6 +23,12 @@ describe("patient view from a database row", () => {
     expect(patientViewFromRow(waiting).triagedAt).toBeNull();
   });
 
+  it("passes the offer time through, and is empty before the database change has run", () => {
+    const switched = { ...waiting, triaged_at: "2026-11-10T12:00:00Z", offered_at: "2026-11-10T12:40:00Z" };
+    expect(patientViewFromRow(switched).offeredAt).toBe("2026-11-10T12:40:00Z");
+    expect(patientViewFromRow(waiting).offeredAt).toBeNull();
+  });
+
   it("passes survey done through, and is false before the database change has run", () => {
     expect(patientViewFromRow({ ...waiting, status: "arrived", closed: true, survey_done: true }).surveyDone).toBe(true);
     expect(patientViewFromRow({ ...waiting, survey_done: false }).surveyDone).toBe(false);

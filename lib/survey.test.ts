@@ -14,6 +14,7 @@ const arrived: PatientView = {
   waitHigh: null,
   calledAt: "2026-11-20T11:00:00Z",
   lastStillHereAt: null,
+  offeredAt: null,
   triagedAt: "2026-11-20T10:00:00Z",
   seen: true,
   closed: true,
