@@ -56,6 +56,10 @@ describe("dashboard numbers: Gemini's synthetic visits", () => {
       noShows: 1, left: 1, unableToReach: 1,
       startedFromHome: 4, homeReachedTriage: 3,
       surveyResponses: 4, surveyScoreSum: 27, survey9or10: 2,
+      // Recalled today after an offer (checked by hand, 2026-11-21): 4 and 6 (2100 s each),
+      // 12 (81000 s) and 13 (63600 s, now needs_reassessment). 0, 1 and 8 were called on 11-17.
+      recalled: 4, offerToCallSeconds: 148800,
+      waitUnder30: 0, wait30to59: 2, wait60to119: 0, wait120plus: 2,
     });
   });
 
@@ -67,6 +71,9 @@ describe("dashboard numbers: Gemini's synthetic visits", () => {
       noShows: 0, left: 0, unableToReach: 0,
       startedFromHome: 0, homeReachedTriage: 0,
       surveyResponses: 0, surveyScoreSum: 0, survey9or10: 0,
+      // 18: offered 00:15, called 00:45 (1800 s, exactly 30 minutes, so 30 to 59). 19 is demo.
+      recalled: 1, offerToCallSeconds: 1800,
+      waitUnder30: 0, wait30to59: 1, wait60to119: 0, wait120plus: 0,
     });
   });
 

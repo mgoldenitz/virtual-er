@@ -4,8 +4,15 @@
 import type { SiteNumbers } from "./dashboardNumbers";
 import type { Site } from "./visit";
 
+/** The 17 numbers per site that may go to Claude. The wait and recall numbers (2026-11-21) are not sent;
+ * sending them is an owner decision. */
+type SummarySite = Omit<
+  SiteNumbers,
+  "recalled" | "offerToCallSeconds" | "waitUnder30" | "wait30to59" | "wait60to119" | "wait120plus"
+>;
+
 /** What the summary route sends to Claude: the two sites' totals and whether the numbers are demo numbers. */
-export type SummaryInput = { isDemo: boolean; sites: Record<Site, SiteNumbers> };
+export type SummaryInput = { isDemo: boolean; sites: Record<Site, SummarySite> };
 
 /** Copies the 17 SiteNumbers fields for sites A and B into new objects, and nothing else. */
 export function summaryInput(numbers: Record<Site, SiteNumbers>, isDemo: boolean): SummaryInput {
@@ -21,7 +28,7 @@ export function parseSummaryBody(body: unknown): { isDemo: boolean } | null {
 }
 
 // Copies one site's 17 fields by name.
-function siteTotals(n: SiteNumbers): SiteNumbers {
+function siteTotals(n: SiteNumbers): SummarySite {
   return {
     waitingNow: n.waitingNow,
     recalledNow: n.recalledNow,

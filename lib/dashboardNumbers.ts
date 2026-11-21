@@ -3,8 +3,10 @@
 
 import { torontoDay } from "./torontoDay";
 import type { Site, Visit } from "./visit";
+import { waitBand, type WaitBand } from "./waitBand";
 
-/** One row of daily_stats (see supabase/migrations/20261116100000_daily_stats_and_cleanup.sql). */
+/** One row of daily_stats (see supabase/migrations/20261116100000_daily_stats_and_cleanup.sql
+ * and 20261120030000_wait_and_recall_stats.sql). */
 export type DailyStatsRow = {
   day: string;
   site: Site;
@@ -25,6 +27,12 @@ export type DailyStatsRow = {
   survey_responses: number;
   survey_score_sum: number;
   survey_9_or_10: number;
+  called: number;
+  offer_to_call_seconds: number;
+  wait_under_30: number;
+  wait_30_to_59: number;
+  wait_60_to_119: number;
+  wait_120_plus: number;
 };
 
 /** The visit fields the dashboard reads. */
@@ -64,6 +72,12 @@ export type SiteNumbers = {
   surveyResponses: number;
   surveyScoreSum: number;
   survey9or10: number;
+  recalled: number;
+  offerToCallSeconds: number;
+  waitUnder30: number;
+  wait30to59: number;
+  wait60to119: number;
+  wait120plus: number;
 };
 
 /** Counts every number for both sites. Only rows whose is_demo equals isDemo are used. */
@@ -105,6 +119,12 @@ function siteNumbers(
   const surveyed = visits.filter((v) => v.survey_score !== null && on(v.closed_at));
   // Visits started from home today.
   const startedHome = visits.filter((v) => v.source === "home" && on(v.created_at));
+
+  // Visits recalled today after an offer, whatever happened after the recall. Each wait is offer to recall.
+  const waits = visits
+    .filter((v) => v.offered_at !== null && on(v.called_at))
+    .map((v) => secondsBetween(v.offered_at, v.called_at));
+  const inBand = (band: WaitBand): number => waits.filter((w) => waitBand(w) === band).length;
 
   const offered = countVisits((v) => on(v.offered_at)) + fromStats((s) => s.offered);
   const declined =
@@ -158,6 +178,14 @@ function siteNumbers(
     survey9or10:
       surveyed.filter((v) => v.survey_score === 9 || v.survey_score === 10).length +
       fromStats((s) => s.survey_9_or_10),
+
+    // Recalled today, the total off-site wait in whole seconds, and the waits per band.
+    recalled: waits.length + fromStats((s) => s.called),
+    offerToCallSeconds: waits.reduce((total, w) => total + w, 0) + fromStats((s) => s.offer_to_call_seconds),
+    waitUnder30: inBand("under_30") + fromStats((s) => s.wait_under_30),
+    wait30to59: inBand("30_to_59") + fromStats((s) => s.wait_30_to_59),
+    wait60to119: inBand("60_to_119") + fromStats((s) => s.wait_60_to_119),
+    wait120plus: inBand("120_plus") + fromStats((s) => s.wait_120_plus),
   };
 }
 

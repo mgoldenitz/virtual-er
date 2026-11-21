@@ -47,6 +47,12 @@ function statsRow(overrides: Partial<DailyStatsRow> = {}): DailyStatsRow {
     survey_responses: 0,
     survey_score_sum: 0,
     survey_9_or_10: 0,
+    called: 0,
+    offer_to_call_seconds: 0,
+    wait_under_30: 0,
+    wait_30_to_59: 0,
+    wait_60_to_119: 0,
+    wait_120_plus: 0,
     ...overrides,
   };
 }
@@ -279,6 +285,12 @@ describe("dashboardNumbers: empty day", () => {
       surveyResponses: 0,
       surveyScoreSum: 0,
       survey9or10: 0,
+      recalled: 0,
+      offerToCallSeconds: 0,
+      waitUnder30: 0,
+      wait30to59: 0,
+      wait60to119: 0,
+      wait120plus: 0,
     });
   });
 });
