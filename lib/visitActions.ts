@@ -59,8 +59,11 @@ function blankVisit(input: NewVisit, source: "home" | "desk", nowIso: string): V
  * - not_eligible: not offered; waits on-site as usual.
  */
 function applyTriage(visit: Visit, ctas: 4 | 5, language: string, outcome: DeskOutcome, nowIso: string): Visit {
-  // A visit back for reassessment starts a fresh wait: no call-back or phone calls carry over.
+  // A visit back for reassessment starts a fresh wait: no call-back, phone calls, offer or
+  // "I'm still here" tap carries over (an old switch stamp would look like a new switch).
   const fresh = {
+    offered_at: null,
+    last_still_here_at: null,
     called_at: null,
     seen_at: null,
     confirmed_at: null,
