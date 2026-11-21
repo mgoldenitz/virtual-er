@@ -1270,3 +1270,85 @@ export function Button({
   );
 }
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-21. Pasted by the owner, unchanged.
+
+### 1. Definitions against code
+
+- Sub-millisecond `Date.parse` truncation can disagree between live `dashboardNumbers` and `delete_old_visits()` on a band edge.
+  - File and line: `lib/dashboardNumbers.ts:195` (`secondsBetween`) vs. `supabase/migrations/20261120030000_wait_and_recall_stats.sql:92, 96, 100, 104, 108`.
+  - What goes wrong: `Date.parse` truncates fractional seconds past 3 digits (milliseconds), whereas Postgres `timestamptz` subtraction preserves microseconds. At a `.5`-second rounding edge near a band boundary, live counts and `daily_stats` can put the same visit in different bands and `offerToCallSeconds` totals.
+  - Example: `offered_at = "2026-11-21T10:00:00.000900Z"`, `called_at = "2026-11-21T10:29:29.500000Z"` (true wait `1769.4991` s). Live `secondsBetween` truncates `.000900` to `.000`, producing `1769.500` s, then `1770` s, then `30` min (`wait30to59`); after clean-up, Postgres rounds `1769.4991` s to `1769` s, then `29` min (`wait_under_30`).
+  - Smallest fix: None needed if timestamps are only ever millisecond-precision from JS; otherwise parse sub-millisecond digits or round timestamps to milliseconds on write.
+  - How sure: High that the precision difference exists; low likelihood of occurring in practice.
+- All other definitions in `lib/dashboardNumbers.ts` and `delete_old_visits()` match each other and the SPEC (`recalled` counts all statuses once on `called_at` when `offered_at` is set; `offer_to_call_seconds` and the 4 wait bands use the same cohort and date; `recall_to_arrival_seconds` requires `status = 'arrived'` and `called_at` set on `arrived_at`). (The funnel label mismatch for `homeReachedTriage` is covered in Section 6.)
+
+### 2. Rounding at the band edges
+
+- Band-edge rounding mismatch (non-negative or negative integer seconds): none found. For any whole `seconds` value, JavaScript `Math.round(seconds / 60)` (`lib/waitBand.ts:9`) and SQL `round(round(extract(epoch ...)) / 60)` produce the same band. Even on negative half-minutes where `Math.round` and Postgres `round(numeric)` diverge (e.g., `-1770` s gives `-29` in JS vs. `-30` in SQL), both values are `< 30` and fall in `under_30`.
+- Negative waits (clock error) reach the wait bands and `offerToCallSeconds`.
+  - File and line: `lib/dashboardNumbers.ts:124-126, 184-188, 193-196` and the migration lines 91-109.
+  - What goes wrong: Neither `dashboardNumbers` nor `delete_old_visits()` checks `called_at >= offered_at` or clamps negative durations to `0`. A clock step-back or manual edit producing `called_at < offered_at` increments `waitUnder30` / `wait_under_30` and subtracts seconds from `offerToCallSeconds` / `offer_to_call_seconds` (and at `-0.5` s, JS gives `0` s while SQL gives `-1` s).
+  - Example: `offered_at = "2026-11-21T10:05:00Z"` and `called_at = "2026-11-21T10:00:00Z"` increments `waitUnder30` by `1` and adds `-300` to `offerToCallSeconds`; as the sole recall of the day, "Average minutes from offer to recall" displays `-5 (1 visit)`.
+  - Smallest fix: Clamp negative durations to `0` with `Math.max(0, ...)` in `lib/dashboardNumbers.ts:126` (and `195`) and `greatest(0, ...)` in the migration lines 92 to 108.
+  - How sure: High.
+
+### 3. The migration
+
+- None found. All 16 existing metrics, the advisory lock, the 24-hour delete CTE, `totals` aggregation, `on conflict ... do update` (including all 6 new columns), `security definer` with `set search_path = ''`, and `revoke execute` from `public, anon, authenticated, service_role` are complete and intact.
+
+### 4. The trend
+
+- Rule parity and live visits on past dates: `trendNumbers` calls `dashboardNumbers(visits, stats, day, isDemo)` for each past day, so all event-based metrics use the same rules as today. A live visit (not yet deleted) can count on a past date, which is right: otherwise yesterday's row would omit un-deleted visits until the clean-up runs.
+- `TrendDay` carries today's live `*Now` counts on every past date.
+  - File and line: `lib/trendNumbers.ts:9, 18`.
+  - What goes wrong: `waitingNow`, `recalledNow` and `reassessmentNow` are not filtered by `day`, so every `TrendDay.numbers` has today's live queue counts. `TrendTable`, `dashboardCsv` and `hasPastData` ignore them, but a future consumer would get today's queue for 7 days ago.
+  - Example: With 3 `waiting` visits live on `2026-11-21`, `trendNumbers(...)[0]` (`day: "2026-11-14"`) has `numbers.A.waitingNow === 3`.
+  - Smallest fix: Zero them out or omit them via a `PastSiteNumbers` type inside `trendNumbers`.
+  - How sure: High.
+
+### 5. The CSV
+
+- Column order, header/cell alignment, and commas or line ends: none found.
+- Negative durations can emit cells starting with `-` (`lib/dashboardCsv.ts:31, 34`). Spreadsheets parse plain `"-5"` as a negative number rather than a formula, though clamping removes it. Fix: clamp as in Section 2. How sure: High.
+- Synchronous `URL.revokeObjectURL` immediately after `link.click()` (`components/dashboard/CsvButton.tsx:25-26`) can cancel the download in some browsers. Fix: `setTimeout(() => URL.revokeObjectURL(url), 1000)`. How sure: Medium.
+
+### 6. Labels and screens
+
+- Funnel "Reached triage (from home)" contradicts "Each row counts what happened today" (`lib/funnelSteps.ts:11`, `components/dashboard/FunnelView.tsx:35`). `homeReachedTriage` counts on `created_at`, not `triaged_at`. ("Answered survey" likewise counts on `closed_at`, not survey time.) Example: a home visit created `2026-11-20 23:50` and triaged `2026-11-21 00:15` gives "Reached triage (from home): 0" and "Triaged CTAS 4 or 5: 1" on `2026-11-21`. Fix: label "Started from home today and reached triage", or a note. How sure: High.
+- "Average minutes from offer to recall" does not say which visits are in it (`SiteNumbers.tsx:45`, `TrendTable.tsx:18`). Example: 10 patients waiting 3 hours and 1 recalled `no_show` after 10 minutes reads `10 (1 visit)`. Fix: "Average minutes from offer to recall (recalled visits)". How sure: Medium.
+- No empty state on `TrendTable`: on day 1 it shows two 7-row grids of `0`, `0 of 0 (-)` and `- (0 visits)`. Fix: one message ("No past days with visits yet.") when `!hasPastData(trend)`. How sure: High.
+- `NoData` announces "no data yet" for days before the start date and for finished 0-visit days (`NumberParts.tsx:6-13`, `TrendTable.tsx:29-49`). Fix: a `label` prop on `NoData`, "not tracked" before the start date, "not applicable" for a 0 bottom. How sure: High.
+- `TrendTable` has no heading, its `<caption>` scrolls off-screen on a phone, and its title is announced twice (`TrendTable.tsx:60-65`). Fix: an `<h2 id>` above the scroll box, `aria-labelledby` on the box and the table, and no `<caption>`. How sure: High.
+- `FunnelView` puts the label and count spans with no separator: textContent "Offered12" (`FunnelView.tsx:16-17`). Fix: `<span className="sr-only">: </span>` or `{" "}` between them. How sure: High.
+- `CsvButton` does not show Real or Demo in its text (`CsvButton.tsx:30-32`). Fix: `Download past 7 days (${isDemo ? "demo " : ""}CSV)`. How sure: Medium.
+
+### 7. Tests that the check files miss
+
+- A negative-wait synthetic visit: `offered_at = '2000-03-01 10:05'`, `called_at = '2000-03-01 10:00'` (Toronto, `called`, CTAS 4, desk, site A, not demo). None of `5W` to `57` tests `called_at < offered_at`. How sure: High.
+- `daily_stats.sql:81-82` pre-inserts the `2000-01-02 A false` row with `0` in all 6 new columns, so the check would still pass if `on conflict` overwrote `called = excluded.called` instead of adding.
+
+## Claude's check of the response
+
+Valid, fix (no product decision needed):
+
+- 5, revoke: correct risk. Move `URL.revokeObjectURL` into a `setTimeout`. `CsvButton.click.test.tsx` must then wait for the timer (fake timers).
+- 6, trend table heading: correct. The `<caption>` is inside the scroll box, so it scrolls away, and the region `aria-label` repeats it. Fix: an `<h2>` above the box, `aria-labelledby` on the box. The tests in `TrendTable.test.tsx` that find the caption must change to find the heading.
+- 6, funnel separator: correct, textContent is "Offered12". Add a separator between the 2 spans.
+- 7, conflict row: correct, a real gap in the check. Give the pre-inserted `2000-01-02 A false` row non-zero values in the 6 new columns and raise that row's expected line by the same values. The owner runs `daily_stats.sql` again.
+
+Valid, owner decision (asked in this turn):
+
+- 6, "Reached triage (from home)" counts on `created_at`. True in both JS and SQL (decisions from 2026-11-16). The fix is a label or a note.
+- 6, "Average minutes from offer to recall" label.
+- 6, no empty state on the trend tables.
+- 6, the spoken words of the dash before the start date.
+
+Not accepted:
+
+- 2, 5 and 7, negative waits and a clamp: the app cannot make `called_at < offered_at`. `visits_before_write` sets both times from the database `now()`, and the switch that moves `offered_at` is allowed only from `declined` (no `called_at`), and its Undo only before the recall (`20261119010000_declined_switch_checks.sql:56-60`). Only a manual SQL edit can do it. A clamp to 0 would hide that edit, not repair it; a negative number shows it.
+- 1, sub-millisecond: true (`now()` has microseconds, `Date.parse` keeps milliseconds), but a visit changes band only when its wait is within 1 ms of a half-second at a band edge, and only between the live count and the stored count. Goes in known-issues.md, no code change.
+- 4, `*Now` counts in `TrendDay`: true, but nothing reads them. No change now.
+- 6, Real or Demo in the CSV button text: the mode switch is above it and the file name says `demo` or `real`. No change, unless the owner wants it.
