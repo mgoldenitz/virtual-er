@@ -119,7 +119,7 @@ Checked against the code on 2026-11-21.
 2. Survey counts not limited to `arrived`: rejected. The owner chose "count every score" on 2026-11-20 (docs/decisions.md line 110, point 4.1).
 3a. The "did not save" alert can show on the new status: accepted. `VisitScreen.tsx` lines 48-55 store `view.status` when `notSaved` becomes true, not the status at the tap. If staff change the status while the tap is in flight, the alert shows on the new screen.
 3b. A failed save for token A shows on visit B: accepted, low risk. `app/patient/page.tsx` line 42 clears `notSaved` on a new link, but an in-flight `onOnMyWay` for the old token sets it again at line 99.
-3c. Double tap in the same frame: rejected. React runs a click update before the next click event, so the second click sees `sending` as true. The existing click tests show one save per double click.
+3c. Double tap in the same frame: probably rejected. React runs the update from a click before the next click event, so the second click sees `sending` as true. No test shows this (a double-tap test is an option).
 4a. Gap clamp not tested: rejected. `lib/patientViewFromRow.test.ts` line 53 ("never uses a gap under 5 minutes") tests it.
 4b. No test for the `offered_at !== null` guard on `declined`: accepted. Every `declined` test in `lib/dashboardNumbers.test.ts` sets `offered_at`.
 4c. `share(1,1)` check lost on site B: rejected. Site B has no offer since the fault 2 decision, so `null` is correct. `lib/dashboardShare.test.ts` line 7 tests a 100% share.
