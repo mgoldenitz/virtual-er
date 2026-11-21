@@ -1,19 +1,25 @@
 "use client";
 
-// The dashboard's body: the Real or Demo switch, the day's numbers for both sites, and the words
-// for loading and out-of-date reads. Real visits show unless staff choose Demo; the choice is not saved.
+// The dashboard's body: the Real or Demo switch, the day's numbers for both sites, today's steps,
+// the past 7 days and the CSV download, and the words for loading and out-of-date reads.
+// Real visits show unless staff choose Demo; the choice is not saved.
 
 import { useState } from "react";
 import { useDashboard } from "@/data/useDashboard";
 import { dashboardNumbers } from "@/lib/dashboardNumbers";
+import { trendNumbers } from "@/lib/trendNumbers";
+import { CsvButton } from "@/components/dashboard/CsvButton";
+import { FunnelView } from "@/components/dashboard/FunnelView";
 import { ModeSwitch } from "@/components/dashboard/ModeSwitch";
 import { SiteNumbers } from "@/components/dashboard/SiteNumbers";
 import { SummaryPanel } from "@/components/dashboard/SummaryPanel";
+import { TrendTable } from "@/components/dashboard/TrendTable";
 
 export function DashboardView() {
   const [isDemo, setIsDemo] = useState(false);
   const { visits, stats, today, outOfDate } = useDashboard(isDemo);
   const counts = visits ? dashboardNumbers(visits, stats, today, isDemo) : null;
+  const trend = visits ? trendNumbers(visits, stats, today, isDemo) : [];
 
   return (
     <>
@@ -36,6 +42,10 @@ export function DashboardView() {
             <SiteNumbers site="A" numbers={counts.A} />
             <SiteNumbers site="B" numbers={counts.B} />
           </div>
+          <FunnelView numbers={counts} />
+          <TrendTable site="A" trend={trend} />
+          <TrendTable site="B" trend={trend} />
+          <CsvButton trend={trend} today={today} isDemo={isDemo} />
           <SummaryPanel isDemo={isDemo} />
         </>
       ) : outOfDate ? (
