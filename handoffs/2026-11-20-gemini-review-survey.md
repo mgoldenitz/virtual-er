@@ -1,0 +1,951 @@
+# Gemini review: the patient survey (Phase 5, Part B)
+
+Model: Gemini Hydrogen 4, High, in a new chat. If you have no Gemini Hydrogen 4 credits, use Gemini 3.6 Flash, High.
+
+## What to paste into Gemini
+
+Paste everything from "Prompt" to the end of this file. The file has no keys, tokens, passwords or real patient data. The tokens in the checks (`ZZZZ...S0`) are made up.
+
+## Prompt
+
+You review a small change to a concept prototype: a virtual ER waiting room. Low-acuity patients wait off-site and follow their place in line on their phone. Synthetic data only. Next.js App Router, React, Supabase (Postgres with row-level security; patients use the `anon` role and reach data only through `security definer` functions that need the visit's access token).
+
+Find problems. Do not confirm that the change is good. For each problem, give the file and line, a concrete case that goes wrong, and the smallest fix. Say "not sure" when you are not sure.
+
+### What the change does
+
+After staff mark a patient "arrived", the visit is closed and the phone shows "Ready at the desk". The phone now shows one survey question: "How would you rate your waiting experience?" with the scores 0 to 10 as radio buttons and a Submit button. After a saved score, the phone says "Thank you for your feedback." and does not ask again.
+
+Rules (from the spec): the score is optional. The patient submits once. Only a visit that arrived (closed) gets the survey. The phone never reads the score back; it reads only `survey_done` (true or false).
+
+### Settled decisions (do not report these as faults)
+
+- "Pick, then Submit" (owner, 2026-11-20): a radio group and a Submit button, not 11 buttons that save on tap.
+- Undo of an arrival keeps the score (owner, 2026-11-20). After a second "Mark arrived", the phone shows thank you, not a second survey.
+- "Score keeps version" (owner, 2026-11-20): a change to `survey_score` alone does not raise `visits.version`. Reason: staff actions save only `where version = the version I read` (helper `changeVisit` below). A staff Undo seconds after the survey was refused once. Staff never see or change the score. Every other change still raises the version (check case 13).
+- `survey.notSaved` is a new text, because the old `patient.notSaved` is about "on your way". The French, Arabic, Urdu and Mandarin texts are drafts; a fluent human reviews them later.
+- `SurveyBox.tsx` compares `result !== "saved"` inline (a trivial check, accepted).
+
+### Questions
+
+1. `submit_survey` (migration 20261120000000_survey.sql): can a patient save a score for a visit that is not theirs, not arrived, not closed, or already scored? Can it save a score outside 0 to 10? Is there a race when two Submits arrive at the same time?
+2. The version trigger (20261120010000_survey_keeps_version.sql): the test is `(to_jsonb(new) - 'survey_score' - 'version') = (to_jsonb(old) - 'survey_score' - 'version')`. Is there a case where another column changes and the version still stays? A case where only the score changes and the version still goes up? Does the order of the `now()` lines after it matter?
+3. `SurveyBox.tsx`: keyboard and screen reader use (fieldset and legend, radio labels, the status and alert roles, focus after Submit and after a failed save), a double Submit, and what shows when the save fails or the network is down.
+4. Is a state missing on the phone (for example: the survey saved, then staff Undo, then the visit is removed instead of arrived)?
+5. Anything in the tests that passes for the wrong reason.
+
+## Checked (output in this session or in docs/progress.md)
+
+- `npm test`: 88 test files, 556 tests pass. `npm run lint`: no faults. `npm run build`: passed.
+- `npm run e2e` two times in a row: 37 passed, 37 passed (phone 390 x 844 and laptop 1280 x 800, with axe checks). The demo simulator was on during these runs.
+- `supabase/checks/survey.sql` on the live database (run by the owner in the SQL Editor): 13 of 13 ok. On a local Postgres copy (PGlite): case 12 failed before the version fix, 13 of 13 ok after it; `demo_tick.sql` all rows in range.
+- `supabase/checks/permissions.sql` live: unchanged; `anon` and `authenticated` get EXECUTE on `submit_survey` and nothing new on tables; no table without row-level security.
+
+## Not checked
+
+- A real phone (only Playwright's phone size in Chromium).
+- A real screen reader (only axe and the roles in the tests).
+- The draft translations of `survey.notSaved`.
+- The dashboard numbers that use `survey_score` (`daily_stats`, written by `delete_old_visits`); this change does not touch them.
+
+## Line counts of the changed files (after the change)
+
+Code: `components/patient/SurveyBox.tsx` 87 (new), `components/patient/StatusAndSound.tsx` 51, `data/patientVisit.ts` 171, `lib/survey.ts` 22 (new), `lib/patientView.ts` 25, `lib/patientViewFromRow.ts` 51, `lib/text/en.ts` 202, `lib/text/fr.ts` 171, `lib/text/ar.ts` 172, `lib/text/ur.ts` 173, `lib/text/zh.ts` 171.
+Database: `supabase/migrations/20261120000000_survey.sql` 113 (new), `supabase/migrations/20261120010000_survey_keeps_version.sql` 51 (new), `supabase/checks/survey.sql` 72 (new), `supabase/checks/permissions.sql` 73.
+Tests: `components/patient/SurveyBox.click.test.tsx` 112 (new), `lib/survey.test.ts` 63 (new), `lib/patientViewFromRow.test.ts` 78, `e2e/recall-arrive.spec.ts` 68. Nine other test files got one fixture line `surveyDone: false,`.
+
+## The diff (code, database and the main tests; the 9 one-line fixture changes are left out)
+
+```diff
+diff --git a/components/patient/StatusAndSound.tsx b/components/patient/StatusAndSound.tsx
+index 524f505..729dbc8 100644
+--- a/components/patient/StatusAndSound.tsx
++++ b/components/patient/StatusAndSound.tsx
+@@ -3,6 +3,7 @@
+ // The "I'm still here" prompt, the status screen and the sound box of the patient page, with the one
+ // flag they share: when the prompt or the sound box leaves the page with focus inside it, the status
+ // screen moves focus to its heading.
++// The survey box shows under the status screen once the visit has arrived and closed (SurveyBox).
+ // The page and the click test both use this part, so the test checks the real wiring.
+ 
+ import { useRef } from "react";
+@@ -10,6 +11,7 @@ import type { PatientView } from "@/lib/patientView";
+ import { PatientStatus } from "./PatientStatus";
+ import { SoundSwitch } from "./SoundSwitch";
+ import { StillHerePrompt } from "./StillHerePrompt";
++import { SurveyBox } from "./SurveyBox";
+ 
+ type Props = {
+   view: PatientView;
+@@ -34,6 +36,7 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
+       <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
+         <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} lostFocus={lostFocus} />
+       </div>
++      {token && <SurveyBox view={view} token={token} language={language} />}
+       {(view.status === "waiting" || view.status === "called") && (
+         <SoundSwitch
+           status={view.status}
+diff --git a/components/patient/SurveyBox.click.test.tsx b/components/patient/SurveyBox.click.test.tsx
+new file mode 100644
+index 0000000..e1f0916
+--- /dev/null
++++ b/components/patient/SurveyBox.click.test.tsx
+@@ -0,0 +1,112 @@
++// @vitest-environment happy-dom
++// The survey on the "Ready at the desk" screen: pick a score from 0 to 10, then Submit.
++// The save is replaced, so each test controls its answer.
++
++import { act } from "react";
++import { createRoot, type Root } from "react-dom/client";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { submitSurvey } from "@/data/patientVisit";
++import type { PatientView } from "@/lib/patientView";
++import { textFor } from "@/lib/text";
++import { SurveyBox } from "./SurveyBox";
++
++vi.mock("@/data/patientVisit", () => ({ submitSurvey: vi.fn().mockResolvedValue("saved") }));
++
++// Tells React that this file runs its updates inside act().
++(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
++
++const s = textFor("en").survey;
++
++const arrived: PatientView = {
++  code: "ABC234",
++  site: "A",
++  language: "en",
++  status: "arrived",
++  placeInLine: null,
++  waitLow: null,
++  waitHigh: null,
++  calledAt: "2026-11-20T11:00:00Z",
++  lastStillHereAt: null,
++  triagedAt: "2026-11-20T10:00:00Z",
++  seen: true,
++  closed: true,
++  expired: false,
++  surveyDone: false,
++};
++
++let container: HTMLDivElement;
++let root: Root;
++
++function show(view: PatientView) {
++  act(() => root.render(<SurveyBox view={view} token="t" language="en" />));
++}
++
++const radios = () => [...container.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
++const submit = () => [...container.querySelectorAll("button")].find((b) => b.textContent === s.submit);
++const pick = (n: number) => act(() => radios().find((r) => r.value === String(n))?.click());
++
++beforeEach(() => {
++  container = document.createElement("div");
++  document.body.appendChild(container);
++  root = createRoot(container);
++  vi.mocked(submitSurvey).mockClear();
++  vi.mocked(submitSurvey).mockResolvedValue("saved");
++});
++
++afterEach(() => {
++  act(() => root.unmount());
++  container.remove();
++});
++
++describe("SurveyBox", () => {
++  it("names the group of 11 scores with the SPEC question", () => {
++    show(arrived);
++    expect(container.querySelector("fieldset legend")?.textContent).toBe(s.question);
++    expect(radios().map((r) => r.value)).toEqual(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
++    expect(container.textContent).toContain(s.low);
++    expect(container.textContent).toContain(s.high);
++    expect(container.textContent).toContain(s.note);
++  });
++
++  it("sends nothing when Submit is pressed with no score picked", async () => {
++    show(arrived);
++    await act(async () => submit()?.click());
++    expect(submitSurvey).not.toHaveBeenCalled();
++  });
++
++  it("sends the picked score with the token", async () => {
++    show(arrived);
++    pick(8);
++    await act(async () => submit()?.click());
++    expect(submitSurvey).toHaveBeenCalledWith("t", 8);
++  });
++
++  it("sends the last score picked when the patient changes it", async () => {
++    show(arrived);
++    pick(3);
++    pick(9);
++    await act(async () => submit()?.click());
++    expect(submitSurvey).toHaveBeenCalledWith("t", 9);
++  });
++
++  it.each(["refused", "not_saved"] as const)("shows the survey's not-saved line when the answer is %s", async (answer) => {
++    vi.mocked(submitSurvey).mockResolvedValue(answer);
++    show(arrived);
++    pick(5);
++    await act(async () => submit()?.click());
++    expect(container.querySelector('[role="alert"]')?.textContent).toBe(s.notSaved);
++    expect(radios()).toHaveLength(11);
++  });
++
++  it("shows the thank-you and no scores once the score is saved", () => {
++    show({ ...arrived, surveyDone: true });
++    expect(container.textContent).toContain(s.thanks);
++    expect(radios()).toHaveLength(0);
++    expect(submit()).toBeUndefined();
++  });
++
++  it("shows nothing for a visit that is not arrived and closed", () => {
++    show({ ...arrived, status: "on_the_way", closed: false });
++    expect(container.textContent).toBe("");
++  });
++});
+diff --git a/components/patient/SurveyBox.tsx b/components/patient/SurveyBox.tsx
+new file mode 100644
+index 0000000..4db0d1c
+--- /dev/null
++++ b/components/patient/SurveyBox.tsx
+@@ -0,0 +1,87 @@
++"use client";
++
++// The survey on the patient's "Ready at the desk" screen: one question, a score from 0 to 10, and Submit.
++// It shows only after the visit is closed and arrived, and only once (lib/survey.ts decides which step).
++
++import { useState, type FormEvent } from "react";
++import { submitSurvey } from "@/data/patientVisit";
++import type { PatientView } from "@/lib/patientView";
++import { isSurveyScore, surveyStep } from "@/lib/survey";
++import { textFor } from "@/lib/text";
++import { Button } from "@/components/Button";
++
++/** The 11 scores the patient can pick, 0 to 10. */
++const SCORES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
++
++type Props = {
++  view: PatientView;
++  /** The visit's token, sent with the score. */
++  token: string;
++  language: string;
++};
++
++export function SurveyBox({ view, token, language }: Props) {
++  const [score, setScore] = useState<number | null>(null);
++  const [sending, setSending] = useState(false);
++  const [notSaved, setNotSaved] = useState(false);
++  const t = textFor(language).survey;
++  const step = surveyStep(view);
++
++  if (step === null) return null;
++  if (step === "thanks") {
++    return (
++      <p role="status" className="clean-card font-semibold">
++        {t.thanks}
++      </p>
++    );
++  }
++
++  async function onSubmit(event: FormEvent<HTMLFormElement>) {
++    event.preventDefault();
++    if (score === null || !isSurveyScore(score) || sending) return;
++    setSending(true);
++    const result = await submitSurvey(token, score);
++    setSending(false);
++    // On "saved" the page re-reads the visit, so the step turns to "thanks" by itself.
++    setNotSaved(result !== "saved");
++  }
++
++  return (
++    <form onSubmit={onSubmit} className="clean-card space-y-3">
++      <fieldset className="space-y-3">
++        <legend className="text-lg font-bold">{t.question}</legend>
++        <div className="flex flex-wrap gap-2">
++          {SCORES.map((n) => (
++            <label
++              key={n}
++              className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-xl border-2 border-slate-700 px-2 font-semibold"
++            >
++              <input
++                type="radio"
++                name="survey-score"
++                value={n}
++                checked={score === n}
++                onChange={() => setScore(n)}
++                className="h-5 w-5"
++              />
++              {n}
++            </label>
++          ))}
++        </div>
++        <div className="flex justify-between gap-2 text-sm">
++          <span>{t.low}</span>
++          <span>{t.high}</span>
++        </div>
++      </fieldset>
++      <p className="text-sm">{t.note}</p>
++      <Button type="submit" disabled={sending} className="w-full text-lg">
++        {t.submit}
++      </Button>
++      {notSaved && (
++        <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
++          {t.notSaved}
++        </p>
++      )}
++    </form>
++  );
++}
+diff --git a/data/patientVisit.ts b/data/patientVisit.ts
+index 7333dd7..551501f 100644
+--- a/data/patientVisit.ts
++++ b/data/patientVisit.ts
+@@ -157,3 +157,15 @@ export function confirmOnMyWayByToken(token: string): Promise<ChangeResult> {
+ export function recordStillHere(token: string): Promise<ChangeResult> {
+   return patientStep("record_still_here", token);
+ }
++
++/** Save the 0 to 10 survey score once. Only after the visit is closed, arrived and waited off-site (SPEC rule 5). */
++export async function submitSurvey(token: string, score: number): Promise<ChangeResult> {
++  try {
++    const { data, error } = await supabaseBrowser().rpc("submit_survey", { p_token: token, p_score: score });
++    if (error || typeof data !== "boolean") return "not_saved";
++    await refreshPatientView(token); // show the result straight away
++    return data ? "saved" : "refused";
++  } catch {
++    return "not_saved";
++  }
++}
+diff --git a/e2e/recall-arrive.spec.ts b/e2e/recall-arrive.spec.ts
+index 80cdbb9..a3989c1 100644
+--- a/e2e/recall-arrive.spec.ts
++++ b/e2e/recall-arrive.spec.ts
+@@ -1,4 +1,4 @@
+-// Recall and arrival: staff recall a waiting patient, the patient is on the way, staff mark arrived, and Undo brings the visit back to the list.
++// Recall and arrival: staff recall a waiting patient, the patient is on the way, staff mark arrived, the patient answers the survey, and Undo brings the visit back; a second arrival shows thank you, not a second survey.
+ 
+ import { expect, test } from "@playwright/test";
+ import { axeFaults } from "./helpers/axe";
+@@ -7,8 +7,10 @@ import { openPatient } from "./helpers/patient";
+ import { openStaff } from "./helpers/staff";
+ 
+ const EMERGENCY = "If your symptoms get worse, call 911 or come back to the emergency department now.";
++// The survey's fieldset has this question as its name. (The text size switch has radio buttons too.)
++const SURVEY = "How would you rate your waiting experience?";
+ 
+-test("recall, on the way, arrived, then undo the arrival", async ({ browser }) => {
++test("recall, on the way, arrived, the survey, then undo and arrive again",async ({ browser }) => {
+   const staff = await openStaff(browser);
+   const patient = await openPatient(browser);
+   try {
+@@ -39,6 +41,13 @@ test("recall, on the way, arrived, then undo the arrival", async ({ browser }) =
+     await expect(patient.getByText(EMERGENCY).first()).toBeVisible();
+     expect(await axeFaults(patient)).toEqual([]);
+ 
++    // The survey: pick 8, Submit, and the phone says thank you instead of asking again.
++    await patient.getByRole("radio", { name: "8" }).check();
++    await patient.getByRole("button", { name: "Submit" }).click();
++    await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toBeVisible();
++    await expect(patient.getByRole("group", { name: SURVEY })).toHaveCount(0);
++    expect(await axeFaults(patient)).toEqual([]);
++
+     // Undo in Recently closed: the row shows on the list again.
+     await staff.getByTestId(`closed-${code}`).getByRole("button", { name: "Undo" }).click();
+     await expect(row).toBeVisible();
+@@ -46,6 +55,12 @@ test("recall, on the way, arrived, then undo the arrival", async ({ browser }) =
+     // Undo puts the visit back to on_the_way, so the phone shows the called screen again.
+     await expect(patient.getByRole("heading", { name: "Please head back now" })).toBeVisible();
+     await expect(patient.getByRole("heading", { name: "Status: Ready at the desk" })).toHaveCount(0);
++
++    // A second arrival keeps the score (owner decision 2026-11-20): thank you, and no second survey.
++    await row.getByRole("button", { name: "Mark arrived" }).click();
++    await expect(patient.getByRole("heading", { name: "Status: Ready at the desk" })).toBeVisible();
++    await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toBeVisible();
++    await expect(patient.getByRole("group", { name: SURVEY })).toHaveCount(0);
+   } finally {
+     await staff.context().close();
+     await patient.context().close();
+diff --git a/lib/patientView.ts b/lib/patientView.ts
+index 947dab5..6dfcf25 100644
+--- a/lib/patientView.ts
++++ b/lib/patientView.ts
+@@ -20,4 +20,6 @@ export type PatientView = {
+   closed: boolean;
+   /** Started from home, never triaged, and past the 6 hours staff keep expecting it. */
+   expired: boolean;
++  /** True once the survey score is saved (lib/survey.ts). The phone never gets the score itself. */
++  surveyDone: boolean;
+ };
+diff --git a/lib/patientViewFromRow.ts b/lib/patientViewFromRow.ts
+index 8773aab..1c24cb3 100644
+--- a/lib/patientViewFromRow.ts
++++ b/lib/patientViewFromRow.ts
+@@ -22,6 +22,8 @@ export type PatientVisitRow = {
+   expired: boolean;
+   /** Added in 20261111050000_still_here.sql; missing (undefined) before that change has run. */
+   triaged_at?: string | null;
++  /** Added in 20261120000000_survey.sql; missing (undefined) before that change has run. */
++  survey_done?: boolean;
+ };
+ 
+ export function patientViewFromRow(row: PatientVisitRow): PatientView {
+@@ -44,5 +46,6 @@ export function patientViewFromRow(row: PatientVisitRow): PatientView {
+     seen: row.seen,
+     closed: row.closed,
+     expired: row.expired,
++    surveyDone: row.survey_done ?? false,
+   };
+ }
+diff --git a/lib/survey.test.ts b/lib/survey.test.ts
+new file mode 100644
+index 0000000..186c21b
+--- /dev/null
++++ b/lib/survey.test.ts
+@@ -0,0 +1,63 @@
++import { describe, expect, it } from "vitest";
++import type { PatientView } from "./patientView";
++import { isSurveyScore, surveyStep } from "./survey";
++import type { VisitStatus } from "./visit";
++
++// Staff marked the patient arrived: the visit is closed and no score is saved yet.
++const arrived: PatientView = {
++  code: "ABC234",
++  site: "A",
++  language: "en",
++  status: "arrived",
++  placeInLine: null,
++  waitLow: null,
++  waitHigh: null,
++  calledAt: "2026-11-20T11:00:00Z",
++  lastStillHereAt: null,
++  triagedAt: "2026-11-20T10:00:00Z",
++  seen: true,
++  closed: true,
++  expired: false,
++  surveyDone: false,
++};
++
++describe("which survey step the patient sees (SPEC line 69, hard rule 5)", () => {
++  it("asks the question when the visit arrived, is closed and has no score", () => {
++    expect(surveyStep(arrived)).toBe("ask");
++  });
++
++  it("says thank you when the score is already saved", () => {
++    expect(surveyStep({ ...arrived, surveyDone: true })).toBe("thanks");
++  });
++
++  it("shows nothing for an arrived visit that is not closed", () => {
++    expect(surveyStep({ ...arrived, closed: false })).toBeNull();
++  });
++
++  const others: VisitStatus[] = [
++    "pre_arrival",
++    "waiting",
++    "called",
++    "on_the_way",
++    "unable_to_reach",
++    "needs_reassessment",
++    "removed",
++    "declined",
++    "not_eligible",
++  ];
++  it.each(others)("shows nothing for a %s visit, closed or not, done or not", (status) => {
++    expect(surveyStep({ ...arrived, status })).toBeNull();
++    expect(surveyStep({ ...arrived, status, closed: false })).toBeNull();
++    expect(surveyStep({ ...arrived, status, surveyDone: true })).toBeNull();
++  });
++});
++
++describe("a survey score", () => {
++  it.each([0, 1, 5, 9, 10])("accepts %s", (n) => {
++    expect(isSurveyScore(n)).toBe(true);
++  });
++
++  it.each([-1, 11, 7.5, Number.NaN, Number.POSITIVE_INFINITY])("refuses %s", (n) => {
++    expect(isSurveyScore(n)).toBe(false);
++  });
++});
+diff --git a/lib/survey.ts b/lib/survey.ts
+new file mode 100644
+index 0000000..3f0fe26
+--- /dev/null
++++ b/lib/survey.ts
+@@ -0,0 +1,22 @@
++// The survey rules (SPEC line 69 and hard rule 5): which survey step the patient's phone shows,
++// and which scores may be sent. The database function submit_survey checks the same things.
++
++import type { PatientView } from "./patientView";
++
++/** "ask" = show the question; "thanks" = the score is saved; null = no survey on this screen. */
++export type SurveyStep = "ask" | "thanks" | null;
++
++/**
++ * Only a closed visit that arrived gets the survey (an arrived visit always waited off-site).
++ * After the score is saved, the phone says thank you instead, also after an Undo and a second arrival.
++ */
++export function surveyStep(view: PatientView): SurveyStep {
++  if (view.status !== "arrived" || !view.closed) return null;
++  if (!view.surveyDone) return "ask";
++  return "thanks";
++}
++
++/** A whole number from 0 to 10. */
++export function isSurveyScore(score: number): boolean {
++  return Number.isInteger(score) && score >= 0 && score <= 10;
++}
+diff --git a/lib/text/ar.ts b/lib/text/ar.ts
+index 9d30da1..c6f4998 100644
+--- a/lib/text/ar.ts
++++ b/lib/text/ar.ts
+@@ -157,6 +157,7 @@ export const ar: PatientText = {
+     submit: "إرسال",
+     thanks: "شكرا لك على ملاحظاتك.",
+     note: "الإجابة اختيارية. لا يتم حفظ اسمك.",
++    notSaved: "لم يتم حفظ إجابتك. يرجى المحاولة مرة أخرى.",
+   },
+   offline: "أنت غير متصل بالإنترنت. أعد الاتصال بالإنترنت لمعرفة حالتك.",
+ };
+diff --git a/lib/text/en.ts b/lib/text/en.ts
+index bb3c9da..e702535 100644
+--- a/lib/text/en.ts
++++ b/lib/text/en.ts
+@@ -185,6 +185,7 @@ export const en = {
+     submit: "Submit",
+     thanks: "Thank you for your feedback.",
+     note: "Answering is optional. Your name is not stored.",
++    notSaved: "Your answer did not save. Please try again.",
+   },
+   offline: "You are offline. Reconnect to the internet to see your status.",
+ };
+diff --git a/lib/text/fr.ts b/lib/text/fr.ts
+index 62c165c..b1256d4 100644
+--- a/lib/text/fr.ts
++++ b/lib/text/fr.ts
+@@ -157,6 +157,7 @@ export const fr: PatientText = {
+     submit: "Soumettre",
+     thanks: "Merci pour vos commentaires.",
+     note: "La réponse est facultative. Votre nom n'est pas enregistré.",
++    notSaved: "Votre réponse n'a pas été enregistrée. Veuillez réessayer.",
+   },
+   offline: "Vous êtes hors ligne. Reconnectez-vous à Internet pour voir votre statut.",
+ };
+diff --git a/lib/text/ur.ts b/lib/text/ur.ts
+index 232da8f..865cba5 100644
+--- a/lib/text/ur.ts
++++ b/lib/text/ur.ts
+@@ -157,6 +157,7 @@ export const ur: PatientText = {
+     submit: "جمع کرائیں",
+     thanks: "آپ کے فیڈ بیک کا شکریہ۔",
+     note: "جواب دینا اختیاری ہے۔ آپ کا نام محفوظ نہیں کیا جاتا ہے۔",
++    notSaved: "آپ کا جواب محفوظ نہیں ہوا۔ براہ کرم دوبارہ کوشش کریں۔",
+   },
+   offline: "آپ آف لائن ہیں۔ اپنا سٹیٹس دیکھنے کے لیے دوبارہ انٹرنیٹ سے کنیکٹ کریں۔",
+ };
+diff --git a/lib/text/zh.ts b/lib/text/zh.ts
+index b7d9125..aebf4ce 100644
+--- a/lib/text/zh.ts
++++ b/lib/text/zh.ts
+@@ -157,6 +157,7 @@ export const zh: PatientText = {
+     submit: "提交",
+     thanks: "感谢您的反馈。",
+     note: "回答是可选的。您的名字不会被保存。",
++    notSaved: "您的回答未保存。请重试。",
+   },
+   offline: "您已离线。请重新连接到互联网以查看您的状态。",
+ };
+diff --git a/supabase/checks/permissions.sql b/supabase/checks/permissions.sql
+index b0db395..2c7dda4 100644
+--- a/supabase/checks/permissions.sql
++++ b/supabase/checks/permissions.sql
+@@ -13,12 +13,16 @@
+ -- revoked from them, so the list stays the same. 20261118010000_clear_demo_data.sql gives
+ -- authenticated EXECUTE on clear_demo_data (staff only, the function checks is_staff), so that
+ -- one line is added to the list. 20261118120000_daily_stats_staff_read.sql gives authenticated
+--- SELECT on daily_stats (the policy lets only staff see rows), so that line is added too:
++-- SELECT on daily_stats (the policy lets only staff see rows), so that line is added too.
++-- 20261120000000_survey.sql gives anon and authenticated EXECUTE on submit_survey (SPEC hard
++-- rule 5: the patient submits the survey score once; it needs the visit's token), so those
++-- two lines are added:
+ --   anon           table     change_signal       SELECT
+ --   anon           function  confirm_on_my_way   EXECUTE
+ --   anon           function  get_patient_visit   EXECUTE
+ --   anon           function  record_seen         EXECUTE
+ --   anon           function  record_still_here   EXECUTE
++--   anon           function  submit_survey       EXECUTE
+ --   authenticated  table     change_signal       SELECT
+ --   authenticated  table     daily_stats         SELECT
+ --   authenticated  table     site_settings       SELECT, UPDATE
+@@ -29,12 +33,13 @@
+ --   authenticated  function  is_staff            EXECUTE
+ --   authenticated  function  record_seen         EXECUTE
+ --   authenticated  function  record_still_here   EXECUTE
++--   authenticated  function  submit_survey       EXECUTE
+ -- Also listed, and fine: rls_auto_enable, for both roles. Supabase made it when the project
+ -- was created; it turns on row-level security for each new table. It is an event trigger
+ -- function, which Postgres refuses to run as an ordinary call.
+ -- Also expected: every table listed has row-level security on (see the second query).
+ -- Supabase's security advisor warns that anon can run get_patient_visit, record_seen,
+--- confirm_on_my_way and record_still_here. That is on purpose (SPEC hard rule 5); each needs the visit's token.
++-- confirm_on_my_way, record_still_here and submit_survey. That is on purpose (SPEC hard rule 5); each needs the visit's token.
+ 
+ -- Table rights use has_table_privilege, not information_schema.role_table_grants: that view
+ -- shows only roles the current user belongs to, so through the read-only Supabase connection
+diff --git a/supabase/checks/survey.sql b/supabase/checks/survey.sql
+new file mode 100644
+index 0000000..5766886
+--- /dev/null
++++ b/supabase/checks/survey.sql
+@@ -0,0 +1,72 @@
++-- Check for the survey (migration 20261120000000_survey.sql): submit_survey and the new
++-- survey_done column of get_patient_visit.
++-- Run the whole file at once (do not select and run one part): the Editor shows only the last
++-- result, so the file keeps each result in a temp table and shows all rows at the end.
++-- It saves nothing: everything happens inside "begin ... rollback".
++-- The synthetic visits start as waiting (the step trigger refuses a new visit as arrived) and
++-- then move along allowed steps, as the staff screen does.
++--
++-- Cases 12 and 13 (20261120010000_survey_keeps_version.sql): the score alone does not raise the
++-- version, so a staff Undo right after the survey is not refused; other changes still raise it.
++--
++-- Expected result: 13 rows, each with result = ok.
++
++begin;
++
++insert into public.visits (code, access_token, site, source, status, triaged_at) values
++  ('ZZZZ5A', 'ZZZZZZZZZZZZZZZZZZZZZZZZS0', 'A', 'desk', 'waiting', now()),  -- arrives, answers 7
++  ('ZZZZ5B', 'ZZZZZZZZZZZZZZZZZZZZZZZZS1', 'A', 'desk', 'waiting', now()),  -- on the way, not closed
++  ('ZZZZ5C', 'ZZZZZZZZZZZZZZZZZZZZZZZZS2', 'A', 'desk', 'waiting', now()),  -- removed (left)
++  ('ZZZZ5D', 'ZZZZZZZZZZZZZZZZZZZZZZZZS3', 'A', 'desk', 'waiting', now());  -- arrives, gives no score
++insert into public.visits (code, access_token, site, source, status, triaged_at, offered_at, closed_at) values
++  ('ZZZZ5E', 'ZZZZZZZZZZZZZZZZZZZZZZZZS4', 'A', 'desk', 'declined', now(), now(), now());
++
++update public.visits set status = 'arrived', arrived_at = now(), closed_at = now()
++  where code in ('ZZZZ5A', 'ZZZZ5D');
++update public.visits set status = 'called', called_at = now() where code = 'ZZZZ5B';
++update public.visits set status = 'on_the_way', confirmed_at = now() where code = 'ZZZZ5B';
++update public.visits set status = 'removed', removed_reason = 'left', closed_at = now() where code = 'ZZZZ5C';
++
++create temp table survey_rows (check_case text, expected text, got text);
++
++-- The versions before the survey (case 12) and before another change (case 13).
++create temp table versions_before as
++  select code, version from public.visits where code in ('ZZZZ5A', 'ZZZZ5B');
++
++insert into survey_rows select '1 on the way, not closed: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS1', 7)::text;
++insert into survey_rows select '2 removed: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS2', 7)::text;
++insert into survey_rows select '3 declined: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS4', 7)::text;
++insert into survey_rows select '4 arrived, score 11: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS0', 11)::text;
++insert into survey_rows select '5 arrived, score -1: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS0', -1)::text;
++insert into survey_rows select '6 a token that opens no visit: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZXX', 7)::text;
++insert into survey_rows select '7 arrived, score 7: saved', 'true',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS0', 7)::text;
++insert into survey_rows select '8 the second try: refused', 'false',
++  public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS0', 8)::text;
++insert into survey_rows select '9 the score stays 7', '7',
++  (select survey_score::text from public.visits where code = 'ZZZZ5A');
++insert into survey_rows select '10 survey_done after the score', 'true',
++  (select survey_done::text from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZS0'));
++insert into survey_rows select '11 survey_done with no score', 'false',
++  (select survey_done::text from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZS3'));
++insert into survey_rows select '12 the survey keeps the version',
++  (select version::text from versions_before where code = 'ZZZZ5A'),
++  (select version::text from public.visits where code = 'ZZZZ5A');
++
++update public.visits set last_still_here_at = now() where code = 'ZZZZ5B';
++insert into survey_rows select '13 another change still raises the version',
++  (select (version + 1)::text from versions_before where code = 'ZZZZ5B'),
++  (select version::text from public.visits where code = 'ZZZZ5B');
++
++select check_case, expected, got,
++       case when got is not distinct from expected then 'ok' else 'FAIL' end as result
++from survey_rows
++order by split_part(check_case, ' ', 1)::integer;
++
++rollback;
+diff --git a/supabase/migrations/20261120000000_survey.sql b/supabase/migrations/20261120000000_survey.sql
+new file mode 100644
+index 0000000..f7b22bb
+--- /dev/null
++++ b/supabase/migrations/20261120000000_survey.sql
+@@ -0,0 +1,113 @@
++-- Phase 5, the survey (SPEC line 69 and hard rule 5): the patient may submit the survey score
++-- once, only after the visit is closed, and only if the visit waited off-site and arrived.
++-- 1. New function submit_survey(token, score). "Arrived" can come only from waiting, called or
++--    on_the_way (visits_check_step), so every arrived visit waited off-site.
++--    The step trigger checks only status moves and the site, so this update (same status) passes.
++-- 2. get_patient_visit gets one new column, survey_done (true once a score is saved). The phone
++--    never gets the score itself back. A new column changes the return type, so the function is
++--    dropped and made again, and its rights are given again below.
++-- Undo of an arrival keeps the score (owner decision 2026-11-20), so a second arrival shows
++-- "Thank you for your feedback." and no second survey.
++
++-- ---------------------------------------------------------------------------
++-- Submit the survey score: once, only for a closed visit that arrived, 0 to 10.
++-- Returns true when the score was saved, false when it was refused.
++-- ---------------------------------------------------------------------------
++create function public.submit_survey(p_token text, p_score integer)
++returns boolean
++language plpgsql
++security definer
++set search_path = ''
++as $$
++begin
++  update public.visits
++  set survey_score = p_score
++  where access_token = p_token
++    and status = 'arrived'
++    and closed_at is not null
++    and survey_score is null
++    and p_score between 0 and 10;
++  return found;
++end;
++$$;
++
++-- ---------------------------------------------------------------------------
++-- The patient read, as in 20261116000000_wait_gap_distinct_moments.sql, plus survey_done.
++-- ---------------------------------------------------------------------------
++drop function public.get_patient_visit(text);
++
++create function public.get_patient_visit(p_token text)
++returns table (
++  code text,
++  site text,
++  language text,
++  status text,
++  place_in_line integer,
++  -- Average minutes between the last 6 distinct call-back moments of the last 3 hours at this
++  -- site, rounded to whole minutes so it cannot be used to work out exactly when other patients
++  -- were called. Null with fewer than 2 distinct moments.
++  average_gap_minutes integer,
++  called_at timestamptz,
++  last_still_here_at timestamptz,
++  seen boolean,
++  closed boolean,
++  -- Started from home, never triaged, and 6 or more hours old (lib/expectedArrivals.ts).
++  expired boolean,
++  -- When this visit was triaged (the start of off-site waiting).
++  triaged_at timestamptz,
++  -- True once the survey score is saved (lib/survey.ts). The score itself is not sent.
++  survey_done boolean
++)
++language sql
++stable
++security definer
++set search_path = ''
++as $$
++  select
++    me.code,
++    me.site,
++    me.language,
++    me.status,
++    case when me.status = 'waiting' and me.triaged_at is not null then (
++      select count(*)::integer + 1
++      from public.visits other
++      where other.site = me.site
++        and other.status = 'waiting'
++        and other.triaged_at is not null
++        and (other.triaged_at, other.id) < (me.triaged_at, me.id)
++    ) end,
++    case when me.status = 'waiting' then (
++      -- The average of the gaps between 6 moments is (last - first) / 5.
++      select case when count(*) >= 2
++        then round(extract(epoch from max(moments.called_at) - min(moments.called_at)) / 60 / (count(*) - 1))::integer
++      end
++      from (
++        select distinct other.called_at
++        from public.visits other
++        where other.site = me.site
++          and other.called_at is not null
++          and other.called_at >= now() - interval '3 hours'
++        order by other.called_at desc
++        limit 6
++      ) moments
++    ) end,
++    me.called_at,
++    me.last_still_here_at,
++    me.seen_at is not null,
++    me.closed_at is not null,
++    me.status = 'pre_arrival' and me.triaged_at is null
++      and me.created_at <= now() - interval '6 hours',
++    me.triaged_at,
++    me.survey_score is not null
++  from public.visits me
++  where me.access_token = p_token;
++$$;
++
++-- ---------------------------------------------------------------------------
++-- Rights: patients (anon) and signed-in users reach these only with a visit's token.
++-- ---------------------------------------------------------------------------
++revoke execute on function public.get_patient_visit(text) from public, anon, authenticated;
++revoke execute on function public.submit_survey(text, integer) from public, anon, authenticated;
++
++grant execute on function public.get_patient_visit(text) to anon, authenticated;
++grant execute on function public.submit_survey(text, integer) to anon, authenticated;
+diff --git a/supabase/migrations/20261120010000_survey_keeps_version.sql b/supabase/migrations/20261120010000_survey_keeps_version.sql
+new file mode 100644
+index 0000000..f5d2f01
+--- /dev/null
++++ b/supabase/migrations/20261120010000_survey_keeps_version.sql
+@@ -0,0 +1,51 @@
++-- Phase 5, the survey: a change to survey_score alone does not raise the visit's version.
++-- Why: a staff action saves only "where version = the version I read" (data/staffActions.ts).
++-- The patient answers the survey at the desk, and staff may press Undo seconds later, before
++-- their screen reads the visit again. With a new version, that Undo was refused once
++-- ("it changed since it was closed"). Staff never see or change the score, so it cannot
++-- conflict with a staff action (owner decision 2026-11-20, "Score keeps version").
++-- Every other change still raises the version (supabase/checks/survey.sql, case 13).
++-- The body is the same as in 20261110090134_visit_version_and_database_times.sql, except the
++-- version line of the update branch. "create or replace" keeps the trigger.
++
++create or replace function public.visits_before_write()
++returns trigger
++language plpgsql
++security invoker
++set search_path = ''
++as $$
++begin
++  if tg_op = 'INSERT' then
++    new.version := 1;
++    new.created_at := now();
++    if new.triaged_at is not null then new.triaged_at := now(); end if;
++    if new.offered_at is not null then new.offered_at := now(); end if;
++    if new.last_still_here_at is not null then new.last_still_here_at := now(); end if;
++    if new.called_at is not null then new.called_at := now(); end if;
++    if new.seen_at is not null then new.seen_at := now(); end if;
++    if new.confirmed_at is not null then new.confirmed_at := now(); end if;
++    if new.review_flagged_at is not null then new.review_flagged_at := now(); end if;
++    if new.arrived_at is not null then new.arrived_at := now(); end if;
++    if new.closed_at is not null then new.closed_at := now(); end if;
++  else
++    -- The whole row, without the score and the version: the same means only the score changed.
++    if (to_jsonb(new) - 'survey_score' - 'version') = (to_jsonb(old) - 'survey_score' - 'version') then
++      new.version := old.version;
++    else
++      new.version := old.version + 1;
++    end if;
++    new.created_at := old.created_at;
++    if new.triaged_at is distinct from old.triaged_at and new.triaged_at is not null then new.triaged_at := now(); end if;
++    if new.offered_at is distinct from old.offered_at and new.offered_at is not null then new.offered_at := now(); end if;
++    if new.last_still_here_at is distinct from old.last_still_here_at and new.last_still_here_at is not null then new.last_still_here_at := now(); end if;
++    if new.called_at is distinct from old.called_at and new.called_at is not null then new.called_at := now(); end if;
++    if new.seen_at is distinct from old.seen_at and new.seen_at is not null then new.seen_at := now(); end if;
++    if new.confirmed_at is distinct from old.confirmed_at and new.confirmed_at is not null then new.confirmed_at := now(); end if;
++    if new.review_flagged_at is distinct from old.review_flagged_at and new.review_flagged_at is not null then new.review_flagged_at := now(); end if;
++    if new.arrived_at is distinct from old.arrived_at and new.arrived_at is not null then new.arrived_at := now(); end if;
++    if new.closed_at is distinct from old.closed_at and new.closed_at is not null then new.closed_at := now(); end if;
++  end if;
++  return new;
++end;
++$$;
++revoke execute on function public.visits_before_write() from public, anon, authenticated;
+```
+
+## Helpers that the changed lines call (not in the diff)
+
+data/patientVisit.ts, lines 62 to 100 (refreshPatientView) and 132 to 145 (patientStep):
+
+```ts
+function entryFor(token: string): Entry {
+  let entry = entries.get(token);
+  if (!entry) {
+    entry = { key: "", failures: 0, latestRead: 0, watchers: 0 };
+    entries.set(token, entry);
+  }
+  return entry;
+}
+
+async function readFromDatabase(token: string): Promise<PatientView | null | "failed"> {
+  try {
+    const { data, error } = await supabaseBrowser().rpc("get_patient_visit", { p_token: token });
+    if (error || !Array.isArray(data)) return "failed";
+    return data.length === 0 ? null : patientViewFromRow(data[0] as PatientVisitRow);
+  } catch {
+    return "failed";
+  }
+}
+
+/** Read the visit again and tell the screens if anything changed. */
+async function refreshPatientView(token: string): Promise<void> {
+  const entry = entryFor(token);
+  const thisRead = ++entry.latestRead;
+  const read = await readFromDatabase(token);
+  if (thisRead !== entry.latestRead) return; // a newer read has started; its answer wins
+  entry.failures = read === "failed" ? entry.failures + 1 : 0;
+  const next = read === "failed" ? afterFailedRead(entry.shown, entry.failures) : read;
+  // Keep the same object until the view really changes, so React does not redraw for nothing.
+  const key = JSON.stringify(next);
+  if (entry.shown !== undefined && key === entry.key) return;
+  entry.key = key;
+  entry.shown = next;
+  listeners.forEach((tell) => tell());
+}
+
+/**
+ * While a screen is showing this token: read now, on every live update, every 15 seconds, and
+ * when the tab comes back.
+ * There is one timer per token however many parts of the screen are listening.
+
+async function patientStep(
+  step: "record_seen" | "confirm_on_my_way" | "record_still_here",
+  token: string,
+): Promise<ChangeResult> {
+  try {
+    const { data, error } = await supabaseBrowser().rpc(step, { p_token: token });
+    if (error || typeof data !== "boolean") return "not_saved";
+    await refreshPatientView(token); // show the result straight away
+    return data ? "saved" : "refused";
+  } catch {
+    return "not_saved";
+  }
+}
+
+```
+
+data/staffActions.ts, lines 40 to 75 (changeVisit, the version lock):
+
+```ts
+async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Promise<ChangeResult> {
+  const before = cachedVisit(id);
+  const after = before ? step(before) : null;
+  if (!before || !after) {
+    void loadVisits();
+    return "refused";
+  }
+  const changed = changedFields(before, after);
+  if (Object.keys(changed).length === 0) return "refused"; // nothing to save
+  try {
+    const { data, error } = await supabaseBrowser()
+      .from("visits")
+      .update(changed)
+      .eq("id", id)
+      .eq("version", before.version)
+      .select();
+    if (error) {
+      // "refused": the step check does not allow this move. "paused": the site was paused on
+      // another screen. Either way, read the list (and the pause switch) again.
+      const result = resultForError(error.code);
+      if (result === "paused") void reloadSitePauses();
+      if (result !== "not_saved") void loadVisits();
+      return result;
+    }
+    if (!Array.isArray(data)) return "not_saved";
+    if (data.length === 0) {
+      // Someone else (another staff screen, or the patient) changed this visit first.
+      void loadVisits();
+      return "refused";
+    }
+    putVisit(data[0] as StoredVisit);
+    return "saved";
+  } catch {
+    return "not_saved";
+  }
+}
+```
+
+The original trigger body: the first function in supabase/migrations/20261110090134_visit_version_and_database_times.sql. It is the same as the new one, except that its update branch has only `new.version := old.version + 1;`.
