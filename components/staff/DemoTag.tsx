@@ -5,7 +5,7 @@ export function DemoTag({ isDemo }: { isDemo: boolean }) {
   return (
     <>
       {" "}
-      <span data-testid="demo-tag" className="ml-1 inline-block whitespace-nowrap rounded border-2 border-slate-700 bg-slate-100 px-1.5 py-0.5 font-sans text-sm font-bold tracking-normal text-slate-900">
+      <span data-testid="demo-tag" className="ml-1 inline-block whitespace-nowrap rounded border-2 border-muted bg-canvas px-1.5 py-0.5 font-sans text-sm font-bold tracking-normal text-ink">
         <span className="sr-only">, </span>Demo<span className="sr-only"> visit</span>
       </span>
     </>

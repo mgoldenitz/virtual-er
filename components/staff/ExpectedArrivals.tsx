@@ -52,10 +52,10 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
 
   return (
     <section aria-labelledby="expected-heading" className="glass-panel space-y-3">
-      <h2 id="expected-heading" className="text-xl font-bold">
+      <h2 id="expected-heading" className="text-2xl font-bold">
         Expected arrivals ({expected.length})
       </h2>
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-muted">
         Started from home, not yet triaged. Not in the waiting line.
       </p>
       <form onSubmit={find} className="flex flex-wrap items-end gap-2">
@@ -79,7 +79,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
       {reassess.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-bold">Back for reassessment ({reassess.length})</h3>
-          <p className="text-sm text-slate-700">{`Reopened after "unable to reach". Triage again before they rejoin the line.`}</p>
+          <p className="text-sm text-muted">{`Reopened after "unable to reach". Triage again before they rejoin the line.`}</p>
           <ul className="space-y-2">
             {reassess.map((visit) => (
               <li
@@ -104,7 +104,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
           {expected.map((visit) => (
             <li
               key={visit.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-slate-300 bg-white p-3"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border-2 border-line bg-card p-3"
               data-testid={`expected-${visit.code}`}
             >
               <p>

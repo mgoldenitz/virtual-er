@@ -77,7 +77,7 @@ export default function StaffPage() {
     <StaffShell>
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
       <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Staff: Virtual Waiting Room</h1>
+        <h1 className="text-3xl font-bold">Staff: Virtual Waiting Room</h1>
         <label className="flex flex-wrap items-center gap-2">
           <span className="font-semibold">Site</span>
           <select
@@ -96,7 +96,7 @@ export default function StaffPage() {
         <SignOutButton />
       </header>
       {outOfDate && (
-        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-red-800 bg-white p-3">
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-red-800 bg-card p-3">
           <p className="font-semibold text-red-900">
             {visits
               ? "This list may be out of date: the visits could not be read just now. Check your connection."
@@ -145,7 +145,7 @@ export default function StaffPage() {
         </div>
 
         <section aria-labelledby="list-heading" className="glass-panel space-y-3">
-          <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-xl font-bold">
+          <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-2xl font-bold">
             Off-site: waiting or called back ({line.length})
           </h2>
           <p role="status" className="min-h-6 font-semibold">
@@ -177,7 +177,7 @@ export default function StaffPage() {
       </div>
 
       <section aria-labelledby="demo-heading" className="glass-panel space-y-3">
-        <h2 id="demo-heading" className="text-xl font-bold">Demo data</h2>
+        <h2 id="demo-heading" className="text-2xl font-bold">Demo data</h2>
         <p>For the demo only. Clear demo data before real testers start.</p>
         <ClearDemoData />
       </section>

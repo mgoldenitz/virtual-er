@@ -122,7 +122,7 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
           )}
           {canPhone && (
             <div className="space-y-2">
-              <p className="text-sm text-slate-700">
+              <p className="text-sm text-muted">
                 Simulated calls (the demo stores no phone numbers). Recorded so far: {visit.phone_attempts}
                 {visit.last_phone_result && ` (last: ${visit.last_phone_result === "answered" ? "answered" : "no answer"})`}.
               </p>
@@ -138,7 +138,7 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
           )}
           {followUp.kind === "review" && (
             <details>
-              <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
+              <summary className="cursor-pointer py-2 text-ink underline underline-offset-2">
                 Confirm unable to reach
               </summary>
               <p className="mt-1 text-sm">

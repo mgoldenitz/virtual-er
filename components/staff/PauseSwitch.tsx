@@ -39,7 +39,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
   }, [mode]);
 
   if (paused === null) {
-    return <p className="text-sm text-slate-700">Checking whether off-site waiting is paused at this site…</p>;
+    return <p className="text-sm text-muted">Checking whether off-site waiting is paused at this site…</p>;
   }
 
   // Count words only when the list has been read; otherwise the sentences name no number.
@@ -112,7 +112,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
       )}
 
       {mode === "confirmPause" && (
-        <div className="space-y-3 rounded-xl border-4 border-red-800 bg-white p-4" data-testid="pause-confirm">
+        <div className="space-y-3 rounded-xl border-4 border-red-800 bg-card p-4" data-testid="pause-confirm">
           <h4 ref={question} tabIndex={-1} className="text-lg font-bold text-red-900">
             Pause off-site waiting at Demo Site {site}?
           </h4>
@@ -132,7 +132,7 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
       )}
 
       {mode === "confirmResume" && (
-        <div className="space-y-3 rounded-xl border-4 border-slate-700 bg-white p-4" data-testid="resume-confirm">
+        <div className="space-y-3 rounded-xl border-4 border-muted bg-card p-4" data-testid="resume-confirm">
           <h4 ref={question} tabIndex={-1} className="text-lg font-bold">
             Turn off-site waiting back on at Demo Site {site}?
           </h4>

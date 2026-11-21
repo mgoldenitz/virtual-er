@@ -150,10 +150,10 @@ export function WaitingOnSite({ visits, site, now, offsitePaused, save, undo, on
 
   return (
     <section aria-labelledby="onsite-heading" className="glass-panel space-y-3">
-      <h2 id="onsite-heading" ref={heading} tabIndex={-1} className="text-xl font-bold">
+      <h2 id="onsite-heading" ref={heading} tabIndex={-1} className="text-2xl font-bold">
         Waiting on-site: offered, declined ({list.length})
       </h2>
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-muted">
         {`Declined in the last ${SWITCH_TO_OFFSITE_HOURS} hours. If a patient changes their mind, they can switch to off-site waiting and keep their place in line from triage. Patients already seen inside stay on this list until ${SWITCH_TO_OFFSITE_HOURS} hours after they declined.`}
       </p>
       {!canSwitch && list.length > 0 && (
@@ -176,7 +176,7 @@ export function WaitingOnSite({ visits, site, now, offsitePaused, save, undo, on
             return (
               <li
                 key={visit.id}
-                className="space-y-3 rounded-lg border-2 border-slate-300 bg-white p-3"
+                className="space-y-3 rounded-lg border-2 border-line bg-card p-3"
                 data-testid={`onsite-${visit.code}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">

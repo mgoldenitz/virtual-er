@@ -21,7 +21,7 @@ export function VisitSlip({ code, token, language, onClose }: Props) {
   return (
     <section
       aria-labelledby="slip-heading"
-      className="rounded-xl border-2 border-slate-800 bg-white p-4"
+      className="rounded-xl border-2 border-ink bg-card p-4"
     >
       <h3 id="slip-heading" className="text-lg font-bold">
         Patient slip for visit {code}
@@ -46,7 +46,7 @@ export function VisitSlip({ code, token, language, onClose }: Props) {
             href={scanLink}
             target="_blank"
             rel="noopener"
-            className="inline-block text-brand underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-slate-950"
+            className="inline-block text-brand underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-ink"
           >
             Demo: open the patient screen in a new tab
           </a>

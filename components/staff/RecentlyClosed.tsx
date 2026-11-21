@@ -72,12 +72,12 @@ export function RecentlyClosed({ visits, site, onUndoResult, onReopened }: Props
       <h3 id="closed-heading" className="text-lg font-bold">
         Recently closed
       </h3>
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-muted">
         Pressed by mistake? Undo puts the patient back where they were. Reopen sends a patient who could not be reached back to triage.
       </p>
       <ul ref={listRef} className="space-y-2">
         {closed.map((visit) => (
-          <li key={visit.id} tabIndex={-1} className="rounded-lg border-2 border-slate-300 bg-white p-3" data-testid={`closed-${visit.code}`}>
+          <li key={visit.id} tabIndex={-1} className="rounded-lg border-2 border-line bg-card p-3" data-testid={`closed-${visit.code}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p>
                 <span className="font-mono font-bold tracking-widest">{visit.code}</span>

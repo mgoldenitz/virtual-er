@@ -59,7 +59,7 @@ export function ClearDemoData() {
           Clear demo data
         </Button>
       ) : (
-        <div className="space-y-3 rounded-xl border-4 border-red-800 bg-white p-4" data-testid="clear-demo-confirm">
+        <div className="space-y-3 rounded-xl border-4 border-red-800 bg-card p-4" data-testid="clear-demo-confirm">
           <h3 ref={question} tabIndex={-1} className="text-lg font-bold text-red-900">
             Clear all demo data?
           </h3>

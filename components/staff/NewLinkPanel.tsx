@@ -41,7 +41,7 @@ export function NewLinkPanel({ code, saving, onConfirm }: Props) {
 
   return (
     <details className="mt-3">
-      <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
+      <summary className="cursor-pointer py-2 text-ink underline underline-offset-2">
         Lost or stolen phone
       </summary>
       <div className="mt-2 space-y-2">

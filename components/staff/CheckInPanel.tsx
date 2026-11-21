@@ -152,11 +152,11 @@ export function CheckInPanel({
 
   return (
     <form onSubmit={onSubmit} className="glass-panel space-y-4" aria-labelledby="checkin-heading">
-      <h2 id="checkin-heading" tabIndex={-1} className="text-xl font-bold">
+      <h2 id="checkin-heading" tabIndex={-1} className="text-2xl font-bold">
         {homeVisit ? `Check in visit ${homeVisit.code} after triage` : "Check in a patient after triage"}
       </h2>
       {homeVisit && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-slate-100 p-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-canvas p-3">
           <p>
             {homeVisit.source === "home" && homeVisit.triaged_at === null
               ? "Started from home. The patient already has this visit on their phone."

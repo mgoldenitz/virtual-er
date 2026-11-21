@@ -114,9 +114,9 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList, onFocusLost }: Pr
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
 
   return (
-    <li ref={row} onFocus={focusWatch.onFocus} onBlur={focusWatch.onBlur}className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
+    <li ref={row} onFocus={focusWatch.onFocus} onBlur={focusWatch.onBlur} className="rounded-xl border-2 border-line bg-card p-4" data-testid={`row-${visit.code}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-mono text-xl font-bold tracking-widest">
+        <p className="font-mono text-2xl font-bold tracking-widest">
           {visit.code}
           <DemoTag isDemo={visit.is_demo} />
         </p>
@@ -144,7 +144,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList, onFocusLost }: Pr
         </Button>
       </div>
       <details className="mt-3">
-        <summary className="cursor-pointer py-2 text-slate-800 underline underline-offset-2">
+        <summary className="cursor-pointer py-2 text-ink underline underline-offset-2">
           Remove from list
         </summary>
         <div className="mt-2 flex flex-wrap gap-2">
