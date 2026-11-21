@@ -1352,3 +1352,10 @@ Not accepted:
 - 1, sub-millisecond: true (`now()` has microseconds, `Date.parse` keeps milliseconds), but a visit changes band only when its wait is within 1 ms of a half-second at a band edge, and only between the live count and the stored count. Goes in known-issues.md, no code change.
 - 4, `*Now` counts in `TrendDay`: true, but nothing reads them. No change now.
 - 6, Real or Demo in the CSV button text: the mode switch is above it and the file name says `demo` or `real`. No change, unless the owner wants it.
+
+Owner decisions (2026-11-21):
+
+- Funnel row label: "Started from home today and reached triage".
+- "Average minutes from offer to recall": no change.
+- Trend tables: one line "No past days with visits yet." when no past day has a number (`hasPastData` false).
+- The dash before the start date: no change ("no data yet").
