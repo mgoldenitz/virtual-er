@@ -2,11 +2,12 @@
 -- Run the whole file at once (do not select and run one part): the Editor shows only the last
 -- result, so the file keeps the first results in a temp table and shows all rows at the end.
 -- Run it in the Supabase SQL Editor after that migration. It saves nothing: everything happens
--- inside "begin ... rollback", so the synthetic visits, the paused trigger and the cleared
+-- inside "begin ... rollback", so the synthetic visits, the paused triggers and the cleared
 -- call-back times all go away at the end.
 --
--- Why the trigger is paused: visits_before_write sets every new called_at to now(), so this
--- check could not put call-backs at different times. Why real call-back times are cleared:
+-- Why the triggers are paused: visits_before_write sets every new called_at to now(), so this
+-- check could not put call-backs at different times; visits_check_step refuses a new visit that
+-- starts as arrived or called. Why real call-back times are cleared:
 -- real call-backs at the same site would change the average.
 --
 -- Expected result (5 rows):
@@ -29,6 +30,9 @@
 begin;
 
 alter table public.visits disable trigger visits_before_write;
+-- The test visits start as arrived or called; visits_check_step (20261117000000) refuses that
+-- for a new visit. This file checks the wait gap, not the steps (allowed_steps.sql does).
+alter table public.visits disable trigger visits_check_step;
 update public.visits set called_at = null where called_at is not null;
 
 insert into public.visits (code, access_token, site, source, status, triaged_at, called_at) values
