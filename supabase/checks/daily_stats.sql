@@ -75,6 +75,9 @@
 begin;
 
 alter table public.visits disable trigger visits_before_write;
+-- The test visits start as arrived, called or removed; visits_check_step (20261117000000) refuses
+-- that for a new visit. This file checks the clean-up totals, not the steps (allowed_steps.sql does).
+alter table public.visits disable trigger visits_check_step;
 
 insert into public.daily_stats (day, site, is_demo, triaged_ctas_4_5, survey_responses, survey_score_sum)
 values ('2000-01-02', 'A', false, 100, 5, 40);
