@@ -50,6 +50,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 - For a change that touches more than one folder, or the database: start in plan mode and get my OK on a plan that names the files, the order of the work, and the tests that prove it.
 - Before you write the plan, search the tests for the behaviour that the plan changes, and name each test that must change in the plan. Name each new function that decides something, and put it in lib/ with a test, also when it is only 3 lines in a component (for example a `beforeSend` filter).
 - If the plan writes to `visits` from the patient side (an RPC), the plan says whether the write raises `version`, and why a staff action after it should or should not be refused (known-issues.md, 2026-11-20).
+- Before you name a new migration, list the migrations on every branch that is open (`git ls-tree --name-only <branch> supabase/migrations/`, for `main` and each worktree branch), and use a number after the highest one. Two sessions can add migrations on the same day.
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
 - Before you remove an import, search the file for other uses of that name.
 - Change docs and code with the Edit tool, never with a Python, sed or heredoc script. In a worktree, a shell write to a project file can be refused.
