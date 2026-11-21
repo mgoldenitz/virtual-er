@@ -40,7 +40,7 @@ An earlier review found these problems. This change tries to fix them:
 - Undo of an arrival keeps the score (owner, 2026-11-20). After a second "Mark arrived", the phone shows thank you, not a second survey.
 - "Score keeps version" (owner, 2026-11-20): a change to `survey_score` alone does not raise `visits.version`. Not part of this change.
 - Gray out Submit until a score is picked (owner, 3.2): `aria-disabled`, not native `disabled`, so the button stays in the tab order.
-- Keep Submit active offline, and fail clearly with the "did not save" alert (owner, 3.8). `components/patient/SurveyForm.tsx` line 70 has no offline check on purpose.
+- Keep Submit active offline, and fail clearly with the "did not save" alert (owner, 3.8). `components/patient/SurveyForm.tsx` line 71 has no offline check on purpose.
 - Count every score on the dashboard, also when a visit is removed after an Undo (owner, 4.1). No dashboard change.
 - `savedHere` is not reset when the step turns null (`components/patient/SurveyBox.tsx` line 21). The database keeps the score after an Undo, so the next arrival shows thanks from `surveyDone` anyway.
 - `SurveyForm.tsx` keeps `!isSurveyScore(score)` in the guard (line 33), although the radios give only 0 to 10. It is a cheap second check; the database checks too.
