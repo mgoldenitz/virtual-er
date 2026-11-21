@@ -17,8 +17,22 @@ describe("CareOptions", () => {
     const links = linkClasses(renderToStaticMarkup(<CareOptions language="en" />));
     expect(links.length).toBeGreaterThan(0);
     for (const classes of links) {
-      expect(classes).toContain("inline-block");
+      // A link in a sentence is inline-block; a link that stands alone is inline-flex (next test).
+      expect(classes.includes("inline-block") || classes.includes("inline-flex")).toBe(true);
       expect(classes).toContain("py-1");
+    }
+  });
+
+  it("puts the words of the 2 links that stand alone in the middle of their 44 pixels", () => {
+    const t = textFor("en").start;
+    const html = renderToStaticMarkup(<CareOptions language="en" />);
+    for (const words of [t.virtualCare, t.waitTimesLink]) {
+      const tag = html.match(new RegExp(`<a [^>]*>${words.replace(/'/g, "&#x27;")}`))?.[0] ?? "";
+      const classes = tag.match(/class="([^"]*)"/)?.[1].split(" ") ?? [];
+      expect(classes).toContain("inline-flex");
+      expect(classes).toContain("items-center");
+      // inline-block and inline-flex both set display, so a link has only one of them.
+      expect(classes).not.toContain("inline-block");
     }
   });
 
