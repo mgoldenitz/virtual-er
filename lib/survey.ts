@@ -9,11 +9,12 @@ export type SurveyStep = "ask" | "thanks" | null;
 /**
  * Only a closed visit that arrived gets the survey (an arrived visit always waited off-site).
  * After the score is saved, the phone says thank you instead, also after an Undo and a second arrival.
+ * savedHere is true when this phone saved the score but the read after it has not come back yet.
  */
-export function surveyStep(view: PatientView): SurveyStep {
+export function surveyStep(view: PatientView, savedHere = false): SurveyStep {
   if (view.status !== "arrived" || !view.closed) return null;
-  if (!view.surveyDone) return "ask";
-  return "thanks";
+  if (view.surveyDone || savedHere) return "thanks";
+  return "ask";
 }
 
 /** A whole number from 0 to 10. */

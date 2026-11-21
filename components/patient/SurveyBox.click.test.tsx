@@ -180,8 +180,10 @@ describe("SurveyBox after the Gemini review", () => {
     const ids = container.querySelector("fieldset")?.getAttribute("aria-describedby")?.split(" ") ?? [];
     const words = ids.map((id) => document.getElementById(id));
     expect(words.map((w) => w?.textContent)).toEqual([s.low, s.high]);
-    const firstRadio = radios()[0];
-    expect(words[0]?.compareDocumentPosition(firstRadio) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const [low] = words;
+    const [firstRadio] = radios();
+    if (!low || !firstRadio) throw new Error("the low word or the first radio is missing");
+    expect(low.compareDocumentPosition(firstRadio) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("sends one time when Submit is pressed twice quickly", async () => {
