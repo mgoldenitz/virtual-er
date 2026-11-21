@@ -34,6 +34,9 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
   const t = textFor(language);
   const state = now ? stillHereState(view, now) : "not_due";
   const showing = state !== "not_due";
+  // When the prompt hides, a failed tap's alert goes, so it cannot come back with the next prompt.
+  // Set during render, not in an effect, as `failedIn` in VisitScreen.tsx.
+  if (!showing && notSaved) setNotSaved(false);
   // If the prompt leaves with focus inside it (after the tap), focus goes to the status heading.
   // With the shared flag, the status screen also does this when the whole prompt leaves on a recall.
   const ownFlag = useRef(false);

@@ -30,7 +30,8 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
   return (
     <>
       {token && view.status === "waiting" && (
-        <StillHerePrompt view={view} token={token} language={language} lostFocus={lostFocus} />
+        // A new link starts a new prompt. The key differs from the survey's key: siblings need different keys.
+        <StillHerePrompt key={`still-here-${token}`} view={view} token={token} language={language} lostFocus={lostFocus} />
       )}
       {/* Offline: a dashed frame shows the status may be old. The frame is always there, so the status keeps its place. */}
       <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
