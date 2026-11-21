@@ -103,3 +103,36 @@ No issues in `vercel.json`; `/api/keep-alive` and `/api/recall-alert` are outsid
 5.7 `20261118000100_demo_simulator.sql` line 98: "see the TODO below", but there is no TODO.
 5.8 `supabase/checks/permissions.sql` line 55: "no migration here gives column rights" is wrong; `20261112010000_site_pause_read.sql` line 11 grants column select to `service_role`.
 5.9 `supabase/checks/daily_stats.sql` line 1: names only `20261116100000`, not `20261116110000`, which replaced `delete_old_visits()`.
+
+## Claude's check
+
+Checked against the latest version of each function (the last migration that defines it) on branch `phase5-e2e`, 2026-11-21.
+
+Valid, to fix:
+- 3.1 and 2.2: valid and important. `applyTriage` (`lib/visitActions.ts:61-77`) keeps the old `offered_at` on the `not_eligible` path, and `delete_old_visits()` and `lib/dashboardNumbers.ts:109` both count any `offered_at`. It also keeps `last_still_here_at`, which is the side case of fault 1 in the code review. Fix: add `offered_at: null` and `last_still_here_at: null` to `fresh`. Plan mode: the database trigger rules for these columns must allow the change.
+- 2.1: the same fault as code review fault 2, in the database count. The owner's choice (count on the triage day) must also change `delete_old_visits()` in a new migration.
+- 1.7: the dashboard part is code review fault 8. The `visitCache.ts` part is valid but small: the database deletes at 24 hours anyway.
+- 5.2, 5.4, 5.5, 5.7, 5.8, 5.9: valid (seen in the files). 5.1 is code review fault 9. 5.6 is valid; the comment is in an old migration, which does not change, so it stays.
+
+Valid, needs an owner decision:
+- 1.2: true, `get_patient_visit` (`20261120000000_survey.sql:70-90`) does not filter on `is_demo`. But the staff line (`lib/queue.ts`) does not either, so the staff list and the phone agree. The decision of 2026-11-18 says "Clear demo data before real testers start".
+- 4.4: true that the CSP has only `frame-ancestors`. A full CSP with Next.js needs nonces and is a large change. Vercel adds HSTS on its own domains.
+- 5.3: only the owner knows if the hour words are approved now.
+
+Valid but low (no change proposed):
+- 1.3: the `site_settings` rows for A and B are made in a migration, and staff cannot delete them. The demo count in the cap is small.
+- 1.5: Supabase has `pgcrypto` in `extensions`; it matters only on a plain Postgres.
+- 1.6: a collision of two 128-bit tokens is not a real risk.
+- 4.1: `getClaims()` gives an error value in normal failures; only a throw gives a 500.
+- 4.3: true; a lost `?tab=` after sign-in is small.
+- 3.2, 3.6: the inputs come from the database as whole numbers and real times.
+
+Not valid:
+- 1.1: the app never sends `created_at`, and a different value inside the same transaction cannot come from the app.
+- 1.4 (a): `status` is `not null` and the app never sends null. (b): after an undone arrival the visit is again a switched visit that is not recalled, so undo of the switch is correct.
+- 1.8: the survey is a radio group 0 to 10; the app cannot send 7.5.
+- 3.3: the table has `check (language ~ '^[a-z]{2,3}$')` (`20261110060756_tables_and_security.sql:35`), so "constructor" cannot be a language.
+- 3.4: there is no `/patients` route.
+- 3.5: Next.js 16 does not support browsers from before 2019.
+- 4.2: `/login` is not a staff path (`lib/staffAccess.ts:24`), so it always gives "allow" and cannot loop.
+- 2.3: the 15-minute cron gap is small. Not checked: whether the database stops a closed status without its time (`arrived_at`, `closed_at`); the app always sets them in `lib/visitActions.ts`.
