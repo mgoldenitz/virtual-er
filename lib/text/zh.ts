@@ -157,6 +157,7 @@ export const zh: PatientText = {
     submit: "提交",
     thanks: "感谢您的反馈。",
     note: "回答是可选的。您的名字不会被保存。",
+    notSaved: "您的回答未保存。请重试。",
   },
   offline: "您已离线。请重新连接到互联网以查看您的状态。",
 };

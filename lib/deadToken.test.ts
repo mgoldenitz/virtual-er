@@ -19,6 +19,7 @@ const view: PatientView = {
   seen: false,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 
 describe("isDeadToken", () => {

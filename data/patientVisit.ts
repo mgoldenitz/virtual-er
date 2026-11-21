@@ -157,3 +157,15 @@ export function confirmOnMyWayByToken(token: string): Promise<ChangeResult> {
 export function recordStillHere(token: string): Promise<ChangeResult> {
   return patientStep("record_still_here", token);
 }
+
+/** Save the 0 to 10 survey score once. Only after the visit is closed, arrived and waited off-site (SPEC rule 5). */
+export async function submitSurvey(token: string, score: number): Promise<ChangeResult> {
+  try {
+    const { data, error } = await supabaseBrowser().rpc("submit_survey", { p_token: token, p_score: score });
+    if (error || typeof data !== "boolean") return "not_saved";
+    await refreshPatientView(token); // show the result straight away
+    return data ? "saved" : "refused";
+  } catch {
+    return "not_saved";
+  }
+}

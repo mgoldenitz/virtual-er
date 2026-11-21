@@ -19,6 +19,7 @@ const view: PatientView = {
   seen: false,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 
 const render = (language: string, low = 95, high = 140) =>

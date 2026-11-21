@@ -16,6 +16,7 @@ const view = (over: Partial<PatientView>): PatientView => ({
   seen: false,
   closed: false,
   expired: false,
+  surveyDone: false,
   ...over,
 });
 

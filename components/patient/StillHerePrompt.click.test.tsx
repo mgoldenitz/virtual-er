@@ -35,6 +35,7 @@ const due: PatientView = {
   seen: false,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 // What the page gets after the tap is saved.
 const tapped: PatientView = { ...due, lastStillHereAt: "2026-11-16T11:59:30Z" };

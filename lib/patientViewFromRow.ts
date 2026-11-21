@@ -22,6 +22,8 @@ export type PatientVisitRow = {
   expired: boolean;
   /** Added in 20261111050000_still_here.sql; missing (undefined) before that change has run. */
   triaged_at?: string | null;
+  /** Added in 20261120000000_survey.sql; missing (undefined) before that change has run. */
+  survey_done?: boolean;
 };
 
 export function patientViewFromRow(row: PatientVisitRow): PatientView {
@@ -44,5 +46,6 @@ export function patientViewFromRow(row: PatientVisitRow): PatientView {
     seen: row.seen,
     closed: row.closed,
     expired: row.expired,
+    surveyDone: row.survey_done ?? false,
   };
 }
