@@ -443,3 +443,66 @@ index 0e445f0..2bbcad4 100644
  }
  
 ```
+
+## Response
+
+### 1. `data-lang-wait` staying until 1.5 s while React already rendered the right language
+
+None found across the paths checked:
+
+* Client navigation (`/` <-> `/patient`): `InlineScript` renders `type="text/plain"` when `typeof window !== "undefined"`, and `<head>` scripts do not re-run on client navigation, so `data-lang-wait` is never re-added. Before a user can trigger client navigation in React, hydration has committed and `useDocumentLanguage`'s `useLayoutEffect` has already cleared `data-lang-wait`.
+* `chooseLanguage(link.language)` effect on `/patient`: When `#l=fr` is in the hash and `localStorage` is `null` or `"ar"`, `languageScript()` sets `data-lang-wait="fr"`. React renders `"en"` (SSR snapshot) and then `"ar"` (if saved) before `useEffect` calls `chooseLanguage("fr")`; `revealsPage` returns `false` on those earlier renders (while React is not yet rendering `"fr"`), and the moment React renders `"fr"`, `useDocumentLanguage`'s `useLayoutEffect` removes `data-lang-wait`.
+* `languageInfo` mapping a saved code to another code: `languageScript()` checks `Object.prototype.hasOwnProperty.call(dirs, c)` where `dirs` is keyed by `LANGUAGES.map((l) => l.code)`. Because only exact, non-`"en"` codes in `LANGUAGES` are accepted, `languageInfo(code).code` always equals `code`.
+* StrictMode double effects and `"en"`/`"ltr"` cleanup: In `components/useDocumentLanguage.ts` lines 13-26, the `[language]` cleanup only sets `lang="en"` and `dir="ltr"`; it never adds `data-lang-wait` back, and the second StrictMode setup sees `waitingFor === null` (`revealsPage` is `true`). (As a `lang`/`dir` note rather than a `data-lang-wait` bug: resetting `en`/`ltr` in the `[language]` cleanup still bounces `<html>` attributes on every language change and risks overwriting `<html>` if an outgoing route's cleanup runs after an incoming route's setup during client navigation.)
+
+### 2. Script hides the page for language X, but React never renders X
+
+None found on `/` or `/patient` in normal operation, with one routing edge case and one unverified assumption:
+
+* Unknown `/patient...` subpaths (404) are matched by `startsWith("/patient")` (minor)
+  * File and line: `lib/languageScript.ts`, line 34 (`if (path !== "/" && !path.startsWith("/patient")) return;`).
+  * Concrete case: A user with `vwr.language = "ar"` saved visits a non-existent subpath such as `/patient/unknown`. `path.startsWith("/patient")` is `true`, so the script sets `lang="ar"`, `dir="rtl"`, and `data-lang-wait="ar"`, while Next.js renders a 404 screen in English without calling `useDocumentLanguage` (hiding any `<main>` on a custom 404 for 1.5 s and leaving `<html lang="ar" dir="rtl">` on English text). (Distinct from the settled `/patients` prefix note.)
+  * How sure: High.
+
+(Assumption check for blocked storage on `/patient`: on `/patient#t=abc&l=fr`, `lib/languageScript.ts` lines 39-43 set `code = "fr"` from `location.hash` and skip `localStorage.getItem`, so `<main>` is hidden even when storage is blocked. React then relies on `chooseLanguage("fr")` in `data/savedLanguage.ts` (whose implementation is not shown in full) to update its in-memory `chosen` value and notify `listeners` even if `localStorage.setItem` throws.)
+
+### 3. Faults in the script string (JSON escaping, `RegExp`, exception paths)
+
+None found for the current constants and browser APIs, with three minor defensive-hardening notes:
+
+* JSON escaping (`lib/languageScript.ts`, lines 36, 40, 43, 49, 51): `JSON.stringify` does not escape `<`, so any future constant containing `"</script>"` would break out of the HTML `<script>` element (all current values are safe; `.replace(/</g, "\\u003c")` prevents future accidents). How sure: High.
+* `RegExp` from `LINK_LANGUAGE_PATTERN.source` (`lib/languageScript.ts`, line 40; `lib/text/languages.ts`, line 29): `LINK_LANGUAGE_PATTERN` has no flags, so `new RegExp(LINK_LANGUAGE_PATTERN.source)` is identical today. If flags such as `i` are ever added to `LINK_LANGUAGE_PATTERN`, `.source` alone would drop them unless `LINK_LANGUAGE_PATTERN.flags` is passed as the second argument. How sure: High.
+* Exception path without timer (`lib/languageScript.ts`, lines 43-52): `localStorage.getItem` (line 43) runs before `root.setAttribute(LANGUAGE_WAIT_ATTR, code)` (line 49), so storage-blocked errors never set `data-lang-wait`. Once line 49 runs, only `setTimeout` throwing on line 50 (practically impossible in browsers) could leave `data-lang-wait` without a timer. How sure: High.
+
+### 4. Test gaps (changed behavior with no automated test)
+
+1. Pre-hydration `<main>` hiding in `app/layout.tsx` and `app/globals.css` is completely untested
+   * File and line: `app/layout.tsx`, line 29 (`<InlineScript html={languageScript()} />`); `app/globals.css`, lines 24-26 (`html[data-lang-wait] main { visibility: hidden; }`); `e2e/languages.spec.ts`, lines 37-39.
+   * Concrete case: `e2e/languages.spec.ts` asserts `data-lang-wait` is gone and `main` is visible after React finishes loading. Removing `<InlineScript html={languageScript()} />` from `app/layout.tsx` or deleting the CSS rule in `app/globals.css` leaves all 584 unit tests and 37 e2e tests passing (this was checked only manually on the dev server).
+   * How sure: High.
+2. Start page `/` with a saved language (and `/patient` reloaded from `localStorage` without `#l=`) has no e2e coverage
+   * File and line: `e2e/languages.spec.ts`, lines 34-40; `components/start/StartPageBody.tsx`.
+   * Concrete case: `e2e/languages.spec.ts` only navigates to `/patient` with `#t=...&l=...` in the hash. No e2e test seeds `vwr.language = "ar"` in `localStorage` and loads `/` (or reloads `/patient` without `#l=`) to verify `languageScript()`, `StartPageBody`, and `useDocumentLanguage` remove `data-lang-wait` and reveal the translated page.
+   * How sure: High.
+3. `#l=fr` overriding a different saved language (`"ar"`) is never tested through `useDocumentLanguage`
+   * File and line: `components/useDocumentLanguage.test.tsx`, lines 64-74; `app/patient/page.tsx`.
+   * Concrete case: `useDocumentLanguage.test.tsx` only tests `"en"` -> `"ur"` with `data-lang-wait="ur"`. No test exercises the `/patient#t=abc&l=fr` + `localStorage = "ar"` sequence (`"en"` stays hidden -> `"ar"` stays hidden -> `"fr"` reveals), nor tests `#l=en` overriding saved `"ar"` in a browser.
+   * How sure: High.
+4. The 1.5 s timeout recovery is not tested in a real browser
+   * File and line: `lib/languageScript.ts`, lines 50-52; `lib/languageScript.test.ts`, lines 94-100.
+   * Concrete case: `lib/languageScript.test.ts` stubs `setTimeout` and runs the callback against a plain object (`fakeRoot`). No browser test holds JS chunks back past 1.5 s to verify `main` transitions from `visibility: hidden` back to visible.
+   * How sure: High.
+
+### 5. Simpler ways to get the same result
+
+None found under the `cacheComponents: true` constraint (keeping `/` and `/patient` static in English without Suspense/dynamic cookie reads). Because React 19 `hydrateRoot` requires `useSyncExternalStore` to render the server snapshot (`null` -> `"en"`) during hydration, and `/patient` can render a previously saved language before `useEffect` reads `#l=`, recording the awaited language code in `data-lang-wait` and removing it only when `revealsPage(language, waitingFor)` is true is already close to minimal. (Only minor cleanup: moving `LANGUAGE_WAIT_ATTR` into `lib/text/languages.ts` alongside `LANGUAGE_KEY` and inlining the one-line check in `useDocumentLanguage.ts` would avoid importing a client hook from the `<head>`-script generator module.)
+
+## Check (Claude, 2026-11-21)
+
+- 1, the cleanup note (`en`/`ltr` on every language change): true, but the cleanup is older than this change and the next setup runs in the same commit, so nothing paints. Not changed.
+- 2, `/patient/unknown`: accepted. `app/patient/page.tsx` is the only patient route and there is no `app/not-found.tsx`. Fix: the script runs only when the path is exactly `/` or `/patient`, with a failing test first. `lib/textSize.ts` keeps `startsWith` (its result there is only a larger font; already listed 2026-11-18).
+- 2, blocked storage: checked, not a fault. `chooseLanguage` in `data/savedLanguage.ts` sets `chosen = code` and tells the listeners; only `setItem` is inside the try.
+- 3, `<` escaping and regex flags: rejected. The values are constants in this repo, never user data, and the pattern has no flags. The exception path note agrees there is no fault.
+- 4.1, 4.2 and 4.4: accepted as one e2e test: `/` with `ar` saved and script files held back 3 s. Before React, `main` is hidden and `<html>` is `ar`/`rtl`; after 1.5 s, `main` shows; after React, the Arabic heading shows. This fails if the head script or the CSS rule is removed.
+- 4.3: accepted as a unit test in `components/useDocumentLanguage.test.tsx`: waiting `fr`, renders `en` then `ar` keep the page hidden, `fr` shows it. The `#l=en` case is already in `lib/languageScript.test.ts`.
+- 5: rejected. `lib/languageScript.ts` does not import a client hook; the hook imports from `lib/`. CLAUDE.md asks that each rule that decides something stays in `lib/` with a test, so `revealsPage` stays.
