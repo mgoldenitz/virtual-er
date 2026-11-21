@@ -7,7 +7,7 @@ import { ACTIVE_STATUSES, type Site, type Visit } from "./visit";
  * Triage time first; two patients triaged at the same moment are put in a fixed order by id,
  * so the staff list and each patient's place always agree.
  */
-function byTriage(a: Visit, b: Visit): number {
+export function byTriage(a: Visit, b: Visit): number {
   const at = a.triaged_at ?? "";
   const bt = b.triaged_at ?? "";
   // Compare the moments themselves, so the order does not depend on how the time is written
