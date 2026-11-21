@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeLine, averageCallGap, MIN_GAP_MINUTES, minutesBetween, placeInLine, waitRange } from "./queue";
+import { activeLine, MIN_GAP_MINUTES, minutesBetween, placeInLine, waitRange } from "./queue";
 import type { Visit } from "./visit";
 import { checkInAtDesk } from "./visitActions";
 
@@ -36,16 +36,8 @@ describe("line order", () => {
 });
 
 describe("wait range", () => {
-  it("uses 15 minutes per patient until there is call-back history", () => {
-    expect(averageCallGap([visit("a", 1)], "A")).toBe(15);
+  it("gives 35 to 60 minutes for place 3 with the 15-minute default gap", () => {
     expect(waitRange(3, 15)).toEqual({ low: 35, high: 60 });
-  });
-
-  it("averages the gaps between the last call-backs", () => {
-    const visits = [0, 10, 30].map((m, i) =>
-      visit(`v${i}`, m, { status: "arrived", called_at: at(m).toISOString() }),
-    );
-    expect(averageCallGap(visits, "A")).toBe(15); // gaps 10 and 20
   });
 
   // The demo simulator keeps about 9 or 10 visits waiting per site, with call-backs 15 to 20 minutes apart
@@ -60,11 +52,6 @@ describe("wait range", () => {
   it("never shows a range below 5 minutes or with equal ends", () => {
     expect(MIN_GAP_MINUTES).toBe(5);
     expect(waitRange(1, MIN_GAP_MINUTES)).toEqual({ low: 5, high: 10 });
-  });
-
-  it("never gives a gap under 5 minutes, even when call-backs come 1 minute apart", () => {
-    const visits = [0, 1].map((m, i) => visit(`v${i}`, m, { status: "arrived", called_at: at(m).toISOString() }));
-    expect(averageCallGap(visits, "A")).toBe(5);
   });
 
   it("counts whole minutes", () => {

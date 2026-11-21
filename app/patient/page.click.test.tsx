@@ -12,7 +12,7 @@ import { textFor } from "@/lib/text";
 import PatientPage from "./page";
 
 // The known token and its waiting visit exist only here: the database read is replaced, so each test controls it.
-const { KNOWN_TOKEN, waiting, NOW } = vi.hoisted(() => {
+const { KNOWN_TOKEN, views, NOW } = vi.hoisted(() => {
   const token = "0123456789ABCDEFGHJKMNPQRS";
   const view: PatientView = {
     code: "ABC234",
@@ -24,23 +24,39 @@ const { KNOWN_TOKEN, waiting, NOW } = vi.hoisted(() => {
     waitHigh: 40,
     calledAt: null,
     lastStillHereAt: null,
+    offeredAt: null,
     triagedAt: "2026-11-16T11:50:00Z",
     seen: false,
     closed: false,
     expired: false,
     surveyDone: false,
   };
-  return { KNOWN_TOKEN: token, waiting: view, NOW: new Date("2026-11-16T12:00:00Z") };
+  // Two more visits, both recalled and already seen, for the "I'm on my way" tests.
+  const called: PatientView = { ...view, status: "called", placeInLine: null, calledAt: "2026-11-16T11:58:00Z", seen: true };
+  const views: Record<string, PatientView> = {
+    [token]: view,
+    "1123456789ABCDEFGHJKMNPQRS": called,
+    "2123456789ABCDEFGHJKMNPQRS": { ...called, code: "XYZ567" },
+  };
+  return { KNOWN_TOKEN: token, views, NOW: new Date("2026-11-16T12:00:00Z") };
 });
+const CALLED_A = "1123456789ABCDEFGHJKMNPQRS";
+const CALLED_B = "2123456789ABCDEFGHJKMNPQRS";
 
 vi.mock("@/data/patientVisit", () => ({
-  usePatientView: (token: string | null) => (token === KNOWN_TOKEN ? waiting : null),
+  usePatientView: (token: string | null) => (token ? (views[token] ?? null) : null),
   recordSeen: vi.fn().mockResolvedValue("saved"),
   confirmOnMyWayByToken: vi.fn().mockResolvedValue("saved"),
   recordStillHere: vi.fn().mockResolvedValue("saved"),
 }));
 // The clock is replaced so the "I'm still here" prompt does not depend on the real time.
 vi.mock("@/components/useNow", () => ({ useNow: () => NOW }));
+// The recall sound is replaced: the test browser has no sound player.
+vi.mock("@/components/patient/alertSound", () => ({
+  unlockSound: vi.fn().mockResolvedValue(true),
+  playAlert: vi.fn().mockReturnValue(new Promise(() => {})),
+  stopVibration: vi.fn(),
+}));
 
 // Tells React that this file runs its updates inside act().
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -126,5 +142,41 @@ describe("patient page when the link changes", () => {
     } finally {
       blocked.mockRestore();
     }
+  });
+});
+
+describe("patient page I'm on my way reply", () => {
+  const onMyWayButton = () => [...container.querySelectorAll("button")].find((b) => b.textContent === en.onMyWay);
+  const notSavedAlert = () =>
+    [...container.querySelectorAll('[role="alert"]')].find((a) => a.textContent === en.notSaved);
+
+  it("shows the did-not-save alert when the save fails on the same link", async () => {
+    const { confirmOnMyWayByToken } = await import("@/data/patientVisit");
+    vi.mocked(confirmOnMyWayByToken).mockResolvedValueOnce("not_saved");
+    openAt(`#t=${CALLED_A}`);
+    await act(async () => onMyWayButton()?.click());
+    expect(notSavedAlert()).toBeDefined();
+  });
+
+  // Gemini review of the Phase 5 fixes, point 3b (2026-11-21): a new link opens while the old
+  // link's save is on its way. The old link's failed reply must not show on the new visit.
+  it("shows no did-not-save alert on a new link when the old link's save fails later", async () => {
+    const { confirmOnMyWayByToken } = await import("@/data/patientVisit");
+    let reply: (result: "saved" | "not_saved") => void = () => {};
+    const held = new Promise<"saved" | "not_saved">((resolve) => (reply = resolve));
+    vi.mocked(confirmOnMyWayByToken).mockReturnValueOnce(held);
+    vi.mocked(confirmOnMyWayByToken).mockClear();
+    openAt(`#t=${CALLED_A}`);
+    expect(onMyWayButton()).toBeDefined();
+    act(() => onMyWayButton()?.click());
+    // Proves the tap's save really started, so a pass below means the old reply was ignored.
+    expect(confirmOnMyWayByToken).toHaveBeenCalledWith(CALLED_A);
+    changeHashTo(`#t=${CALLED_B}`);
+    expect(container.textContent).toContain("XYZ567");
+    // The test browser can fire a late hashchange for the address change. Let it come first, so the
+    // reply below is the last thing that happens, as on a real phone.
+    await act(async () => new Promise((done) => setTimeout(done, 0)));
+    await act(async () => reply("not_saved"));
+    expect(notSavedAlert()).toBeUndefined();
   });
 });

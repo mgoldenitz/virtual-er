@@ -16,12 +16,17 @@ import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { VisitScreen } from "@/components/patient/VisitScreen";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 import { isDeadToken } from "@/lib/deadToken";
+import { replyIsForCurrentLink } from "@/lib/saveReply";
+import type { VisitStatus } from "@/lib/visit";
 import { textFor } from "@/lib/text";
 import { languageInfo, patientLanguage } from "@/lib/text/languages";
 
 export default function PatientPage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
-  const [notSaved, setNotSaved] = useState(false);
+  // The status at the "I'm on my way" tap, when that save failed (null: no failed save).
+  const [notSavedIn, setNotSavedIn] = useState<VisitStatus | null>(null);
+  // The link open now, for a save reply that comes back after a new link opened.
+  const currentToken = useRef<string | null>(null);
   const [brokenLink, setBrokenLink] = useState(false);
   const [sending, setSending] = useState(false);
   const chosenLanguage = useChosenLanguage();
@@ -37,9 +42,10 @@ export default function PatientPage() {
       const link = takeTokenFromLink();
       // A desk QR link carries the visit's language: remember it, so it shows before the visit loads.
       if (link.language) chooseLanguage(link.language);
+      currentToken.current = link.token;
       setToken(link.token);
       setBrokenLink(link.brokenLink);
-      setNotSaved(false);
+      setNotSavedIn(null);
     };
     if (!linkRead.current) {
       linkRead.current = true;
@@ -89,13 +95,18 @@ export default function PatientPage() {
 
   async function onOnMyWay() {
     if (!token || sending) return;
+    const tapToken = token;
+    const tapStatus = view?.status ?? null;
     setSending(true);
+    setNotSavedIn(null); // a new tap clears the last failed save's alert while it saves
     // "Seen" can only be recorded while the visit is still "called". A very quick tap could
     // otherwise confirm first and leave the seen time empty, so make sure it is recorded first.
-    if (view && !view.seen) await recordSeen(token);
-    const result = await confirmOnMyWayByToken(token);
+    if (view && !view.seen) await recordSeen(tapToken);
+    const result = await confirmOnMyWayByToken(tapToken);
     setSending(false);
-    setNotSaved(result === "not_saved");
+    // A new link opened while this save was on its way: the reply is for the old visit.
+    if (!replyIsForCurrentLink(tapToken, currentToken.current)) return;
+    setNotSavedIn(result === "not_saved" ? tapStatus : null);
   }
 
   return (
@@ -117,7 +128,7 @@ export default function PatientPage() {
         onOnMyWay={onOnMyWay}
         sending={sending}
         online={online}
-        notSaved={notSaved}
+        notSavedIn={notSavedIn}
       />
     </main>
     </PatientShell>

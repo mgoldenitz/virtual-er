@@ -1,7 +1,7 @@
 "use client";
 
-// The no-response steps on one staff row after "Recall patient": the flag ("Phone this patient",
-// "Review: unable to reach" and so on), the simulated phone-call buttons, and the nurse's
+// The no-response steps on one staff row after "Recall patient": the flag ("Phone the patient now",
+// "Phone the patient again", "Review: unable to reach" and so on), the simulated phone-call buttons, and the nurse's
 // confirmation of "unable to reach". The rule that picks the flag is in lib/followUp.ts.
 
 import { confirmUnableToReachFor, recordPhoneCallFor } from "@/data/staffActions";

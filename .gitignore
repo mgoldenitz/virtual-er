@@ -52,3 +52,5 @@ MGMT51463/
 Hand off summary.docx
 # Office lock files
 ~$*
+# Screenshots from the run skill driver (.claude/skills/run-virtual-er).
+/screenshots/run/

@@ -1,14 +1,13 @@
 // Line order and the simulated wait range.
 // The line is ordered by triaged_at, never by created_at (SPEC data section).
 
-import { DEFAULT_GAP_MINUTES } from "./demoTimes";
 import { ACTIVE_STATUSES, type Site, type Visit } from "./visit";
 
 /**
  * Triage time first; two patients triaged at the same moment are put in a fixed order by id,
  * so the staff list and each patient's place always agree.
  */
-function byTriage(a: Visit, b: Visit): number {
+export function byTriage(a: Visit, b: Visit): number {
   const at = a.triaged_at ?? "";
   const bt = b.triaged_at ?? "";
   // Compare the moments themselves, so the order does not depend on how the time is written
@@ -42,19 +41,6 @@ export function placeInLine(visits: Visit[], visit: Visit): number | null {
 
 /** The smallest gap per place, so a fast burst of call-backs never gives a very short wait. */
 export const MIN_GAP_MINUTES = 5;
-
-/** Average minutes between the last 5 call-backs at a site; 15 until there is history, never under 5. */
-export function averageCallGap(visits: Visit[], site: Site): number {
-  const times = visits
-    .filter((v) => v.site === site && v.called_at)
-    .map((v) => new Date(v.called_at!).getTime())
-    .sort((a, b) => a - b)
-    .slice(-6); // 6 call-backs give 5 gaps
-  if (times.length < 2) return DEFAULT_GAP_MINUTES;
-  const gaps = times.slice(1).map((t, i) => (t - times[i]) / 60_000);
-  const avg = gaps.reduce((sum, g) => sum + g, 0) / gaps.length;
-  return Math.max(avg, MIN_GAP_MINUTES);
-}
 
 /**
  * Simulated wait range in minutes (SPEC rule 8: never THP's numbers).

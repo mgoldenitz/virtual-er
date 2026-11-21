@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { recordStillHere } from "@/data/patientVisit";
 import type { PatientView } from "@/lib/patientView";
-import { stillHereState } from "@/lib/stillHere";
+import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import { textFor } from "@/lib/text";
 import { Button } from "@/components/Button";
 import { useNow } from "@/components/useNow";
@@ -34,6 +34,9 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
   const t = textFor(language);
   const state = now ? stillHereState(view, now) : "not_due";
   const showing = state !== "not_due";
+  // When the prompt hides, a failed tap's alert goes, so it cannot come back with the next prompt.
+  // Set during render, not in an effect, as `failedIn` in VisitScreen.tsx.
+  if (!showing && notSaved) setNotSaved(false);
   // If the prompt leaves with focus inside it (after the tap), focus goes to the status heading.
   // With the shared flag, the status screen also does this when the whole prompt leaves on a recall.
   const ownFlag = useRef(false);
@@ -49,7 +52,13 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
     };
   }, [showing, t.announce.stillHere]);
 
-  const tapped = view.lastStillHereAt ? new Date(view.lastStillHereAt).getTime() : null;
+  // A switch to off-site waiting stamps the same moment in last_still_here_at: lastTapThisWait skips it.
+  const tapAt = lastTapThisWait({
+    triagedAt: view.triagedAt,
+    lastStillHereAt: view.lastStillHereAt,
+    offeredAt: view.offeredAt,
+  });
+  const tapped = tapAt ? new Date(tapAt).getTime() : null;
   const thanking = !showing && now !== null && tapped !== null && now.getTime() - tapped < THANKS_MS;
 
   // After a few seconds the hidden box goes empty, so a swipe reads the thank-you only on the card.
@@ -66,6 +75,7 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
   async function onTap() {
     if (sending) return;
     setSending(true);
+    setNotSaved(false); // a new tap clears the last failed save's alert while it saves
     const result = await recordStillHere(token);
     setSending(false);
     setNotSaved(result === "not_saved");

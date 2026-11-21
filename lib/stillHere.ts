@@ -25,10 +25,18 @@ function clockStart({ triagedAt, lastStillHereAt }: StillHereInput): number | nu
   return Math.max(triaged, tapped);
 }
 
-/** The last tap in this wait, or null if there was none since the latest triage (a reopened visit starts fresh). */
-export function lastTapThisWait({ triagedAt, lastStillHereAt }: Omit<StillHereInput, "status">): string | null {
+type LastTapInput = Omit<StillHereInput, "status"> & { offeredAt?: string | null };
+
+/** The last tap in this wait, or null if there was none since the latest triage (a reopened visit starts fresh), or if that stamp is a switch to off-site waiting. */
+export function lastTapThisWait({ triagedAt, lastStillHereAt, offeredAt }: LastTapInput): string | null {
   if (!triagedAt || !lastStillHereAt) return null;
-  return new Date(lastStillHereAt).getTime() >= new Date(triagedAt).getTime() ? lastStillHereAt : null;
+  const triaged = new Date(triagedAt).getTime();
+  const tapped = new Date(lastStillHereAt).getTime();
+  if (tapped < triaged) return null;
+  // A switch from declined sets offered_at and last_still_here_at to the same moment, after triage: not a tap.
+  const offered = offeredAt ? new Date(offeredAt).getTime() : null;
+  const isSwitchStamp = offered !== null && offered > triaged && offered === tapped;
+  return isSwitchStamp ? null : lastStillHereAt;
 }
 
 export function stillHereState(visit: StillHereInput, now: Date): StillHereState {

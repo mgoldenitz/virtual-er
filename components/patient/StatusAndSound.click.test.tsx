@@ -35,6 +35,7 @@ const waiting: PatientView = {
   waitHigh: 40,
   calledAt: null,
   lastStillHereAt: null,
+  offeredAt: null,
   triagedAt: "2026-11-16T11:29:00Z",
   seen: false,
   closed: false,
@@ -89,5 +90,32 @@ describe("StatusAndSound with the I'm still here prompt", () => {
     show({ ...called, status: "on_the_way" });
     expect(container.querySelector('input[name="survey-score"]')).toBeNull();
     expect(document.activeElement).toBe(container.querySelector("#status-heading"));
+  });
+
+  it("starts the survey empty when the visit's token changes, so a picked score does not carry over", () => {
+    const arrived: PatientView = { ...called, status: "arrived", closed: true, seen: true };
+    show(arrived);
+    const eight = container.querySelector<HTMLInputElement>('input[name="survey-score"][value="8"]');
+    act(() => eight?.click());
+    expect(eight?.checked).toBe(true);
+    act(() =>
+      root.render(<StatusAndSound view={arrived} token="B" language="en" onOnMyWay={() => {}} sending={false} online />),
+    );
+    const checked = [...container.querySelectorAll<HTMLInputElement>('input[name="survey-score"]')].filter((r) => r.checked);
+    expect(checked).toHaveLength(0);
+  });
+
+  // Gemini review of the Phase 5 fixes, point 5a (2026-11-21): a failed tap on one visit's link
+  // must not show its alert on the visit of a new link.
+  it("drops the still-here did-not-save alert when the visit's token changes", async () => {
+    const { recordStillHere } = await import("@/data/patientVisit");
+    vi.mocked(recordStillHere).mockResolvedValueOnce("not_saved");
+    show(waiting);
+    await act(async () => button(t.stillHere.button)?.click());
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(t.stillHere.notSaved);
+    act(() =>
+      root.render(<StatusAndSound view={waiting} token="B" language="en" onOnMyWay={() => {}} sending={false} online />),
+    );
+    expect(container.querySelector('[role="alert"]')).toBeNull();
   });
 });

@@ -1,12 +1,16 @@
--- Check for the 24-hour clean-up (migrations 20261116100000_daily_stats_and_cleanup.sql and 20261120030000_wait_and_recall_stats.sql).
--- Run the whole file at once in the Supabase SQL Editor, after that migration. It saves nothing:
--- everything happens inside "begin ... rollback", so the synthetic visits, the paused trigger,
+-- Check for the 24-hour clean-up (made in migration 20261116100000_daily_stats_and_cleanup.sql;
+-- the newest copy of delete_old_visits is in 20261121010000_wait_stats_on_triage_day.sql).
+-- Run the whole file at once in the Supabase SQL Editor, after those migrations. It saves nothing:
+-- everything happens inside "begin ... rollback", so the synthetic visits, the 2 paused triggers,
 -- the real visits that the clean-up deletes and the daily_stats rows all come back as they were.
 -- If a number is wrong, the run stops with an error that names the row, what it got and what
 -- it expected (and still saves nothing). If all is right, it shows the 7 rows below.
 --
 -- Why the trigger is paused: visits_before_write sets every new time to now(), so this check
--- could not make visits that are more than 24 hours old.
+-- could not make visits that are more than 24 hours old. visits_check_step (migration
+-- 20261117000000) is paused too, because it lets a new visit start only as pre_arrival,
+-- waiting, declined or not_eligible, and this check inserts visits that are already closed.
+-- Both come back at the rollback.
 -- Why the year 2000: no real visit can count on those dates. Toronto is on EST (UTC-5) in
 -- January and on EDT (UTC-4) in July.
 -- D1 = 2000-01-01, D2 = 2000-01-02, D3 = 2000-07-01, D4 = 2000-07-02, D5 = 2000-03-01 and
@@ -32,6 +36,8 @@
 --   5M  desk, CTAS 4, triaged and offered D2, removed as left
 --   5Q  desk, CTAS 4, triaged and offered D1, arrived 10 min after the call (600 s), survey 9
 --   5R  desk, CTAS 5, triaged and offered D2, arrived 30 min after the call (1800 s), survey 8
+--   58  desk, CTAS 4, triaged D1 and declined, then switched to off-site waiting on D2
+--       (offered_at on D2), still waiting when deleted. Its offer counts on D1, the triage day.
 --   5S  desk, CTAS 4, triaged and offered D3 23:00 EDT, called 23:45, arrived D4 00:30 EDT (2700 s).
 --       In UTC its triage is already D4; with a fixed UTC-5 its arrival would still be D3.
 --   5W  desk, CTAS 4, triaged and offered D5 10:00, called 10:29:29 (1769 s, 29 min)
@@ -59,7 +65,7 @@
 -- called_and_arrived, call_to_arrival_seconds, arrived, no_shows, removed_left, unable_to_reach,
 -- open_at_deletion, started_from_home, home_reached_triage, surveys, score_sum, 9_or_10,
 -- called, offer_to_call_seconds, wait_under_30, wait_30_to_59, wait_60_to_119, wait_120_plus
---   D1 A false  6 1 5 1 2 2400 2 0 0 0 0 1 1 1 9 1 4 30600 2 0 1 1
+--   D1 A false  7 1 6 1 2 2400 2 0 0 0 1 1 1 1 9 1 4 30600 2 0 1 1
 --   D2 A false  105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1 13 14500 1 4 4 4
 --   D2 B true   4 0 4 0 0 0 0 0 0 0 4 0 0 0 0 0 3 9900 0 3 0 0
 --   D3 A false  1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 2700 0 1 0 0
@@ -68,10 +74,12 @@
 --   D6 A false  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1200 1 0 0 0
 -- The wait bands round the wait to whole seconds first, then to whole minutes. 5Y (1769.6 s) is in
 -- 30 to 59; one rounding would put it under 30. Offer to call: 5Q 25 min, 5B 15 min, 5A and 5G
--- 115 min, 5E 355 min, 5F, 5R, 5T, 5U, 5V 55 min, 5S 45 min.
+-- 115 min, 5E 355 min, 5F, 5R, 5T, 5U, 5V 55 min, 5S 45 min. 58 was never called, so it is in
+-- no wait number.
 -- Notes: 5B counts as triaged on D1 but as arrived on D2. 5G counts as started from home on D1
 -- (its created date) but as triaged on D2. 5J has no call time, so it is in arrived but not in
--- called_and_arrived. 5K, 5T, 5U and 5V count as open at deletion on their triaged date.
+-- called_and_arrived. 5K, 5T, 5U, 5V and 58 count as open at deletion on their triaged date.
+-- 58 is offered on D1, not D2: if D2 shows 6 offers, the clean-up counts on offered_at.
 
 begin;
 
@@ -136,6 +144,9 @@ values
   ('ZZZZ5R', 'ZZZZZZZZZZZZZZZZZZZZZZZZE4', 'A', 'desk', 5, 'arrived', null, false,
    '2000-01-02 14:00 America/Toronto', '2000-01-02 14:00 America/Toronto', '2000-01-02 14:05 America/Toronto',
    '2000-01-02 15:00 America/Toronto', '2000-01-02 15:30 America/Toronto', '2000-01-02 15:30 America/Toronto', 8),
+  ('ZZZZ58', 'ZZZZZZZZZZZZZZZZZZZZZZZZF9', 'A', 'desk', 4, 'waiting', null, false,
+   '2000-01-01 15:00 America/Toronto', '2000-01-01 15:00 America/Toronto', '2000-01-02 09:00 America/Toronto',
+   null, null, null, null),
   ('ZZZZ5S', 'ZZZZZZZZZZZZZZZZZZZZZZZZE5', 'A', 'desk', 4, 'arrived', null, false,
    '2000-07-01 23:00 America/Toronto', '2000-07-01 23:00 America/Toronto', '2000-07-01 23:00 America/Toronto',
    '2000-07-01 23:45 America/Toronto', '2000-07-02 00:30 America/Toronto', '2000-07-02 00:30 America/Toronto', null),
@@ -224,7 +235,7 @@ declare
 begin
   for want in
     select * from (values
-      ('2000-01-01'::date, 'A', false, '6 1 5 1 2 2400 2 0 0 0 0 1 1 1 9 1 4 30600 2 0 1 1'),
+      ('2000-01-01'::date, 'A', false, '7 1 6 1 2 2400 2 0 0 0 1 1 1 1 9 1 4 30600 2 0 1 1'),
       ('2000-01-02'::date, 'A', false, '105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1 13 14500 1 4 4 4'),
       ('2000-01-02'::date, 'B', true,  '4 0 4 0 0 0 0 0 0 0 4 0 0 0 0 0 3 9900 0 3 0 0'),
       ('2000-07-01'::date, 'A', false, '1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 2700 0 1 0 0'),

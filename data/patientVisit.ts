@@ -1,6 +1,7 @@
 // Everything a patient's phone may do, each as one narrow call that takes the token
-// (SPEC rule 5). Patient screens use only this file. Reading the visit and the two patient
-// steps go to the database functions; starting from home goes through the server route
+// (SPEC rule 5). Patient screens use only this file. Reading the visit (get_patient_visit),
+// the patient steps (record_seen, confirm_on_my_way, record_still_here) and the survey
+// (submit_survey) go to database functions; starting from home goes through the server route
 // app/api/start-visit.
 
 import { useCallback, useSyncExternalStore } from "react";

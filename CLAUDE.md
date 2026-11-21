@@ -41,6 +41,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 - Make a Git save point (a commit with a short plain-English message) before starting a change and again once it works.
 - If a change breaks the app, go back to the last save point that worked instead of stacking fixes.
+- Stage files by name (`git add path/to/file`), never a whole folder, so untracked files do not go into the commit (2026-11-21: `git add handoffs` committed a review bundle).
 
 ## Checks before done
 

@@ -31,6 +31,7 @@ const due: PatientView = {
   waitHigh: 40,
   calledAt: null,
   lastStillHereAt: null,
+  offeredAt: null,
   triagedAt: "2026-11-16T11:29:00Z",
   seen: false,
   closed: false,
@@ -127,6 +128,16 @@ describe("StillHerePrompt tap", () => {
     }
   });
 
+  it("does not thank a patient for the switch to off-site waiting, which is not a tap", () => {
+    const switched: PatientView = {
+      ...due,
+      offeredAt: "2026-11-16T11:59:55Z",
+      lastStillHereAt: "2026-11-16T11:59:55Z",
+    };
+    show(switched);
+    expect(container.textContent).not.toContain(s.thanks);
+  });
+
   it("leaves focus on the page after a phone tap that did not focus the button", async () => {
     show(due);
     expect(document.activeElement).toBe(document.body);
@@ -142,5 +153,30 @@ describe("StillHerePrompt tap", () => {
     const alert = container.querySelector('[role="alert"]');
     expect(alert?.textContent).toBe("Your tap did not save. Staff may not know you are still waiting. Please try again.");
     expect(alert?.textContent).not.toBe(textFor("en").patient.notSaved);
+  });
+
+  it("clears the did-not-save alert as soon as a new tap starts saving", async () => {
+    vi.mocked(recordStillHere).mockResolvedValueOnce("not_saved").mockReturnValueOnce(new Promise<"saved">(() => {}));
+    show(due);
+    await act(async () => button()?.click());
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    act(() => {
+      button()?.click();
+    });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  // Gemini review of the Phase 5 fixes, point 5b (2026-11-21): a tap from another phone hides the
+  // prompt; when the prompt is due again, the old failed tap's alert must not come back.
+  it("does not bring back an old did-not-save alert when the prompt is due again", async () => {
+    vi.mocked(recordStillHere).mockResolvedValueOnce("not_saved");
+    show(due);
+    await act(async () => button()?.click());
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    show(tapped);
+    expect(button()).toBeUndefined();
+    show(due);
+    expect(button()).toBeDefined();
+    expect(container.querySelector('[role="alert"]')).toBeNull();
   });
 });

@@ -4,7 +4,7 @@
 // because they have been waiting inside the whole time. A switch made by mistake can be undone
 // until the patient is recalled.
 
-import { placeInLine } from "./queue";
+import { byTriage, placeInLine } from "./queue";
 import type { Site, Visit } from "./visit";
 
 /** How long after declining a patient can still be switched to off-site waiting. */
@@ -56,14 +56,6 @@ export function canUndoSwitch(visit: Visit): boolean {
 export function undoSwitch(visit: Visit, now: Date): Visit | null {
   if (!canUndoSwitch(visit)) return null;
   return { ...visit, status: "declined", closed_at: now.toISOString() };
-}
-
-/** Triage time first, then the time text (finer than milliseconds), then the id, as the line does. */
-function byTriage(a: Visit, b: Visit): number {
-  const apart = ms(a.triaged_at!) - ms(b.triaged_at!);
-  if (apart !== 0) return apart < 0 ? -1 : 1;
-  if (a.triaged_at !== b.triaged_at) return a.triaged_at! < b.triaged_at! ? -1 : 1;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
 /** The staff "Waiting on-site: offered, declined" list at one site: visits that can still switch, oldest triage first. */

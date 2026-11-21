@@ -6,8 +6,10 @@
 // new heading when the old screen left with focus inside it.
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { type FailedIn, notSavedAlertShows } from "@/lib/notSavedAlert";
 import type { PatientView } from "@/lib/patientView";
+import type { VisitStatus } from "@/lib/visit";
 import { fill, textFor } from "@/lib/text";
 import { FocusBox } from "./FocusBox";
 import { StatusAndSound } from "./StatusAndSound";
@@ -28,19 +30,31 @@ type Props = {
   onOnMyWay: () => void;
   sending: boolean;
   online: boolean;
-  /** True when "I'm on my way" could not be saved. */
-  notSaved: boolean;
+  /** The status the visit was in at the "I'm on my way" tap, when that save failed (null: no failed save). */
+  notSavedIn: VisitStatus | null;
 };
 
 type Screen = "loading" | "unavailable" | "none" | "visit";
 
-export function VisitScreen({ loading, result, linkFailed, linkReplaced = false, token, language, onOnMyWay, sending, online, notSaved }: Props) {
+export function VisitScreen({ loading, result, linkFailed, linkReplaced = false, token, language, onOnMyWay, sending, online, notSavedIn }: Props) {
   const t = textFor(language);
   const p = t.patient;
   const view = result === "unavailable" ? null : result;
   // True when the old screen left with focus inside it; then focus goes to the new heading.
   const lostFocus = useRef(false);
   const markLost = useRescueFocus("status-heading", lostFocus);
+  // The status the failed save was in, or "gone" once the visit has left that status (so an Undo
+  // back to it does not bring the old alert back). It starts from the status at the tap, so a
+  // reply that comes after staff changed the status shows no alert. Set during render, not in an
+  // effect, and cleared when the failed save clears.
+  const [failedIn, setFailedIn] = useState<FailedIn>(null);
+  if (notSavedIn === null) {
+    if (failedIn !== null) setFailedIn(null);
+  } else if (failedIn === null) {
+    setFailedIn(notSavedIn);
+  } else if (view && failedIn !== "gone" && failedIn !== view.status) {
+    setFailedIn("gone");
+  }
 
   // Which of the 4 screens shows. "Loading…" comes first: while loading, result can be undefined.
   const screen: Screen = loading ? "loading" : result === "unavailable" ? "unavailable" : !view ? "none" : "visit";
@@ -91,7 +105,7 @@ export function VisitScreen({ loading, result, linkFailed, linkReplaced = false,
             · <bdi>{fill(t.siteName, { site: view.site })}</bdi>
           </p>
           <StatusAndSound view={view} token={token} language={language} onOnMyWay={onOnMyWay} sending={sending} online={online} />
-          {notSaved && (
+          {notSavedAlertShows(failedIn, view.status) && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
               {p.notSaved}
             </p>

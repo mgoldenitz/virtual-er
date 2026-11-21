@@ -26,8 +26,14 @@ function statsRow(overrides: Partial<DailyStatsRow>): DailyStatsRow {
 
 describe("trendNumbers", () => {
   it("gives the 7 past days, oldest first, each counted on its own date", () => {
-    // Offered at 12:00 on 2026-11-17 in Toronto: it counts on the 17th only, not today.
-    const trend = trendNumbers([visit({ offered_at: "2026-11-17T17:00:00.000Z" })], [], today, false);
+    // Triaged at 11:00 and offered at 12:00 on 2026-11-17 in Toronto: the offer counts on the 17th
+    // only, not today (offers count on the triage day, decision 2026-11-21).
+    const trend = trendNumbers(
+      [visit({ triaged_at: "2026-11-17T16:00:00.000Z", offered_at: "2026-11-17T17:00:00.000Z" })],
+      [],
+      today,
+      false,
+    );
     expect(trend.map((d) => d.day)).toEqual([
       "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-16", "2026-11-17",
     ]);
@@ -69,7 +75,12 @@ describe("hasPastData", () => {
   });
 
   it("is true when a live visit had an event on a past day", () => {
-    const trend = trendNumbers([visit({ offered_at: "2026-11-17T17:00:00.000Z" })], [], today, false);
+    const trend = trendNumbers(
+      [visit({ triaged_at: "2026-11-17T16:00:00.000Z", offered_at: "2026-11-17T17:00:00.000Z" })],
+      [],
+      today,
+      false,
+    );
     expect(hasPastData(trend)).toBe(true);
   });
 });

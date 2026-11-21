@@ -22,6 +22,8 @@ export type PatientVisitRow = {
   expired: boolean;
   /** Added in 20261111050000_still_here.sql; missing (undefined) before that change has run. */
   triaged_at?: string | null;
+  /** Added in 20261121000000_patient_view_offered_at.sql; missing (undefined) before that change has run. */
+  offered_at?: string | null;
   /** Added in 20261120000000_survey.sql; missing (undefined) before that change has run. */
   survey_done?: boolean;
 };
@@ -43,6 +45,7 @@ export function patientViewFromRow(row: PatientVisitRow): PatientView {
     calledAt: row.called_at,
     lastStillHereAt: row.last_still_here_at,
     triagedAt: row.triaged_at ?? null,
+    offeredAt: row.offered_at ?? null,
     seen: row.seen,
     closed: row.closed,
     expired: row.expired,

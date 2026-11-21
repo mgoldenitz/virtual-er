@@ -126,9 +126,12 @@ function siteNumbers(
     .map((v) => secondsBetween(v.offered_at, v.called_at));
   const inBand = (band: WaitBand): number => waits.filter((w) => waitBand(w) === band).length;
 
-  const offered = countVisits((v) => on(v.offered_at)) + fromStats((s) => s.offered);
+  // Offers and declines count on the triage day, so a declined visit switched the next day does
+  // not add an offer to a day with no triage for it (decision 2026-11-21, fault 2).
+  const offered = countVisits((v) => v.offered_at !== null && on(v.triaged_at)) + fromStats((s) => s.offered);
   const declined =
-    countVisits((v) => v.status === "declined" && on(v.offered_at)) + fromStats((s) => s.declined);
+    countVisits((v) => v.status === "declined" && v.offered_at !== null && on(v.triaged_at)) +
+    fromStats((s) => s.declined);
 
   return {
     // Live now: no date test, because daily_stats has no "now" numbers.

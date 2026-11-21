@@ -45,7 +45,8 @@
 -- shows only roles the current user belongs to, so through the read-only Supabase connection
 -- it shows no table rights at all. has_table_privilege answers for any role and includes
 -- rights that come through PUBLIC or another role. It looks at whole-table rights only, not
--- column rights; no migration here gives column rights.
+-- column rights. Some migrations give column rights, for example 20261112010000_site_pause_read.sql
+-- (line 9: select on site_settings for service_role). This check lists only anon and authenticated.
 select r.rolname as role, 'table' as kind, c.relname as name,
        string_agg(p.priv, ', ' order by p.priv) as rights
 from pg_class c

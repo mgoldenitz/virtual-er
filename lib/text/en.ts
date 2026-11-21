@@ -2,8 +2,8 @@
 // Wording approved by the owner on 2026-11-10 (handoffs/archive/2026-11-10-gemini-patient-wording-phase3-response.md).
 // Sentences marked "SPEC" are fixed by SPEC.md: change them only if the owner changes SPEC.
 // Words in {braces} are filled in by the app (for example {low}); translators keep them as they are.
-// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
-// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
+// The hour and minute words (waitRangeLong and the Duration words at the end) were drafted by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md); the owner approved the English on 2026-11-21.
 
 import type { DurationWords } from "./durationWords";
 
@@ -144,7 +144,7 @@ export const en = {
     typeLink: "Or type this link into your phone's browser:",
   },
 
-  // Phase 3 features still being built. Written now so all text is translated in one batch.
+  // Text for the still-here prompt (components/patient/StillHerePrompt.tsx). Kept with the rest of the patient text so it is all translated in one batch.
   stillHere: {
     heading: "Are you still following your visit?",
     button: "I'm still here",
