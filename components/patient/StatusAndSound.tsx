@@ -34,7 +34,7 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
         <StillHerePrompt key={`still-here-${token}`} view={view} token={token} language={language} lostFocus={lostFocus} />
       )}
       {/* Offline: a dashed frame shows the status may be old. The frame is always there, so the status keeps its place. */}
-      <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
+      <div className={online ? "" : "rounded-xl border-4 border-dashed border-ink p-1"} data-testid="status-frame">
         <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} lostFocus={lostFocus} />
       </div>
       {token && (

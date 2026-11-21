@@ -16,7 +16,7 @@ import { StartVisit } from "@/components/start/StartVisit";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 
 const linkStyle =
-  "inline-block min-h-11 rounded-lg border-2 border-slate-700 px-4 py-2 font-semibold focus-visible:outline-4 focus-visible:outline-slate-950";
+  "inline-block min-h-11 rounded-lg border-2 border-control bg-card px-4 py-2 font-semibold text-ink hover:bg-canvas focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 export function StartPageBody() {
   const language = useChosenLanguage() ?? "en";
@@ -24,7 +24,7 @@ export function StartPageBody() {
   useDocumentLanguage(language);
   return (
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-6 px-4 py-6">
-      <h1 className="text-2xl font-bold">{t.appName}</h1>
+      <h1 className="text-3xl font-bold">{t.appName}</h1>
       <LanguageSwitch language={language} />
       <TextSizeSwitch language={language} />
       <p className="rounded-lg border-2 border-red-700 bg-red-50 p-3 text-lg font-bold text-red-900">
@@ -35,7 +35,7 @@ export function StartPageBody() {
       </div>
       <StartVisit language={language} />
       <EmergencyLine language={language} />
-      <nav aria-label={t.start.demoScreens} className="flex flex-wrap gap-3 border-t border-slate-300 pt-4">
+      <nav aria-label={t.start.demoScreens} className="flex flex-wrap gap-3 border-t border-line pt-4">
         <Link href="/staff" className={linkStyle}>
           {t.start.staffScreen}
         </Link>

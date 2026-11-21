@@ -28,7 +28,7 @@ export function CareOptions({ language }: { language?: string }) {
   const s = t.start;
   return (
     <section aria-labelledby="options-heading" className="space-y-3">
-      <h2 id="options-heading" className="text-xl font-bold">
+      <h2 id="options-heading" className="text-2xl font-bold">
         {s.careHeading}
       </h2>
       <p>{s.careIntro}</p>

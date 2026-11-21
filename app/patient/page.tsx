@@ -112,7 +112,7 @@ export default function PatientPage() {
   return (
     <PatientShell>
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
-      <h1 className="text-xl font-bold">{t.appName}</h1>
+      <h1 className="text-lg font-bold">{t.appName}</h1>
       <LanguageSwitch language={language} />
       <TextSizeSwitch language={language} />
       <EmergencyLine language={language} />

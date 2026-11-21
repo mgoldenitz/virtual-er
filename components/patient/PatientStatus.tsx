@@ -55,7 +55,7 @@ function Waiting({ view, language, t }: { view: PatientView; language: string; t
         {p.waitLabel}{" "}
         <strong>{view.waitLow !== null && view.waitHigh !== null && formatWaitRange(view.waitLow, view.waitHigh, language)}</strong>
       </p>
-      <p className="text-sm text-slate-700">{p.simulated}</p>
+      <p className="text-sm text-muted">{p.simulated}</p>
     </section>
   );
 }

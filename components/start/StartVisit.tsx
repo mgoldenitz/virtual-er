@@ -21,7 +21,7 @@ import { Button } from "@/components/Button";
 const noSubscribe = () => () => {};
 
 const openLinkStyle =
-  "inline-block min-h-11 rounded-xl bg-brand px-4 py-2 font-semibold text-white hover:bg-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
+  "inline-block min-h-11 rounded-xl bg-brand px-4 py-2 font-semibold text-white hover:bg-brand-strong active:bg-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink";
 const boxStyle = "clean-card space-y-3";
 
 export function StartVisit({ language }: { language: string }) {
@@ -61,7 +61,7 @@ export function StartVisit({ language }: { language: string }) {
   if (state === "unavailable") {
     return (
       <section aria-labelledby="start-heading" className={boxStyle}>
-        <h2 id="start-heading" className="text-xl font-bold">
+        <h2 id="start-heading" className="text-2xl font-bold">
           {s.unavailableHeading}
         </h2>
         <p>{s.unavailableText}</p>
@@ -72,7 +72,7 @@ export function StartVisit({ language }: { language: string }) {
   if (saved && typeof saved === "object" && state === "open") {
     return (
       <section aria-labelledby="start-heading" className={boxStyle}>
-        <h2 id="start-heading" className="text-xl font-bold">
+        <h2 id="start-heading" className="text-2xl font-bold">
           {s.openHeading}
         </h2>
         <p>
@@ -93,7 +93,7 @@ export function StartVisit({ language }: { language: string }) {
   const savedBox =
     saved && typeof saved === "object" && (state === "closed" || state === "expired") ? (
       <section aria-labelledby="saved-heading" className={boxStyle}>
-        <h2 id="saved-heading" className="text-xl font-bold">
+        <h2 id="saved-heading" className="text-2xl font-bold">
           {savedNote[state].heading}
         </h2>
         <p>
@@ -134,7 +134,7 @@ export function StartVisit({ language }: { language: string }) {
       <>
         {announcer}
         <section aria-labelledby="start-heading" className={boxStyle} data-testid="start-paused">
-          <h2 id="start-heading" className="text-xl font-bold">
+          <h2 id="start-heading" className="text-2xl font-bold">
             {t.pausedHeading}
           </h2>
           <p>{s.paused}</p>
@@ -160,7 +160,7 @@ export function StartVisit({ language }: { language: string }) {
     <>
       {announcer}
       <section aria-labelledby="start-heading" className="clean-card space-y-4">
-        <h2 id="start-heading" className="text-xl font-bold">
+        <h2 id="start-heading" className="text-2xl font-bold">
           {s.startHeading}
         </h2>
         <p>{s.startIntro}</p>

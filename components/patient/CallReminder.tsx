@@ -35,7 +35,7 @@ export function CallReminder({ view, t }: { view: PatientView; t: PatientText })
       </p>
       {words && (
         <p
-          className="rounded-lg border-4 border-red-800 bg-white p-3 text-lg font-bold text-red-900"
+          className="rounded-lg border-4 border-red-800 bg-card p-3 text-lg font-bold text-red-900"
           data-testid={`call-reminder-${step}`}
         >
           {words}

@@ -88,7 +88,7 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
       </p>
       {showing && (
         <PromptCard onFocusLost={markLost}>
-          <h2 id="still-here-heading" className="text-xl font-bold">
+          <h2 id="still-here-heading" className="text-2xl font-bold">
             {t.stillHere.heading}
           </h2>
           <p>{t.stillHere.meaning}</p>
