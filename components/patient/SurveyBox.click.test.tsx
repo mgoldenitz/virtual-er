@@ -16,6 +16,7 @@ vi.mock("@/data/patientVisit", () => ({ submitSurvey: vi.fn().mockResolvedValue(
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const s = textFor("en").survey;
+const p = textFor("en").patient;
 
 const arrived: PatientView = {
   code: "ABC234",
@@ -42,7 +43,8 @@ function show(view: PatientView) {
 }
 
 const radios = () => [...container.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
-const submit = () => [...container.querySelectorAll("button")].find((b) => b.textContent === s.submit);
+// Found by its type, because its words change to "Sending…" while the save runs.
+const submit = () => container.querySelector<HTMLButtonElement>('button[type="submit"]') ?? undefined;
 const pick = (n: number) => act(() => radios().find((r) => r.value === String(n))?.click());
 
 beforeEach(() => {
@@ -66,6 +68,15 @@ describe("SurveyBox", () => {
     expect(container.textContent).toContain(s.low);
     expect(container.textContent).toContain(s.high);
     expect(container.textContent).toContain(s.note);
+    expect(submit()?.textContent).toBe(s.submit);
+  });
+
+  it("puts the 0 and 10 labels before the scores, so a screen reader reads them first", () => {
+    show(arrived);
+    const id = container.querySelector("fieldset")?.getAttribute("aria-describedby") ?? "";
+    const scale = document.getElementById(id);
+    const first = radios()[0];
+    expect(scale && first && scale.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("sends nothing when Submit is pressed with no score picked", async () => {
@@ -135,9 +146,31 @@ describe("SurveyBox", () => {
     show(arrived);
     pick(6);
     act(() => submit()?.click());
+    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
+    expect(submit()?.textContent).toBe(p.sending);
     act(() => submit()?.click());
     await act(async () => finish("saved"));
     expect(submitSurvey).toHaveBeenCalledTimes(1);
+  });
+
+  it("moves focus to the thank-you also when the re-read shows the score before the save answers", async () => {
+    let finish: (answer: "saved") => void = () => {};
+    vi.mocked(submitSurvey).mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    show(arrived);
+    pick(6);
+    submit()?.focus();
+    act(() => submit()?.click());
+    show({ ...arrived, surveyDone: true });
+    await act(async () => finish("saved"));
+    const thanks = [...container.querySelectorAll('[role="status"]')].find((el) => el.textContent === s.thanks);
+    expect(document.activeElement).toBe(thanks);
+  });
+
+  it("sends a score of 0", async () => {
+    show(arrived);
+    pick(0);
+    await act(async () => submit()?.click());
+    expect(submitSurvey).toHaveBeenCalledWith("t", 0);
   });
 
   it("sends the picked score with the token", async () => {
