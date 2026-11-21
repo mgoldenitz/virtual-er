@@ -144,7 +144,7 @@ export const en = {
     typeLink: "Or type this link into your phone's browser:",
   },
 
-  // Phase 3 features still being built. Written now so all text is translated in one batch.
+  // Text for the still-here prompt (components/patient/StillHerePrompt.tsx). Kept with the rest of the patient text so it is all translated in one batch.
   stillHere: {
     heading: "Are you still following your visit?",
     button: "I'm still here",

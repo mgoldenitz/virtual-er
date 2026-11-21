@@ -1,5 +1,5 @@
 // The disclaimer footer that SPEC.md requires on every page.
-// English until the patient's chosen language is remembered on the phone (Phase 3 language switch).
+// Always English for now: it uses textFor("en") and does not read the language saved on the phone (data/savedLanguage.ts).
 
 import { textFor } from "@/lib/text";
 

@@ -16,9 +16,9 @@ export type StaffFollowUp =
   | { kind: "none" }
   /** "Phoned, answered" was recorded; flags wait until `until`. */
   | { kind: "paused"; until: string }
-  /** "Phone this patient." */
+  /** "Phone the patient now." */
   | { kind: "phone" }
-  /** "Phone a second time." */
+  /** "Phone the patient again." */
   | { kind: "phone_again" }
   /** "Review: unable to reach." A nurse must confirm before the visit leaves the line. */
   | { kind: "review" }
@@ -64,7 +64,7 @@ export function staffFollowUp(visit: FollowUpFields, now: Date): StaffFollowUp {
   return { kind: "none" };
 }
 
-/** Staff can record a simulated phone call from the "Phone this patient" step onwards, while called. */
+/** Staff can record a simulated phone call from the "Phone the patient now" step onwards, while called. */
 export function canRecordPhoneCall(visit: Pick<Visit, "status" | "called_at">, now: Date): boolean {
   return (
     visit.status === "called" &&
