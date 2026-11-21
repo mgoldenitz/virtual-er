@@ -110,3 +110,22 @@ Gemini Hydrogen 4, High, 2026-11-21:
 * When `problem === "paused"` and a background `/api/site-status` poll updates `pauses[site]` to `true`, `sitePaused` renders `s.paused` (`data-testid="site-paused"`) right above `problem && <p role="alert">` showing the exact same `s.paused` text a second time.
 * **`data/sitePauses.test.ts` still masks `setSitePaused`'s null-store omission with a priming save** — `data/sitePauses.test.ts:87-91`, `data/sitePauses.ts:68`
 * `setSitePaused` still only updates `state.pauses` immediately when `state.pauses` is already non-null (`if (result !== "not_saved" && state.pauses)`), and `data/sitePauses.test.ts:87` still runs an initial un-held `setSitePaused("A", true)` before mounting `Probe` and testing the held re-read, so an immediate update from `state.pauses === null` remains untested and broken.
+
+## Claude's check
+
+Checked against the code on 2026-11-21.
+
+1. Millisecond truncation in `lastTapThisWait`: rejected. The switch writes `offered_at` and `last_still_here_at` from the same `now()`, so the two values are equal. A real tap has the same millisecond as the switch only if it comes less than 1 ms after it. That is not possible through the phone.
+2. Survey counts not limited to `arrived`: rejected. The owner chose "count every score" on 2026-11-20 (docs/decisions.md line 110, point 4.1).
+3a. The "did not save" alert can show on the new status: accepted. `VisitScreen.tsx` lines 48-55 store `view.status` when `notSaved` becomes true, not the status at the tap. If staff change the status while the tap is in flight, the alert shows on the new screen.
+3b. A failed save for token A shows on visit B: accepted, low risk. `app/patient/page.tsx` line 42 clears `notSaved` on a new link, but an in-flight `onOnMyWay` for the old token sets it again at line 99.
+3c. Double tap in the same frame: rejected. React runs a click update before the next click event, so the second click sees `sending` as true. The existing click tests show one save per double click.
+4a. Gap clamp not tested: rejected. `lib/patientViewFromRow.test.ts` line 53 ("never uses a gap under 5 minutes") tests it.
+4b. No test for the `offered_at !== null` guard on `declined`: accepted. Every `declined` test in `lib/dashboardNumbers.test.ts` sets `offered_at`.
+4c. `share(1,1)` check lost on site B: rejected. Site B has no offer since the fault 2 decision, so `null` is correct. `lib/dashboardShare.test.ts` line 7 tests a 100% share.
+5a and 5b. Stale `notSaved` in `StillHerePrompt`: accepted. If the prompt hides after a failed tap (a tap from another phone) and comes back, the old alert shows again. Also no `key={token}` (`StatusAndSound.tsx` line 33).
+5c. Site radios active while a start is in flight: accepted. A failed start for site A shows its alert under site B.
+5d. Paused text two times: accepted. With `problem === "paused"` and then `sitePaused` true, `StartVisit.tsx` lines 189-199 show `s.paused` two times.
+5e. Null store in `setSitePaused` not tested: rejected. `PauseSwitch.tsx` shows the switch only after the first read (`paused === null` shows "Checking..."), so `setSitePaused` never runs with an empty store.
+
+Not checked: 3b and 5a in a browser.
