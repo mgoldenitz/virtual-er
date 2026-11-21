@@ -165,4 +165,18 @@ describe("StillHerePrompt tap", () => {
     });
     expect(container.querySelector('[role="alert"]')).toBeNull();
   });
+
+  // Gemini review of the Phase 5 fixes, point 5b (2026-11-21): a tap from another phone hides the
+  // prompt; when the prompt is due again, the old failed tap's alert must not come back.
+  it("does not bring back an old did-not-save alert when the prompt is due again", async () => {
+    vi.mocked(recordStillHere).mockResolvedValueOnce("not_saved");
+    show(due);
+    await act(async () => button()?.click());
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    show(tapped);
+    expect(button()).toBeUndefined();
+    show(due);
+    expect(button()).toBeDefined();
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
 });
