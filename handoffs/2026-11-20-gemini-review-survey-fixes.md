@@ -535,3 +535,88 @@ index 5766886..b293185 100644
         case when got is not distinct from expected then 'ok' else 'FAIL' end as result
  from survey_rows
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, new chat, 2026-11-20. Pasted by the owner, as given.
+
+### 1. Focus after a save (`SurveyBox.tsx`)
+
+* **Concurrent `surveyDone = true` and `onSaved()` causes a two-commit focus drop and live-region collision**:
+  * **File and line:** `components/patient/SurveyBox.tsx` lines 24–38 and `data/patientVisit.ts` lines 166–167.
+  * **Concrete case:** A patient picks a score and activates Submit. Inside `submitSurvey`, `await refreshPatientView(token)` updates `entry.shown` (`surveyDone = true`) and notifies listeners *before* `submitSurvey` returns `"saved"`. In the first commit, `SurveyBox` sees `surveyDone === true` while `savedHere` is still `false`, so `<SurveyForm>` unmounts (dropping focus from Submit to `document.body`) and `<p ref={thanks} role="status">` mounts without focus. In the next commit, `onSaved()` sets `savedHere = true` and `useEffect` calls `thanks.current?.focus()`. Focus lands on `thanks`, but mounting `role="status"` first and focusing it a commit later can trigger a double announcement or cut off speech in screen readers (not sure of exact timing on real VoiceOver/TalkBack).
+  * **Smallest fix:** Remove `role="status"` from the focused `<p ref={thanks} tabIndex={-1}>` in `components/patient/SurveyBox.tsx` line 35 (or move focus when `step` transitions `"ask"` -> `"thanks"` in the same commit instead of waiting for `savedHere` if `refreshPatientView` beat `onSaved()`, noting that `e2e/recall-arrive.spec.ts` queries `role="status"` if removed).
+* **Turning `"unavailable"` after two failed reads drops `onSaved()` and leaves focus stranded**:
+  * **File and line:** `components/patient/SurveyBox.tsx` lines 21–38, `components/patient/SurveyForm.tsx` lines 37–39, and `data/patientVisit.ts` lines 87–94 and 166–167.
+  * **Concrete case:** Suppose 1 background read failed earlier (`entry.failures === 1`). The patient submits a score: `submit_survey` succeeds, then `await refreshPatientView(token)` fails, pushing `entry.failures` to `2`. `afterFailedRead` returns `"unavailable"`, which unmounts `StatusAndSound` and `SurveyBox` before `submitSurvey` returns `"saved"`. `onSaved()` calls `setSavedHere(true)` on an unmounted `SurveyBox` (a no-op), and when reads recover, `SurveyBox` mounts fresh with `savedHere = false` and `surveyDone = true` — so focus never moves to the thank-you (it fell to `document.body` when the `"unavailable"` screen took over). The same loss happens if `savedHere` was already `true` (focus on `thanks`), two background reads fail to `"unavailable"`, and the visit screen comes back.
+  * **Smallest fix:** Handle `"unavailable"` recovery focus in the parent patient page/wrapper (outside `StatusAndSound` and `SurveyBox`, e.g., rescuing lost focus to `#status-heading` on recovery) rather than inside `SurveyBox`.
+* **Staff Undo while focus is inside `SurveyBox` drops focus to `document.body`**:
+  * **File and line:** `components/patient/StatusAndSound.tsx` line 39 and `components/patient/SurveyBox.tsx` lines 32–38.
+  * **Concrete case:** A keyboard user has focus on a radio button, Submit, or the focused thank-you `<p>` when staff click Undo (`view.status` becomes `"on_the_way"`, `closed: false`). `SurveyBox` returns `null` and unmounts the focused element, and because `StatusAndSound.tsx` line 39 does not pass `lostFocus` to `SurveyBox`, `PatientStatus` does not rescue focus to `#status-heading`.
+  * **Smallest fix:** Pass `onFocusLost={() => { lostFocus.current = true; }}` from `StatusAndSound.tsx` line 39 into `SurveyBox` and wrap `SurveyBox`'s non-null output with `useReportFocusOnLeave`.
+
+### 2. `aria-disabled` on Submit (`SurveyForm.tsx`)
+
+* **Screen-reader announcement ("dimmed" / "unavailable") and `sending` state:**
+  * **File and line:** `components/patient/SurveyForm.tsx` lines 36–38 and 71.
+  * **Concrete case:** With `aria-disabled={score === null || sending}`, VoiceOver announces `"dimmed"` when `score === null` and keeps the button in the tab order. However, when a user activates Submit and `sending` turns `true`, `aria-disabled` flips to `"true"` on the *already-focused* button with no text change (still `"Submit"`) and no live announcement — so a screen-reader user is not told the form is currently sending. (Not sure of exact phrasing differences across iOS VoiceOver and Android TalkBack without testing on real devices.)
+  * **Smallest fix:** Switch the button text to `"Sending…"` (already in `lib/text` for `patient.sending`) or expose an `aria-live="polite"` status while `sending` is `true`.
+* **Pressing Enter inside a radio button:**
+  * **File and line:** `components/patient/SurveyForm.tsx` lines 30–33 and 53–60.
+  * **Result:** Pressing Enter inside a radio input fires `<form onSubmit={onSubmit}>`, so line 33 (`if (score === null || !isSurveyScore(score) || sending) return;`) **does** stop the submit when `score === null` or `sending === true`.
+  * **Concrete race on double-submit:** Because `sending` is React state rather than a synchronous ref, two rapid clicks or Enter + click in the same event batch before React commits `sending = true` both see `sending === false` and fire `submitSurvey` twice.
+  * **Smallest fix:** Add `const sendingRef = useRef(false);` in `SurveyForm.tsx` and guard `onSubmit` with `sendingRef.current` before `setSending(true)`.
+* **Silent no-op when Submit is pressed with no score:**
+  * **File and line:** `components/patient/SurveyForm.tsx` lines 33 and 70–71, and `lib/text/en.ts` line 186.
+  * **Concrete case:** Line 70 reads `"Answering is optional. Your name is not stored."`. A patient who taps the dimmed Submit button thinking it skips the survey (or taps Submit accidentally before picking a number) hits `if (score === null ...) return;` on line 33 and gets zero visual or screen-reader explanation.
+  * **Smallest fix:** When `onSubmit` returns early because `score === null`, show a polite inline hint (e.g., `"Pick a score from 0 to 10 first."` in a `<p role="status">`) or tie a hint to Submit via `aria-describedby`.
+
+### 3. Does React 19 really make a new alert element? (`SurveyForm.tsx`)
+
+* **File and line:** `components/patient/SurveyForm.tsx` lines 30–41 and 74–78.
+* **What happens in React 19:** Because `onSubmit` is a discrete DOM event (`SyncLane`), React 19 normally flushes `setNotSaved(false)` and `setSending(true)` synchronously at the end of the event handler before `await submitSurvey(token, score)` resumes, so a failed `submitSurvey` later sets `notSaved = true` in a second commit and mounts a new `<p role="alert">` node.
+* **Concrete cases where it can still fail:**
+  1. **Same-frame unmount/remount on fast failures:** If `submitSurvey` fails immediately (for example, `supabaseBrowser()` throws synchronously into `catch` or an offline `fetch` rejects in < 16 ms before the browser paints), `<p role="alert">` is removed and re-inserted within the same animation frame. Browsers/accessibility trees can coalesce a same-frame remove-and-add so VoiceOver or TalkBack never announces the second failure (not sure on all browser/screen-reader pairs without real device testing).
+  2. **Non-discrete invocation:** If `onSubmit` were ever triggered outside a discrete React event (non-sync lane), React 19 would batch `setNotSaved(false)` and `setNotSaved(true)` into one render if `submitSurvey` settled on a microtask, leaving the original `<p role="alert">` in place.
+* **Smallest fix:** Clear `notSaved` as soon as the patient changes any radio score (`onChange={() => { setScore(n); setNotSaved(false); }}` on line 58), or wait one animation frame / vary the alert text when retrying while `notSaved` was already `true`.
+
+### 4. `aria-describedby` on `<fieldset>` (`SurveyForm.tsx`)
+
+* **File and line:** `components/patient/SurveyForm.tsx` lines 45–68.
+* **Concrete case:** Not sure of every Android TalkBack version without real device testing, **but** iOS VoiceOver (Safari/WebKit) commonly ignores `aria-describedby` on `<fieldset>` when swiping into the radio buttons inside it, and TalkBack support for `fieldset[aria-describedby]` is inconsistent. Even worse, `<div id={scaleId}>` (`"0 = Very poor"` / `"10 = Excellent"`) sits in the DOM **after** all 11 radios (lines 65–68), so swipe-order users hear `"0"` through `"10"` before ever reaching what `0` and `10` mean.
+* **Smallest fix:** Move the `<div id={scaleId}>` scale labels **above** the radio group (directly below `<legend>`), and add `.sr-only` anchor labels inside the `0` and `10` `<label>`s (or include `"0 = Very poor, 10 = Excellent"` inside `<legend>`) so every screen reader announces the scale before or on the first radio.
+
+### 5. `refreshPatientView` error after a saved score (`data/patientVisit.ts`)
+
+* **File and line:** `data/patientVisit.ts` lines 82–95 and 162–171.
+* **Can `refreshPatientView` throw?** Not sure whether `readFromDatabase` inside `data/patientVisit.ts` (not in the diff) catches all fetch/JSON errors or can reject; however, if `readFromDatabase`, `JSON.stringify(next)`, or any listener in `listeners` throws inside `refreshPatientView(token)` on line 166, `submitSurvey` jumps straight to `catch { return "not_saved"; }` on lines 169–170.
+* **Concrete case (brings back problem 1.1):** `submit_survey` commits the score and returns `true`, then `refreshPatientView(token)` throws. `submitSurvey` returns `"not_saved"`. `SurveyForm` stays mounted with the red `"Your answer did not save"` alert. When the patient taps Submit again, `submit_survey` returns `false` (`"refused"`), and if `refreshPatientView` fails/throws again, `SurveyForm` line 40 shows `"Your answer did not save"` a second time even though the score was saved on the first tap. (Also, if `submit_survey` returns `false` because another tab saved first and `refreshPatientView` fails once—keeping `surveyDone: false` via `afterFailedRead`—line 40 likewise shows `"Your answer did not save"` for a `"refused"` result.)
+* **Smallest fix:** Wrap `await refreshPatientView(token);` in its own `try { await refreshPatientView(token); } catch {}` in `data/patientVisit.ts` line 166 so a read failure after a committed `submit_survey` still returns `"saved"` (or `"refused"`).
+
+### 6. The `anon` test in case 16 (`supabase/checks/survey.sql`)
+
+* **File and line:** `supabase/checks/survey.sql` lines 78–83 (`set local role anon;` through `insert into survey_rows ... '16 anon saves a score'`).
+* **Is it a fair test?** Only partially: it proves the Postgres `anon` role has `EXECUTE` on `public.submit_survey` and that the `security definer` update writes `survey_score = 9`.
+* **What it does NOT test:**
+  * **PostgREST / Supabase API layer:** Running in the SQL Editor does not verify that PostgREST exposes `submit_survey` in `public`, that the schema cache was refreshed, or that `authenticator` -> `anon` JWT switching and JSON RPC parameter binding (`p_token`, `p_score`) work over HTTP.
+  * **Return value in Case 16:** `select public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS7', 9);` discards the boolean return value instead of asserting `'true'`.
+  * **`anon` read/write restrictions and `get_patient_visit`:** It does not check that `anon` can read `survey_done = true` (without `survey_score`) via `get_patient_visit`, nor that RLS/privileges still block `anon` from reading or updating `public.visits` directly.
+* **Smallest fix:** Capture the boolean returned by `submit_survey` as `anon` into a row/variable (or run `get_patient_visit` as `anon` right after) and add a negative check verifying `anon` cannot `select` or `update public.visits` directly; verify the live PostgREST RPC call once against Supabase HTTP.
+
+### 7. Tests that pass for the wrong reason
+
+* **Double-submit test flushes React between clicks (`components/patient/SurveyBox.click.test.tsx` lines 130–139):**
+  * **Concrete case:** Lines 135–136 call `act(() => submit()?.click());` twice in separate `act()` blocks, which forces React to commit `sending = true` before the second click. Combining both clicks in one `act(() => { submit()?.click(); submit()?.click(); })` (matching two rapid clicks in one browser frame) currently fails because `SurveyForm.tsx` line 33 only checks `sending` state, not a ref.
+  * **Smallest fix:** Put both clicks inside a single `act()` and fix `SurveyForm.tsx` with a `sendingRef`.
+* **`aria-disabled` test never checks `sending` or initial `"true"` state (`components/patient/SurveyBox.click.test.tsx` lines 78–83):**
+  * **Concrete case:** `"grays out Submit until a score is picked, and keeps it a real button"` checks `hasAttribute("disabled")` is `false`, picks `4`, and checks `aria-disabled` is `"false"` — it never asserts `aria-disabled` is `"true"` while `sending` is `true`. Dropping `|| sending` from `SurveyForm.tsx` line 71 would still pass all tests.
+  * **Smallest fix:** Assert `aria-disabled` is `"true"` before `pick(4)` and while a `submitSurvey` promise is pending.
+* **Thank-you focus test mocks `submitSurvey` without simulating `refreshPatientView` (`components/patient/SurveyBox.click.test.tsx` lines 94–107):**
+  * **Concrete case:** `submitSurvey` resolves `"saved"` without ever flipping `view.surveyDone` to `true`, so the test misses the two-commit race in Question 1, and `submit()?.click()` runs while `document.activeElement` is still `document.body` (never focusing Submit first). Meanwhile, line 104 only mounts directly into `surveyDone: true` instead of testing a transition from `surveyDone: false` -> `true` (background read) or `"unavailable"` -> recovered.
+  * **Smallest fix:** Focus `submit()` before clicking in line 97, add a test where `show({ ...arrived, surveyDone: true })` fires *before* `submitSurvey` resolves `"saved"`, and add a test transitioning from `arrived` -> `on_the_way` (Undo) while focus is on a radio or `thanks`.
+* **Second-alert test verifies a new DOM node in happy-dom, not a paint boundary (`components/patient/SurveyBox.click.test.tsx` lines 109–119):**
+  * **Concrete case:** `expect(second).not.toBe(first)` proves React replaced the `<p role="alert">` node after `act()`, which still passes even if a synchronous/sub-frame failure in a real browser removes and re-adds the node within the same frame.
+  * **Smallest fix:** Clear `notSaved` on radio `onChange` (or defer re-showing across a paint frame) and add a test covering picking a score / retrying after failure.
+* **Radio Enter-submit and score `0` / `10` unit tests:**
+  * **Concrete case:** `SurveyBox.click.test.tsx` tests button `.click()` with no score, never pressing Enter inside a radio input while `score === null` or `sending === true`, and (based on the diff) we cannot see lines 1–71 to verify whether `SurveyBox.click.test.tsx` tests submitting `0` and `10` in React (not sure without the rest of the file).
+  * **Smallest fix:** Add unit cases submitting `0`, `10`, and `Enter` on a radio while `sending` is pending.
