@@ -19,8 +19,10 @@ async function rowNumber(section: Locator, label: string): Promise<number> {
   return Number(match[0]);
 }
 
-/** Waits until both site sections are on the page. They only show once the numbers have loaded. */
-// exact: true, because the trend box "Demo Site A, past 7 days" is a region too, and the name is matched as a part otherwise.
+/**
+ * Waits until both site sections are on the page. They only show once the numbers have loaded.
+ * exact: true, because the trend box "Demo Site A, past 7 days" is a region too, and the name is matched as a part otherwise.
+ */
 async function waitForNumbers(page: Page): Promise<void> {
   await expect(page.getByRole("region", { name: "Demo Site A", exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "Demo Site B", exact: true })).toBeVisible();

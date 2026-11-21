@@ -72,7 +72,9 @@ describe("CsvButton", () => {
       act(() => root.render(<CsvButton trend={withData} today="2026-11-25" isDemo={false} />));
       await act(async () => button()?.click());
       expect(URL.revokeObjectURL).not.toHaveBeenCalled();
-      act(() => vi.advanceTimersByTime(1000));
+      act(() => vi.advanceTimersByTime(999));
+      expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(1));
       expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
       expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:test");
     } finally {
