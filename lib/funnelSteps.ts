@@ -8,7 +8,7 @@ export type FunnelStep = { label: string; count: number };
 export function funnelSteps(n: SiteNumbers): FunnelStep[] {
   return [
     { label: "Started from home", count: n.startedFromHome },
-    { label: "Reached triage (from home)", count: n.homeReachedTriage },
+    { label: "Started from home today and reached triage", count: n.homeReachedTriage },
     { label: "Triaged CTAS 4 or 5 (home and desk)", count: n.triaged },
     { label: "Offered", count: n.offered },
     { label: "Accepted", count: n.accepted },

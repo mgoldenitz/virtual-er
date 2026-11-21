@@ -20,9 +20,10 @@ async function rowNumber(section: Locator, label: string): Promise<number> {
 }
 
 /** Waits until both site sections are on the page. They only show once the numbers have loaded. */
+// exact: true, because the trend box "Demo Site A, past 7 days" is a region too, and the name is matched as a part otherwise.
 async function waitForNumbers(page: Page): Promise<void> {
-  await expect(page.getByRole("region", { name: "Demo Site A" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Demo Site B" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Demo Site A", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Demo Site B", exact: true })).toBeVisible();
 }
 
 test("real visits show by default, a desk check-in adds to the Site A numbers, and demo shows both sites", async ({ browser }) => {
@@ -40,7 +41,7 @@ test("real visits show by default, a desk check-in adds to the Site A numbers, a
     await expect(realButton).toHaveAttribute("aria-pressed", "true");
 
     // Read the Site A numbers before the check-in.
-    const siteA = dashboard.getByRole("region", { name: "Demo Site A" });
+    const siteA = dashboard.getByRole("region", { name: "Demo Site A", exact: true });
     const waitingBefore = await rowNumber(siteA, "Waiting off-site");
     const acceptedBefore = await rowNumber(siteA, "Accepted");
 
@@ -58,7 +59,7 @@ test("real visits show by default, a desk check-in adds to the Site A numbers, a
     await expect(realButton).toHaveAttribute("aria-pressed", "false");
     await waitForNumbers(dashboard);
     for (const site of ["A", "B"]) {
-      const section = dashboard.getByRole("region", { name: `Demo Site ${site}` });
+      const section = dashboard.getByRole("region", { name: `Demo Site ${site}`, exact: true });
       await expect(rowValue(section, "Waiting off-site")).toHaveText(/^\d+$/);
     }
 

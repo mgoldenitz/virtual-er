@@ -50,7 +50,8 @@
 --       check reads that day's row before and after (triaged and not eligible), and compares
 --       with a recount.
 --   5N  23 hours old: must stay
--- A daily_stats row is already there for (D2, A, not demo): 100 triaged, 5 surveys, score sum 40.
+-- A daily_stats row is already there for (D2, A, not demo): 100 triaged, 5 surveys, score sum 40,
+-- 10 called, 1000 offer-to-call seconds and wait bands 1 2 3 4.
 -- The clean-up must add to it, not replace it. After the first run, no visit older than 24 hours
 -- may be left. A second run must change nothing.
 --
@@ -59,7 +60,7 @@
 -- open_at_deletion, started_from_home, home_reached_triage, surveys, score_sum, 9_or_10,
 -- called, offer_to_call_seconds, wait_under_30, wait_30_to_59, wait_60_to_119, wait_120_plus
 --   D1 A false  6 1 5 1 2 2400 2 0 0 0 0 1 1 1 9 1 4 30600 2 0 1 1
---   D2 A false  105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1 3 13500 0 2 1 0
+--   D2 A false  105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1 13 14500 1 4 4 4
 --   D2 B true   4 0 4 0 0 0 0 0 0 0 4 0 0 0 0 0 3 9900 0 3 0 0
 --   D3 A false  1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 2700 0 1 0 0
 --   D4 A false  0 0 0 0 1 2700 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -79,8 +80,9 @@ alter table public.visits disable trigger visits_before_write;
 -- that for a new visit. This file checks the clean-up totals, not the steps (allowed_steps.sql does).
 alter table public.visits disable trigger visits_check_step;
 
-insert into public.daily_stats (day, site, is_demo, triaged_ctas_4_5, survey_responses, survey_score_sum)
-values ('2000-01-02', 'A', false, 100, 5, 40);
+insert into public.daily_stats (day, site, is_demo, triaged_ctas_4_5, survey_responses, survey_score_sum,
+  called, offer_to_call_seconds, wait_under_30, wait_30_to_59, wait_60_to_119, wait_120_plus)
+values ('2000-01-02', 'A', false, 100, 5, 40, 10, 1000, 1, 2, 3, 4);
 
 insert into public.visits
   (code, access_token, site, source, ctas_level, status, removed_reason, is_demo,
@@ -223,7 +225,7 @@ begin
   for want in
     select * from (values
       ('2000-01-01'::date, 'A', false, '6 1 5 1 2 2400 2 0 0 0 0 1 1 1 9 1 4 30600 2 0 1 1'),
-      ('2000-01-02'::date, 'A', false, '105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1 3 13500 0 2 1 0'),
+      ('2000-01-02'::date, 'A', false, '105 0 5 0 3 5400 4 1 1 1 0 1 0 8 64 1 13 14500 1 4 4 4'),
       ('2000-01-02'::date, 'B', true,  '4 0 4 0 0 0 0 0 0 0 4 0 0 0 0 0 3 9900 0 3 0 0'),
       ('2000-07-01'::date, 'A', false, '1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 2700 0 1 0 0'),
       ('2000-07-02'::date, 'A', false, '0 0 0 0 1 2700 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'),

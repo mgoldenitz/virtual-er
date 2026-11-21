@@ -1,6 +1,8 @@
 // One site's past 7 days as a table: one row per day, with each share and average next to its counts.
 // On a phone the table scrolls sideways inside its own box, so the page itself does not.
+// The heading is outside that box, so it stays in view when the table scrolls.
 
+import { useId } from "react";
 import type { SiteNumbers } from "@/lib/dashboardNumbers";
 import { averageMinutes, averageScore, share } from "@/lib/dashboardShare";
 import type { TrendDay } from "@/lib/trendNumbers";
@@ -54,14 +56,17 @@ function DayCells({ n, hasWait }: { n: SiteNumbers; hasWait: boolean }) {
 export function TrendTable({ site, trend }: Props) {
   // The dates are "YYYY-MM-DD", so comparing the text compares the dates.
   const someBeforeStart = trend.some((d) => d.day < WAIT_START_DAY);
-  const caption = `Demo Site ${site}, past 7 days`;
+  const title = `Demo Site ${site}, past 7 days`;
+  const headingId = useId();
 
   return (
     <section className="glass-panel space-y-2">
+      <h2 id={headingId} className="text-lg font-bold">
+        {title}
+      </h2>
       {/* "relative" keeps the absolute sr-only words inside this box, or the phone page scrolls sideways. */}
-      <div className="relative overflow-x-auto" role="region" aria-label={caption} tabIndex={0}>
+      <div className="relative overflow-x-auto" role="region" aria-labelledby={headingId} tabIndex={0}>
         <table className="w-full border-collapse text-sm">
-          <caption className="mb-2 text-left text-lg font-bold">{caption}</caption>
           <thead>
             <tr>
               <th scope="col" className="border-b-2 border-slate-300 px-2 py-2 text-left">

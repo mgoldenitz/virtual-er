@@ -8,12 +8,11 @@ import { useState } from "react";
 import { useDashboard } from "@/data/useDashboard";
 import { dashboardNumbers } from "@/lib/dashboardNumbers";
 import { trendNumbers } from "@/lib/trendNumbers";
-import { CsvButton } from "@/components/dashboard/CsvButton";
 import { FunnelView } from "@/components/dashboard/FunnelView";
 import { ModeSwitch } from "@/components/dashboard/ModeSwitch";
+import { PastDaysView } from "@/components/dashboard/PastDaysView";
 import { SiteNumbers } from "@/components/dashboard/SiteNumbers";
 import { SummaryPanel } from "@/components/dashboard/SummaryPanel";
-import { TrendTable } from "@/components/dashboard/TrendTable";
 
 export function DashboardView() {
   const [isDemo, setIsDemo] = useState(false);
@@ -43,9 +42,7 @@ export function DashboardView() {
             <SiteNumbers site="B" numbers={counts.B} />
           </div>
           <FunnelView numbers={counts} />
-          <TrendTable site="A" trend={trend} />
-          <TrendTable site="B" trend={trend} />
-          <CsvButton trend={trend} today={today} isDemo={isDemo} />
+          <PastDaysView trend={trend} today={today} isDemo={isDemo} />
           <SummaryPanel isDemo={isDemo} />
         </>
       ) : outOfDate ? (
