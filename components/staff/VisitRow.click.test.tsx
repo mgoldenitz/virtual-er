@@ -193,6 +193,45 @@ describe("VisitRow focus when another screen changes the row", () => {
     expect(document.activeElement).toBe(document.body);
   });
 
+  /** A button on the page outside the row, such as another patient's row. */
+  function outsideButton() {
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    return outside;
+  }
+
+  it("focus that staff moved out of the row stays there when the part that had focus leaves", () => {
+    const outside = outsideButton();
+    button("Recall patient")?.focus();
+    outside.focus();
+    drawStrict(called);
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
+  });
+
+  it("after earlier focus in the row and then a phone tap, focus does not move", () => {
+    const recall = button("Recall patient");
+    recall?.focus();
+    // A tap on a phone: the pointer goes down, and focus falls to the page body without a focus event.
+    act(() => button("Show QR again")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
+    recall?.blur();
+    drawStrict(called);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("a part that left while focus was outside the row does not take focus at a later change", () => {
+    const onTheWay = confirmOnMyWay(called, now);
+    if (!onTheWay) throw new Error("confirmOnMyWay refused the test visit");
+    const outside = outsideButton();
+    button("Recall patient")?.focus();
+    outside.focus();
+    drawStrict(called); // "Recall patient" leaves while focus is outside the row
+    outside.blur();
+    drawStrict(onTheWay);
+    expect(document.activeElement).toBe(document.body);
+    outside.remove();
+  });
+
   it("when the row leaves the list with focus inside it, it reports the lost focus once", () => {
     const onFocusLost = vi.fn();
     drawStrict(waiting, onFocusLost);
