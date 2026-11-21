@@ -1,4 +1,4 @@
-// Recall and arrival: staff recall a waiting patient, the patient is on the way, staff mark arrived, and Undo brings the visit back to the list.
+// Recall and arrival: staff recall a waiting patient, the patient is on the way, staff mark arrived, the patient answers the survey, and Undo brings the visit back; a second arrival shows thank you, not a second survey.
 
 import { expect, test } from "@playwright/test";
 import { axeFaults } from "./helpers/axe";
@@ -8,7 +8,7 @@ import { openStaff } from "./helpers/staff";
 
 const EMERGENCY = "If your symptoms get worse, call 911 or come back to the emergency department now.";
 
-test("recall, on the way, arrived, then undo the arrival", async ({ browser }) => {
+test("recall, on the way, arrived, the survey, then undo and arrive again",async ({ browser }) => {
   const staff = await openStaff(browser);
   const patient = await openPatient(browser);
   try {
@@ -39,6 +39,13 @@ test("recall, on the way, arrived, then undo the arrival", async ({ browser }) =
     await expect(patient.getByText(EMERGENCY).first()).toBeVisible();
     expect(await axeFaults(patient)).toEqual([]);
 
+    // The survey: pick 8, Submit, and the phone says thank you instead of asking again.
+    await patient.getByRole("radio", { name: "8" }).check();
+    await patient.getByRole("button", { name: "Submit" }).click();
+    await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toBeVisible();
+    await expect(patient.getByRole("radio")).toHaveCount(0);
+    expect(await axeFaults(patient)).toEqual([]);
+
     // Undo in Recently closed: the row shows on the list again.
     await staff.getByTestId(`closed-${code}`).getByRole("button", { name: "Undo" }).click();
     await expect(row).toBeVisible();
@@ -46,6 +53,12 @@ test("recall, on the way, arrived, then undo the arrival", async ({ browser }) =
     // Undo puts the visit back to on_the_way, so the phone shows the called screen again.
     await expect(patient.getByRole("heading", { name: "Please head back now" })).toBeVisible();
     await expect(patient.getByRole("heading", { name: "Status: Ready at the desk" })).toHaveCount(0);
+
+    // A second arrival keeps the score (owner decision 2026-11-20): thank you, and no second survey.
+    await row.getByRole("button", { name: "Mark arrived" }).click();
+    await expect(patient.getByRole("heading", { name: "Status: Ready at the desk" })).toBeVisible();
+    await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toBeVisible();
+    await expect(patient.getByRole("radio")).toHaveCount(0);
   } finally {
     await staff.context().close();
     await patient.context().close();
