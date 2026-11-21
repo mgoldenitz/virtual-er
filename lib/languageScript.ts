@@ -22,8 +22,9 @@ export function revealsPage(language: string, waitingFor: string | null): boolea
 }
 
 /**
- * A short plain-JavaScript script for the page's <head>. It works only on the start page and the
- * patient screens (as lib/textSize.ts does). On a patient screen, the language in the desk link
+ * A short plain-JavaScript script for the page's <head>. It works only on exactly "/" and "/patient",
+ * because only those pages run the hook that shows the page again (a 404 such as /patient/unknown
+ * does not). On the patient page, the language in the desk link
  * (#...l=fr) comes first, because the patient page saves that language; else the saved one.
  * English, an unknown code or blocked storage: it does nothing. The key, the rule and the
  * directions are written in as JSON, so they are defined only in lib/text/languages.ts.
@@ -32,12 +33,12 @@ export function languageScript(): string {
   const dirs = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.dir]));
   return `(function () {
   var path = location.pathname;
-  if (path !== "/" && !path.startsWith("/patient")) return;
+  if (path !== "/" && path !== "/patient") return;
   try {
     var dirs = ${JSON.stringify(dirs)};
     var known = function (c) { return !!c && Object.prototype.hasOwnProperty.call(dirs, c); };
     var code = null;
-    if (path.startsWith("/patient")) {
+    if (path === "/patient") {
       var match = location.hash.match(new RegExp(${JSON.stringify(LINK_LANGUAGE_PATTERN.source)}));
       if (match && known(match[1])) code = match[1];
     }
