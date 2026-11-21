@@ -26,7 +26,7 @@ export function DashboardView() {
       <p className="font-semibold">{isDemo ? "Showing demo visits only." : "Showing real visits only."}</p>
 
       {outOfDate && (
-        <div role="alert" className="rounded-lg border-2 border-red-800 bg-white p-3">
+        <div role="alert" className="rounded-lg border-2 border-red-800 bg-card p-3">
           <p className="font-semibold text-red-900">
             {visits
               ? "This list may be out of date: the visits could not be read just now. Check your connection."

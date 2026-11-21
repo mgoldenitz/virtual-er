@@ -23,7 +23,7 @@ const HEADERS = [
 
 /** The 6 number cells for one day. Before the wait start date, the wait cell is only a dash. */
 function DayCells({ n, hasWait }: { n: SiteNumbers; hasWait: boolean }) {
-  const cell = "border-b border-slate-200 px-2 py-2 text-right";
+  const cell = "border-b border-line px-2 py-2 text-right";
   return (
     <>
       <td className={cell}>{n.triaged}</td>
@@ -69,11 +69,11 @@ export function TrendTable({ site, trend }: Props) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th scope="col" className="border-b-2 border-slate-300 px-2 py-2 text-left">
+              <th scope="col" className="border-b-2 border-control px-2 py-2 text-left">
                 Day
               </th>
               {HEADERS.map((h) => (
-                <th key={h} scope="col" className="border-b-2 border-slate-300 px-2 py-2 text-right">
+                <th key={h} scope="col" className="border-b-2 border-control px-2 py-2 text-right">
                   {h}
                 </th>
               ))}
@@ -82,7 +82,7 @@ export function TrendTable({ site, trend }: Props) {
           <tbody>
             {trend.map((d) => (
               <tr key={d.day}>
-                <th scope="row" className="whitespace-nowrap border-b border-slate-200 px-2 py-2 text-left">
+                <th scope="row" className="whitespace-nowrap border-b border-line px-2 py-2 text-left">
                   {d.day}
                 </th>
                 <DayCells n={d.numbers[site]} hasWait={d.day >= WAIT_START_DAY} />

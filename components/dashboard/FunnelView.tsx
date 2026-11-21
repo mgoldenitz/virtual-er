@@ -14,7 +14,7 @@ function SiteSteps({ site, n }: { site: "A" | "B"; n: SiteNumbers }) {
       <ol aria-label={name} className="text-sm">
         {funnelSteps(n).map((step) => (
           // "relative" keeps the absolute sr-only text inside the row, or the phone page scrolls sideways.
-          <li key={step.label} className="relative flex justify-between gap-4 border-b border-slate-200 py-1">
+          <li key={step.label} className="relative flex justify-between gap-4 border-b border-line py-1">
             <span>{step.label}</span>
             <span className="sr-only">: </span>
             <span className="font-semibold">{step.count}</span>

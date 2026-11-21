@@ -25,7 +25,7 @@ export function NumberOrDash({ value }: { value: number | null }) {
 /** One label and value pair in a list (inside a <dl>). */
 export function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap justify-between gap-x-3 border-b border-slate-200 py-2">
+    <div className="flex flex-wrap justify-between gap-x-3 border-b border-line py-2">
       <dt className="font-semibold">{label}</dt>
       <dd>{children}</dd>
     </div>

@@ -22,7 +22,7 @@ export function SiteNumbers({ site, numbers: n }: Props) {
 
   return (
     <section aria-labelledby={`site-${site}-heading`} className="glass-panel space-y-3">
-      <h2 id={`site-${site}-heading`} className="text-xl font-bold">
+      <h2 id={`site-${site}-heading`} className="text-2xl font-bold">
         Demo Site {site}
       </h2>
 

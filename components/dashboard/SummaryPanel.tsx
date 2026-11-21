@@ -45,7 +45,7 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
   const message = shown && shown.forDemo === isDemo ? shown.message : null;
 
   return (
-    <section aria-label="Summary" className="space-y-3 rounded-lg border-2 border-slate-300 bg-white p-4">
+    <section aria-label="Summary" className="space-y-3 rounded-lg border-2 border-line bg-card p-4">
       <Button variant="secondary" onClick={writeSummary} disabled={waiting || resting}>
         Write a short summary
       </Button>
@@ -53,7 +53,7 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
       {message?.kind === "text" && (
         <>
           <p>{message.text}</p>
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-muted">
             {"Written by an AI model from today's totals. Check the numbers above."}
           </p>
         </>
