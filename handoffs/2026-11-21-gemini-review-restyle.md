@@ -46,6 +46,7 @@ Commits: `0291f74` (contrast test), `cbd0b57` (step 1), `905a3dd` (step 2), `d8a
 - After step 4: 116 test files, 749 tests pass; lint exit 0; build passed.
 - Playwright screenshots at 390 px: `/`, `/patient`, `/staff`, `/login`, `/dashboard`; at 1280 px: `/staff`, `/dashboard`. The ink focus ring shows on the dashboard "Real" button after Tab.
 - No `text-xl`, `bg-white`, `slate-`, `gray-` or `teal-` is left in app/ or components/ (search).
+- `npm run e2e` after step 4: 39 passed (2.0 min), phone and laptop.
 
 ## Not checked
 
@@ -53,7 +54,6 @@ Commits: `0291f74` (contrast test), `cbd0b57` (step 1), `905a3dd` (step 2), `d8a
 - A real phone (iPhone or Android) and its system font.
 - Windows High Contrast mode and forced colours.
 - The focus ring on every control one by one; only the "Real" button was seen.
-- `npm run e2e` after the restyle.
 
 ## Response
 
