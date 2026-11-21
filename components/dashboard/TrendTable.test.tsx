@@ -106,6 +106,16 @@ describe("TrendTable", () => {
     expect(container.textContent).toContain("Wait numbers start on 2026-11-21.");
   });
 
+  it("keeps the hidden screen-reader words inside the scroll box, so a phone page does not scroll sideways", () => {
+    // An sr-only span is position: absolute. It stays inside an overflow box only when that box is positioned.
+    // Found on 2026-11-21 at 390 px: the page was 569 px wide.
+    show(trendWith("2026-11-22"));
+    const box = container.querySelector('[role="region"]');
+    expect(box?.querySelector(".sr-only")).not.toBeNull();
+    expect(box?.classList.contains("overflow-x-auto")).toBe(true);
+    expect(box?.classList.contains("relative")).toBe(true);
+  });
+
   it("has no start note when every day is on or after the start date", () => {
     // The 7 days before 2026-11-29 are 2026-11-22 to 2026-11-28, all after the start date.
     show(trendNumbers([], [], "2026-11-29", false));
