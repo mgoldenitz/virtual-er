@@ -171,6 +171,15 @@ describe("VisitScreen did-not-save alert", () => {
     showSaveFailure({ ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" });
     expect(container.querySelector('[role="alert"]')).toBeNull();
   });
+
+  it("does not bring the old alert back when an Undo returns the visit to called", () => {
+    const called: PatientView = { ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" };
+    showSaveFailure(called);
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(p.notSaved);
+    showSaveFailure({ ...called, status: "arrived", closed: true });
+    showSaveFailure(called);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
 });
 
 describe("VisitScreen help on the no-visit, broken-link and replaced-link screens", () => {
