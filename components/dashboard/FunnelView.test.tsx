@@ -39,19 +39,27 @@ function steps(site: "A" | "B"): string[] {
 }
 
 describe("FunnelView", () => {
+  // The ": " is hidden screen-reader text, so a screen reader says "Offered: 7", not "Offered7" (Gemini review 2026-11-21).
   it("lists the 8 steps with their counts for each site, in order", () => {
     act(() => root.render(<FunnelView numbers={{ A: busy, B: zero }} />));
     expect(steps("A")).toEqual([
-      "Started from home5",
-      "Reached triage (from home)4",
-      "Triaged CTAS 4 or 5 (home and desk)9",
-      "Offered7",
-      "Accepted6",
-      "Recalled4",
-      "Arrived after recall3",
-      "Answered survey2",
+      "Started from home: 5",
+      "Started from home today and reached triage: 4",
+      "Triaged CTAS 4 or 5 (home and desk): 9",
+      "Offered: 7",
+      "Accepted: 6",
+      "Recalled: 4",
+      "Arrived after recall: 3",
+      "Answered survey: 2",
     ]);
-    expect(steps("B")[0]).toBe("Started from home0");
+    expect(steps("B")[0]).toBe("Started from home: 0");
+  });
+
+  it("keeps the hidden separator inside its row, so a phone page does not scroll sideways", () => {
+    act(() => root.render(<FunnelView numbers={{ A: busy, B: zero }} />));
+    const row = container.querySelector("li");
+    expect(row?.querySelector(".sr-only")?.textContent).toBe(": ");
+    expect(row?.classList.contains("relative")).toBe(true);
   });
 
   it("shows counts only, with no percent, and the line that explains a larger lower row", () => {

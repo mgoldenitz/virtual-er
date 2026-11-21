@@ -65,6 +65,21 @@ describe("CsvButton", () => {
     expect(await blobs[0].text()).toContain("2026-11-22,B,true,");
   });
 
+  // Some browsers stop the download when the file link is taken back at once (Gemini review 2026-11-21).
+  it("takes the file link back only after a wait, not at the click", async () => {
+    vi.useFakeTimers();
+    try {
+      act(() => root.render(<CsvButton trend={withData} today="2026-11-25" isDemo={false} />));
+      await act(async () => button()?.click());
+      expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(1000));
+      expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:test");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows a line instead of the button when no past day has a number", () => {
     act(() => root.render(<CsvButton trend={empty} today="2026-11-25" isDemo={false} />));
     expect(button()).toBeNull();

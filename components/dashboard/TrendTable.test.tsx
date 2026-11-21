@@ -53,9 +53,17 @@ afterEach(() => {
 });
 
 describe("TrendTable", () => {
-  it("has a caption, the column headers and one row per day, oldest first", () => {
+  it("has a heading outside the scroll box that names the box, the column headers and one row per day, oldest first", () => {
+    // The heading is outside the box, so it stays in view when the table scrolls sideways (Gemini review 2026-11-21).
     show(trendWith("2026-11-22"));
-    expect(container.querySelector("caption")?.textContent).toBe("Demo Site A, past 7 days");
+    const heading = container.querySelector("h2");
+    const box = container.querySelector('[role="region"]');
+    expect(heading?.textContent).toBe("Demo Site A, past 7 days");
+    expect(heading?.id).toBeTruthy();
+    expect(box?.getAttribute("aria-labelledby")).toBe(heading?.id);
+    expect(box?.hasAttribute("aria-label")).toBe(false);
+    expect(box?.contains(heading ?? null)).toBe(false);
+    expect(container.querySelector("caption")).toBeNull();
     const headers = [...container.querySelectorAll("thead th")].map((h) => h.textContent);
     expect(headers).toEqual([
       "Day",

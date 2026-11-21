@@ -14,7 +14,7 @@ describe("funnelSteps", () => {
   it("gives the 8 steps in order, each with its count only", () => {
     expect(funnelSteps(numbers)).toEqual([
       { label: "Started from home", count: 1 },
-      { label: "Reached triage (from home)", count: 2 },
+      { label: "Started from home today and reached triage", count: 2 },
       { label: "Triaged CTAS 4 or 5 (home and desk)", count: 3 },
       { label: "Offered", count: 4 },
       { label: "Accepted", count: 5 },
