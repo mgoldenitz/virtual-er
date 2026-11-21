@@ -39,11 +39,6 @@ export function reloadSitePauses(): Promise<void> {
   return load();
 }
 
-/** The last known state; for tests and code outside React. */
-export function pauseStateNow(): PauseState {
-  return state;
-}
-
 function watch(onChange: () => void): () => void {
   listeners.add(onChange);
   if (!stopReading) stopReading = keepFresh(load, () => state.failed, REREAD_MS);
