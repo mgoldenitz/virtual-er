@@ -2,8 +2,8 @@
 // Wording approved by the owner on 2026-11-10 (handoffs/archive/2026-11-10-gemini-patient-wording-phase3-response.md).
 // Sentences marked "SPEC" are fixed by SPEC.md: change them only if the owner changes SPEC.
 // Words in {braces} are filled in by the app (for example {low}); translators keep them as they are.
-// The hour and minute words (waitRangeLong and the Duration words at the end) are a draft by
-// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md), not yet approved.
+// The hour and minute words (waitRangeLong and the Duration words at the end) were drafted by
+// Gemini Hydrogen 4 (2026-11-15, handoffs/archive/2026-11-15-gemini-hours-units.md); the owner approved the English on 2026-11-21.
 
 import type { DurationWords } from "./durationWords";
 
