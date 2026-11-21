@@ -647,3 +647,5 @@ Not a problem (no change):
 Owner decision needed:
 
 - 2.3 Submit with no score does nothing and says nothing. Options: add a hint line ("Pick a score from 0 to 10 first."), which is new patient text in 5 languages (drafts, reviewed later by a fluent human); or keep it as it is (Submit is grayed out, and the note says answering is optional).
+
+Owner answers (2026-11-20): 2.3 keep it as it is (in docs/decisions.md). Make the 6 fixes, tests first.
