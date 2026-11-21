@@ -29,6 +29,7 @@ const view: PatientView = {
   seen: true,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 
 let container: HTMLDivElement;

@@ -36,6 +36,7 @@ const waiting: PatientView = {
   seen: false,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 // The same visit after staff recall it.
 const called: PatientView = { ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" };

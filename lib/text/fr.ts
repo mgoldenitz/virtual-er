@@ -157,6 +157,7 @@ export const fr: PatientText = {
     submit: "Soumettre",
     thanks: "Merci pour vos commentaires.",
     note: "La réponse est facultative. Votre nom n'est pas enregistré.",
+    notSaved: "Votre réponse n'a pas été enregistrée. Veuillez réessayer.",
   },
   offline: "Vous êtes hors ligne. Reconnectez-vous à Internet pour voir votre statut.",
 };

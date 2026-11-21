@@ -185,6 +185,7 @@ export const en = {
     submit: "Submit",
     thanks: "Thank you for your feedback.",
     note: "Answering is optional. Your name is not stored.",
+    notSaved: "Your answer did not save. Please try again.",
   },
   offline: "You are offline. Reconnect to the internet to see your status.",
 };

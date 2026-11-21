@@ -32,7 +32,10 @@ test("start from home, then staff check the visit in", async ({ browser }) => {
 
     // The patient screen changes to waiting: a place, a range, and the demo sentence.
     await expect(patient.getByText("Status: Waiting")).toBeVisible();
-    await expect(patient.getByText("Your place in line:")).toBeVisible();
+    // Two main elements are on the page here, so pick the one that holds the waiting text.
+    const waitingMain = patient.locator("main").filter({ hasText: "Your place in line:" });
+    await expect(waitingMain).toContainText(/Your place in line:\s*[1-9]\d*/);
+    await expect(waitingMain).toContainText(/\d+\s+(?:hours?\s+|minutes?\s+)?to\s+\d+/);
     await expect(patient.getByText("Estimated time until you're called back:")).toBeVisible();
     await expect(patient.getByText("This estimate is simulated for the demo.")).toBeVisible();
     await expect(patient.getByText(EMERGENCY).first()).toBeVisible();

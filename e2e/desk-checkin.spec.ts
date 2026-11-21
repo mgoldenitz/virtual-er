@@ -17,7 +17,8 @@ test("a desk check-in gives a slip, and the slip link opens a waiting visit", as
 
     await patient.goto(link);
     await expect(patient.getByRole("heading", { name: "Status: Waiting" })).toBeVisible();
-    await expect(patient.getByText("Your place in line:")).toBeVisible();
+    await expect(patient.locator("main")).toContainText(/Your place in line:\s*[1-9]\d*/);
+    await expect(patient.locator("main")).toContainText(/\d+\s+(?:hours?\s+|minutes?\s+)?to\s+\d+/);
     await expect(patient.getByText(EMERGENCY).first()).toBeVisible();
     expect(await axeFaults(patient)).toEqual([]);
   } finally {
@@ -49,8 +50,10 @@ test("not eligible: no slip", async ({ browser }) => {
     await fillCheckIn(staff, { ticks: false });
     await staff.getByRole("button", { name: "Not eligible" }).click();
 
-    await codeFromMessage(staff, "not eligible");
+    const code = await codeFromMessage(staff, "not eligible");
     await expect(staff.locator("#slip-heading")).toHaveCount(0);
+    await expect(staffRow(staff, code)).toHaveCount(0);
+    await expect(staff.getByTestId(`onsite-${code}`)).toHaveCount(0);
   } finally {
     await staff.context().close();
   }

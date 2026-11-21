@@ -39,17 +39,18 @@ export async function fillCheckIn(staff: Page, options: { ticks: boolean; langua
     await staff.getByRole("checkbox", { name: "Agrees to wait off-site" }).check();
   }
   if (options.language) {
-    await staff.getByLabel("Language", { exact: true }).selectOption(options.language);
+    // Find the select by its role and name: the label around it also holds the option names.
+    await staff.getByRole("combobox", { name: "Language", exact: true }).selectOption(options.language);
   }
 }
 
-/** The slip after a check-in: its code (written down for cleanup) and the link that opens the visit. */
+/** The slip after a check-in: its code (written down for cleanup at once) and the link that opens the visit. */
 export async function readSlip(staff: Page): Promise<{ code: string; link: string }> {
   const slip = staff.locator("section", { has: staff.locator("#slip-heading") });
   await expect(slip).toBeVisible();
   const code = (await slip.locator("strong.font-mono").textContent()) ?? "";
-  const link = (await slip.getByRole("link", { name: /open the patient screen/ }).getAttribute("href")) ?? "";
   rememberCode(code);
+  const link = (await slip.getByRole("link", { name: /open the patient screen/ }).getAttribute("href")) ?? "";
   return { code, link };
 }
 

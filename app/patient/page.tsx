@@ -3,7 +3,7 @@
 // The patient screen on the patient's own phone: opens the visit from the link's token
 // (or the one saved on this phone) and updates live.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { confirmOnMyWayByToken, recordSeen, usePatientView } from "@/data/patientVisit";
 import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
 import { forgetSavedToken, takeTokenFromLink } from "@/data/savedToken";
@@ -29,6 +29,9 @@ export default function PatientPage() {
 
   // Reading the link and browser storage can only happen in the browser, after the first render.
   // A new link opened on this same page (only the #t=... part changes) switches to that visit.
+  // The first read removes #t=... from the address, so a second read would find nothing:
+  // linkRead makes sure the page reads the link on load only once (React dev runs effects twice).
+  const linkRead = useRef(false);
   useEffect(() => {
     const readLink = () => {
       const link = takeTokenFromLink();
@@ -38,7 +41,10 @@ export default function PatientPage() {
       setBrokenLink(link.brokenLink);
       setNotSaved(false);
     };
-    readLink();
+    if (!linkRead.current) {
+      linkRead.current = true;
+      readLink();
+    }
     window.addEventListener("hashchange", readLink);
     return () => window.removeEventListener("hashchange", readLink);
   }, []);

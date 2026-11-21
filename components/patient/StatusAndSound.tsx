@@ -3,6 +3,7 @@
 // The "I'm still here" prompt, the status screen and the sound box of the patient page, with the one
 // flag they share: when the prompt or the sound box leaves the page with focus inside it, the status
 // screen moves focus to its heading.
+// The survey box shows under the status screen once the visit has arrived and closed (SurveyBox).
 // The page and the click test both use this part, so the test checks the real wiring.
 
 import { useRef } from "react";
@@ -10,6 +11,7 @@ import type { PatientView } from "@/lib/patientView";
 import { PatientStatus } from "./PatientStatus";
 import { SoundSwitch } from "./SoundSwitch";
 import { StillHerePrompt } from "./StillHerePrompt";
+import { SurveyBox } from "./SurveyBox";
 
 type Props = {
   view: PatientView;
@@ -34,6 +36,7 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
       <div className={online ? "" : "rounded-xl border-4 border-dashed border-slate-700 p-1"} data-testid="status-frame">
         <PatientStatus view={view} language={language} onOnMyWay={onOnMyWay} sending={sending} lostFocus={lostFocus} />
       </div>
+      {token && <SurveyBox view={view} token={token} language={language} />}
       {(view.status === "waiting" || view.status === "called") && (
         <SoundSwitch
           status={view.status}

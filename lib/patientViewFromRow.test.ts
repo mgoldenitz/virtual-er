@@ -23,6 +23,12 @@ describe("patient view from a database row", () => {
     expect(patientViewFromRow(waiting).triagedAt).toBeNull();
   });
 
+  it("passes survey done through, and is false before the database change has run", () => {
+    expect(patientViewFromRow({ ...waiting, status: "arrived", closed: true, survey_done: true }).surveyDone).toBe(true);
+    expect(patientViewFromRow({ ...waiting, survey_done: false }).surveyDone).toBe(false);
+    expect(patientViewFromRow(waiting).surveyDone).toBe(false);
+  });
+
   it("uses the 15-minute default gap until there is call-back history", () => {
     const view = patientViewFromRow(waiting);
     expect(view.placeInLine).toBe(2);

@@ -33,6 +33,7 @@ const view: PatientView = {
   seen: true,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 
 /** The status screen and the sound box, as the patient page shows them. */

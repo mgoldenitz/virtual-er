@@ -36,6 +36,7 @@ const waiting: PatientView = {
   seen: false,
   closed: false,
   expired: false,
+  surveyDone: false,
 };
 
 let container: HTMLDivElement;

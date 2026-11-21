@@ -2,9 +2,9 @@
 
 import type { Browser, Page } from "@playwright/test";
 
-/** A new context with no saved visit (a saved visit would hide the broken-link screen). */
+/** A new context starts with no saved data, so no saved visit hides the broken-link screen. */
 export async function openPatient(browser: Browser): Promise<Page> {
-  const context = await browser.newContext({ storageState: undefined });
+  const context = await browser.newContext();
   return context.newPage();
 }
 

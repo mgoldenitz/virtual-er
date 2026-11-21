@@ -1,7 +1,7 @@
 // Pausing off-site waiting at site B: the start page shows the paused message, the check-in offers on-site waiting only, and site B is switched on again.
 
 import { expect, test, type Page } from "@playwright/test";
-import { chooseSite } from "./helpers/flows";
+import { chooseSite, codeFromMessage, fillCheckIn } from "./helpers/flows";
 import { openHome, openPatient } from "./helpers/patient";
 import { openStaff } from "./helpers/staff";
 
@@ -35,6 +35,9 @@ test("paused site B: the start page and the check-in offer no off-site waiting",
   const staff = await openStaff(browser);
   const patient = await openPatient(browser);
   try {
+    // A run stopped before finally can leave site B paused.
+    await turnSiteBOnIfPaused(staff);
+
     // Staff pause off-site waiting at site B, and confirm.
     await chooseSite(staff, "B");
     await pauseButton(staff).click();
@@ -51,6 +54,13 @@ test("paused site B: the start page and the check-in offer no off-site waiting",
     await expect(staff.getByText(PAUSED_AT_SITE_TEXT)).toBeVisible();
     await expect(staff.getByRole("button", { name: "Waits on-site" })).toBeVisible();
     await expect(staff.getByRole("button", { name: "Start off-site waiting" })).toHaveCount(0);
+
+    // Press "Waits on-site" (the CTAS level must be chosen first). The message gives the code, and no slip is shown.
+    await fillCheckIn(staff, { ticks: false });
+    await staff.getByRole("button", { name: "Waits on-site" }).click();
+    const code = await codeFromMessage(staff, "waiting on-site \\(off-site waiting paused\\)");
+    expect(code).toMatch(/^[A-Z0-9]{6}$/);
+    await expect(staff.locator("#slip-heading")).toHaveCount(0);
   } finally {
     // Always switch site B back on, even when a check above failed, so no test leaves it paused.
     try {

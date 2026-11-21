@@ -20,4 +20,6 @@ export type PatientView = {
   closed: boolean;
   /** Started from home, never triaged, and past the 6 hours staff keep expecting it. */
   expired: boolean;
+  /** True once the survey score is saved (lib/survey.ts). The phone never gets the score itself. */
+  surveyDone: boolean;
 };

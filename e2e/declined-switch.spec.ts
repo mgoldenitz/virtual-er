@@ -42,6 +42,7 @@ test("declined, then switched to off-site waiting, then undone", async ({ browse
     await staff.getByRole("button", { name: `Undo switch for visit ${code}`, exact: true }).click();
     await expect(onsite).toBeVisible();
     await expect(staffRow(staff, code)).toHaveCount(0);
+    await expect(patient.getByRole("heading", { name: "Status: Waiting in the emergency department" })).toBeVisible();
   } finally {
     await staff.context().close();
     await patient.context().close();
