@@ -1060,3 +1060,36 @@ In `submit_survey` (`supabase/migrations/20261120000000_survey.sql`, lines 16–
 * **File and line:** `data/patientVisit.ts`, lines 162–171; `lib/patientViewFromRow.test.ts` (not in diff).
 * **Concrete case:** No unit test in the diff exercises `submitSurvey` directly (`SurveyBox.click.test.tsx` mocks it), leaving error/exception/refusal branches in `data/patientVisit.ts` untested in Vitest; not sure what the 78 lines of `lib/patientViewFromRow.test.ts` cover because its diff is omitted.
 * **Smallest fix:** Add unit tests for `submitSurvey` covering `"saved"`, `"refused"`, `"not_saved"`, and `refreshPatientView` failure/throw.
+
+---
+
+## Claude's check (2026-11-21)
+
+I read each named file and line in the code as it is now.
+
+Correct, and worth a fix:
+- 1, a read that fails after a save: correct in part. `refreshPatientView` cannot throw, because `readFromDatabase` (data/patientVisit.ts line 71) catches all errors. But the soft fail is real. `afterFailedRead` (lib/failedRead.ts line 14) keeps the old view after 1 failed read, so the step stays "ask". A second Submit is refused, and the phone then says "did not save", but the score did save. Fix: after "saved", SurveyBox shows the thank-you text at once.
+- 3, focus after Submit and after Undo: correct. The Submit button leaves the page, and StatusAndSound.tsx line 39 gives SurveyBox no `onFocusLost`. The rescue that already exists (`useReportFocusOnLeave`, used in FocusBox, SoundSwitch and StillHerePrompt) fixes both cases. Button.tsx sets the native `disabled` attribute, so the "focus while sending" case is real too, and the same rescue fixes it.
+- 3, a second failure is not announced again: correct. Fix: `setNotSaved(false)` at the start of Submit and when a score is picked.
+- 3, the 0 and 10 words come after the 11 radios: correct. Fix: put them under the legend, with `aria-describedby` on the fieldset.
+- 3, an old score and an old error stay after Undo and a second arrival: correct. SurveyBox stays mounted and returns null (line 30). Fix: put the form in a child part that shows only in "ask".
+- 3, a double Submit: in part. React 18 runs the updates of each click before the next click, so this case is unlikely. A `useRef` guard costs 3 lines, so add it.
+- 5, tests: correct. No test picks 0 or 10, and no test tries again after a failure. No StatusAndSound test shows SurveyBox (the e2e test checks the real page). The e2e test does not check that the thank-you text goes away after Undo. survey.sql does not try 0, 10 or null.
+
+Not correct, or not worth a change:
+- 1, `submit_survey` itself: Gemini found no fault. `visits.survey_score` has `check (survey_score between 0 and 10)` (20261110060756_tables_and_security.sql line 53).
+- 2, the order in the trigger: no real case. No app code sets `created_at`, or sets a time to a new value in the same transaction. If it happens, the only result is one extra version, which is the safe direction (the old behaviour). No change.
+- 2, a staff change to an existing score keeps the version: staff screens never write `survey_score`. No change.
+- 5, `submitSurvey` unit tests: it has the same shape as `patientStep` (lines 132-144), and the click test plus the e2e test cover it. Low value.
+
+Product decisions (asked of the owner in the same turn):
+- Submit with no score picked does nothing (3).
+- A score stays on a visit that ends `removed` or `unable_to_reach` after Undo (4). `daily_stats` (20261120030000_wait_and_recall_stats.sql line 80) and `lib/dashboardNumbers.ts` count it, because they check only `survey_score is not null and closed_at is not null`.
+- Offline: the survey is not in the dashed frame and does not warn (3).
+
+The fixes touch components/, e2e/ and supabase/checks/, so they need a plan first (CLAUDE.md).
+
+Owner's decisions (2026-11-21):
+- No score picked: Submit looks off (`aria-disabled`) until the patient picks a score. No new text.
+- A score on a visit that ends `removed` or `unable_to_reach`: keep counting it. Add a known-issues line. No code change.
+- Offline: leave as is. The "did not save" message tells the patient.
