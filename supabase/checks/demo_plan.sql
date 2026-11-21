@@ -1,4 +1,4 @@
--- Check for the day plan (migration 20261120000000_demo_plan.sql).
+-- Check for the day plan (migration 20261120020000_demo_plan.sql).
 -- Run the whole file at once in the Supabase SQL Editor, after that migration. It saves nothing:
 -- everything happens inside "begin ... rollback". After it, run supabase/checks/demo_tick.sql again:
 -- it sets the normal plan (the old numbers) for its own run, so its 13 expected rows stay the same.

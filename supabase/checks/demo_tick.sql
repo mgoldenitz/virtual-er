@@ -1,5 +1,5 @@
 -- Check for the demo simulator (migrations 20261118000100_demo_simulator.sql,
--- 20261118000200_demo_simulator_fixes.sql and 20261120000000_demo_plan.sql).
+-- 20261118000200_demo_simulator_fixes.sql and 20261120020000_demo_plan.sql).
 -- Run the whole file at once (do not select and run one part): the Editor shows only the last
 -- result, so the file keeps the results in a temp table and shows all rows at the end.
 -- Run it in the Supabase SQL Editor after both demo migrations and the fixes migration. It saves
@@ -54,7 +54,7 @@ select '00 demo visits before the check', count(*) from public.visits where is_d
 update public.site_settings set offsite_paused = false;
 
 -- Use the normal day plan (the old fixed chances), because the ranges below are for it.
--- A saved plan from Claude comes back at the rollback. Needs 20261120000000_demo_plan.sql.
+-- A saved plan from Claude comes back at the rollback. Needs 20261120020000_demo_plan.sql.
 update public.demo_settings set
   seen_chance = 0.70, on_my_way_chance = 0.70, still_here_chance = 0.70, arrive_chance = 0.50,
   quick_recall_chance = 0.50, home_start_chance = 0.10, desk_offer_chance = 0.80, english_share = 0.70
