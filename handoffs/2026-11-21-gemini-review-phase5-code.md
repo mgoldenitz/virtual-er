@@ -126,3 +126,23 @@ Bundle gap (what could not be checked): The attached bundle stops inside `lib/te
 ### Question 3 (The database)
 
 Cannot be answered without the `supabase/migrations/` files, which were cut off after `lib/text/en.ts` in this bundle. To check migration order, dropped/altered functions, triggers, and RLS policies against the app's RPC and table calls (`get_patient_visit`, `start_home_visit`, `record_seen`, `confirm_on_my_way`, `record_still_here`, `submit_survey`, `clear_demo_data`, `visits`, `site_settings`, `daily_stats`, `change_signal`), please paste the `supabase/migrations/` files and the remainder of `lib/`.
+
+## Claude's check
+
+Checked against the code on branch `phase5-e2e` at commit 20cdcf3, 2026-11-21.
+
+1. Valid. `lib/switchToOffsite.ts:33` sets `last_still_here_at` to now, and `StillHerePrompt.tsx:52-53` shows the thanks for any value under 5 minutes old. The side case is also valid: `applyTriage` and `reopenUnableToReach` in `lib/visitActions.ts` do not clear `last_still_here_at`, and `StillHerePrompt` has no `lastTapThisWait` check. A fix that changes what the switch writes touches `lib/` and the database RPC, so it needs a plan.
+2. Valid. `lib/dashboardNumbers.ts:109` counts on `offered_at`, triaged counts on `triaged_at` (120-122). Needs an owner decision on how to count.
+3. Valid, but only when the second link opens in the same tab after the first survey was sent. Fix: `key={token}` on `SurveyBox` in `StatusAndSound.tsx:40`.
+4. Main claim wrong: `StillHerePrompt.tsx:71` sets `notSaved` from each result, so a tap that saves clears it, and the next prompt opens clean. Sub-claim valid: a second offline tap keeps `notSaved` true, so the alert is not announced again. Fix: `setNotSaved(false)` at the start of the tap.
+5. Valid. `VisitScreen.tsx` shows the alert in every status; only `readLink` resets it.
+6. Valid. `CheckInPanel.tsx:138-139` resets `ctas` and `ticked` but not `language`, and the reset block at 60-68 runs only when a new home visit is chosen.
+7. Valid. `StartVisit.tsx:179` `onChange={() => setSite(option)}` does not clear `problem`.
+8. Valid but small. `serverNow()` (`data/serverClock.ts:45-48`) returns the device clock until the first `/api/time` answer comes back. It matters only on a device with a wrong clock near midnight, for the first read.
+9. Valid. `averageCallGap` is used only by `lib/queue.test.ts`, and `pauseStateNow` only by `data/sitePauses.test.ts`. Removal also removes those tests, so it needs the owner's OK.
+10. Valid. `lib/queue.ts:11-20` and `lib/switchToOffsite.ts:59-64` give the same order. Fix: export one from `lib/queue.ts`.
+11. Valid as a naming point. A rename crosses `app/`, `components/`, `data/` and `lib/`; low value now.
+12. Partly valid. `ExpectedArrivals.tsx` is 124 lines and holds two lists and the code lookup. Under the 300-line limit; a split is optional.
+13. Valid, all five. `Footer.tsx:9` still uses `textFor("en")` though `data/savedLanguage.ts` exists; `data/patientVisit.ts` calls `get_patient_visit`, `submit_survey` and three steps through `patientStep`; `FollowUpPanel.tsx:68` now says "Phone the patient now." and "Phone the patient again."; `RecentlyClosed.tsx:63` says "below".
+
+Question 2: no fault found in the files seen. Question 3: not answered, because the upload stopped in `lib/text/en.ts`. A second handoff with the rest of `lib/` and `supabase/migrations/` is due.
