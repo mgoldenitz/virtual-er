@@ -192,3 +192,12 @@ Point by point:
 - 7c (still-waiting patients not in the average): valid for the label. The longest current wait is a new number, not in this plan.
 - 7d (counts and date anchors in the trend): valid. Fix: counts in brackets, one note line.
 - 7e (early arrivals): valid; covered by the funnel wording.
+
+## Owner decisions (2026-11-20)
+
+- Funnel line: "Each row counts what happened today. Desk patients join at Triaged, and some patients come back before a recall, so a lower row can be larger."
+- Wait label: "Average minutes from offer to recall".
+- Days before the new columns: "-" on screen with one note line; empty cells in the CSV.
+- Read race (1e): a line in docs/known-issues.md only. No new database function.
+
+Review closed. File moved to handoffs/archive/.
