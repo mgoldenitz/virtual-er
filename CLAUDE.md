@@ -52,7 +52,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 - If the plan writes to `visits` from the patient side (an RPC), the plan says whether the write raises `version`, and why a staff action after it should or should not be refused (known-issues.md, 2026-11-20).
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
 - Before you remove an import, search the file for other uses of that name.
-- Change docs and code with the Edit tool, not a Python or sed script, when the new text has quotes or backslashes.
+- Change or add to docs and code with the Edit tool, not a Python or sed script or a heredoc (`cat >>`), when the new text has quotes or backslashes.
 
 ## Keep the app organized so a beginner can read it
 
