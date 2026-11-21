@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 // Presses "Recall patient" on a staff row in a test browser (happy-dom): it saves only after "Yes",
 // and focus then moves to the progress line, because the "Recall patient" button leaves the page.
+// Also: when another staff screen changes the row, focus in a button that leaves is not lost.
 
-import { act } from "react";
+import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { callBackVisit } from "@/data/staffActions";
@@ -151,5 +152,52 @@ describe("VisitRow recall", () => {
     await nextTick();
     expect(document.activeElement).toBe(button("Recall patient"));
     expect(container.textContent).toContain(result === "not_saved" ? "Not saved" : "The list just changed");
+  });
+});
+
+describe("VisitRow focus when another screen changes the row", () => {
+  /** Draws the row in StrictMode, which runs each effect twice, as the dev server does. */
+  const drawStrict = (visit: Visit | null, onFocusLost = vi.fn()) =>
+    act(() =>
+      root.render(
+        <StrictMode>
+          {visit && <VisitRow visit={visit} now={now} onShowSlip={vi.fn()} onLeftList={vi.fn()} onFocusLost={onFocusLost} />}
+        </StrictMode>,
+      ),
+    );
+
+  beforeEach(() => drawStrict(waiting));
+
+  it("when another screen recalls the patient, focus moves from Recall patient to the progress line", () => {
+    button("Recall patient")?.focus();
+    drawStrict(called);
+    expect(document.activeElement).toBe(progressLine());
+  });
+
+  it("when another screen recalls the patient during the question, focus moves from Yes to the progress line", async () => {
+    await press("Recall patient");
+    expect(document.activeElement).toBe(button("Yes, recall patient"));
+    drawStrict(called);
+    expect(document.activeElement).toBe(progressLine());
+  });
+
+  it("a focused button that stays keeps focus", () => {
+    button("Mark arrived")?.focus();
+    drawStrict(called);
+    expect(document.activeElement).toBe(button("Mark arrived"));
+  });
+
+  it("after a phone tap (focus on the page body), focus does not move", async () => {
+    await act(async () => button("Show QR again")?.click());
+    drawStrict(called);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("when the row leaves the list with focus inside it, it reports the lost focus once", () => {
+    const onFocusLost = vi.fn();
+    drawStrict(waiting, onFocusLost);
+    button("Mark arrived")?.focus();
+    drawStrict(null, onFocusLost);
+    expect(onFocusLost).toHaveBeenCalledTimes(1);
   });
 });
