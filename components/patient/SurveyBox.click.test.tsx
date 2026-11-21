@@ -72,6 +72,72 @@ describe("SurveyBox", () => {
     show(arrived);
     await act(async () => submit()?.click());
     expect(submitSurvey).not.toHaveBeenCalled();
+    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("grays out Submit until a score is picked, and keeps it a real button", () => {
+    show(arrived);
+    expect(submit()?.hasAttribute("disabled")).toBe(false);
+    pick(4);
+    expect(submit()?.getAttribute("aria-disabled")).toBe("false");
+  });
+
+  it("ties the 0 and 10 labels to the group of scores", () => {
+    show(arrived);
+    const id = container.querySelector("fieldset")?.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    const scale = document.getElementById(id ?? "");
+    expect(scale?.textContent).toContain(s.low);
+    expect(scale?.textContent).toContain(s.high);
+  });
+
+  it("says thank you and moves focus to it when the save worked, before the next read shows it", async () => {
+    show(arrived);
+    pick(8);
+    await act(async () => submit()?.click());
+    const thanks = [...container.querySelectorAll('[role="status"]')].find((p) => p.textContent === s.thanks);
+    expect(thanks).toBeDefined();
+    expect(document.activeElement).toBe(thanks);
+    expect(radios()).toHaveLength(0);
+  });
+
+  it("does not move focus to a thank-you that was already there", () => {
+    show({ ...arrived, surveyDone: true });
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("shows a new alert for a second failed save, so it is read out again", async () => {
+    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
+    show(arrived);
+    pick(5);
+    await act(async () => submit()?.click());
+    const first = container.querySelector('[role="alert"]');
+    await act(async () => submit()?.click());
+    const second = container.querySelector('[role="alert"]');
+    expect(second?.textContent).toBe(s.notSaved);
+    expect(second).not.toBe(first);
+  });
+
+  it("starts empty after an Undo and a second arrival", async () => {
+    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
+    show(arrived);
+    pick(5);
+    await act(async () => submit()?.click());
+    show({ ...arrived, status: "on_the_way", closed: false });
+    show(arrived);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(radios().some((r) => r.checked)).toBe(false);
+  });
+
+  it("sends once when Submit is pressed twice while the first save runs", async () => {
+    let finish: (answer: "saved") => void = () => {};
+    vi.mocked(submitSurvey).mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    show(arrived);
+    pick(6);
+    act(() => submit()?.click());
+    act(() => submit()?.click());
+    await act(async () => finish("saved"));
+    expect(submitSurvey).toHaveBeenCalledTimes(1);
   });
 
   it("sends the picked score with the token", async () => {

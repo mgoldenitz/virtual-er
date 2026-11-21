@@ -30,6 +30,14 @@ describe("which survey step the patient sees (SPEC line 69, hard rule 5)", () =>
     expect(surveyStep({ ...arrived, surveyDone: true })).toBe("thanks");
   });
 
+  it("says thank you when this phone saved the score, before the next read shows it", () => {
+    expect(surveyStep(arrived, true)).toBe("thanks");
+  });
+
+  it("shows nothing after an Undo, also when this phone saved the score", () => {
+    expect(surveyStep({ ...arrived, status: "on_the_way", closed: false }, true)).toBeNull();
+  });
+
   it("shows nothing for an arrived visit that is not closed", () => {
     expect(surveyStep({ ...arrived, closed: false })).toBeNull();
   });
