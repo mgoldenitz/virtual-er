@@ -4,7 +4,7 @@ Model: Gemini Hydrogen 4, High, in a new chat. Date: 2026-11-21.
 
 ## Context
 
-The Phase 5 independent code review (handoffs/2026-11-21-gemini-review-phase5-code.md) could not answer Question 3, because the upload stopped inside `lib/text/en.ts`. This review covers the files it did not see: the rest of `lib/`, all of `supabase/migrations/`, `supabase/checks/`, `proxy.ts`, `scripts/` and the config files. `SPEC.md` and the `data/` files (the app's database calls) are in the bundle again so the calls can be matched to the database.
+The Phase 5 independent code review (handoffs/archive/2026-11-21-gemini-review-phase5-code.md) could not answer Question 3, because the upload stopped inside `lib/text/en.ts`. This review covers the files it did not see: the rest of `lib/`, all of `supabase/migrations/`, `supabase/checks/`, `proxy.ts`, `scripts/` and the config files. `SPEC.md` and the `data/` files (the app's database calls) are in the bundle again so the calls can be matched to the database.
 
 Synthetic data only. The bundle leaves out `.mcp.json` and every `.env` file except `.env.example`. No keys, tokens, passwords or project IDs.
 
@@ -20,7 +20,7 @@ Find problems; do not confirm that things work. For each fault give the file and
 
 ## Checked (in this session or in docs/progress.md)
 
-- The first review's findings were checked against the code at commit 20cdcf3 (see "Claude's check" in handoffs/2026-11-21-gemini-review-phase5-code.md).
+- The first review's findings were checked against the code at commit 20cdcf3 (see "Claude's check" in handoffs/archive/2026-11-21-gemini-review-phase5-code.md).
 - The bundle was scanned for key-like text (JWT start `eyJ`, `sk_`, `service_role_key`, `supabase.co`, `password =`): no match.
 
 ## Not checked
