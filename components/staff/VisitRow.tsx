@@ -89,7 +89,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList, onFocusLost }: Pr
   // When another screen changes this visit, a button with focus can leave the page (for example
   // "Recall patient"): focus goes to the progress line. When the whole row leaves, the page is told.
   const row = useRef<HTMLLIElement>(null);
-  const rememberFocus = useRowFocusRescue(progressLine, visit);
+  const focusWatch = useRowFocusRescue(progressLine, visit);
   useReportFocusOnLeave(row, onFocusLost);
   /** True once a recall from this row is saved. */
   const [recallSaved, setRecallSaved] = useState(false);
@@ -114,7 +114,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList, onFocusLost }: Pr
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
 
   return (
-    <li ref={row} onFocus={rememberFocus} className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
+    <li ref={row} onFocus={focusWatch.onFocus} onBlur={focusWatch.onBlur}className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-mono text-xl font-bold tracking-widest">
           {visit.code}

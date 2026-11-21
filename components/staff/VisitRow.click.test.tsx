@@ -232,6 +232,16 @@ describe("VisitRow focus when another screen changes the row", () => {
     outside.remove();
   });
 
+  it("focus that staff moved out of the row and then to nobody is not taken back when the part leaves", () => {
+    const outside = outsideButton();
+    button("Recall patient")?.focus();
+    outside.focus();
+    outside.blur();
+    drawStrict(called);
+    expect(document.activeElement).toBe(document.body);
+    outside.remove();
+  });
+
   it("when the row leaves the list with focus inside it, it reports the lost focus once", () => {
     const onFocusLost = vi.fn();
     drawStrict(waiting, onFocusLost);

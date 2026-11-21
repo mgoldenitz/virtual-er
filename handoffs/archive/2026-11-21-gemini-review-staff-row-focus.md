@@ -380,3 +380,5 @@ Gemini Hydrogen 4, High, 2026-11-21 (pasted by the owner):
 - 3, tests that pass for the wrong reason: valid, all 3. Accept: (a) focus outside the row keeps focus when the part leaves; (b) earlier focus in the row, then a tap to the body, then `draw(called)`: focus stays on the body; (c) a page-level test where the row leaves and focus goes to `#list-heading`.
 - 4a, inline `lib/rowFocus.ts`: reject. CLAUDE.md says each function that decides goes in `lib/` with a test. Keep the file; the new order of checks (clear a detached part first) goes in the hook, and `lib/rowFocus.ts` keeps the decision.
 - 4c, `useReportFocusOnLeave` on the panels: reject. It needs a wrapper per panel, and the `FollowUpPanel` buttons leave while the panel stays (settled point in this handoff).
+
+Owner chose (2026-11-21): the stale-part fix (2, 1a, 1b) and the 3 new tests (3). Not done: the `RecallPanel` `useEffect` (1c, 4b), listed as a limit in `docs/known-issues.md`. Done: tests first in `1d883f1` (2 failed), then the fix; 91 test files, 600 tests pass; lint exit 0; build passed.
