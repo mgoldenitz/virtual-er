@@ -11,7 +11,10 @@ import { playAlert, stopVibration, unlockSound } from "./alertSound";
 import { StatusAndSound } from "./StatusAndSound";
 
 // The tap's save, the clock and the sound player are replaced, so each test controls them.
-vi.mock("@/data/patientVisit", () => ({ recordStillHere: vi.fn().mockResolvedValue("saved") }));
+vi.mock("@/data/patientVisit", () => ({
+  recordStillHere: vi.fn().mockResolvedValue("saved"),
+  submitSurvey: vi.fn().mockResolvedValue("saved"),
+}));
 const NOW = new Date("2026-11-16T12:00:00Z");
 vi.mock("@/components/useNow", () => ({ useNow: () => NOW }));
 vi.mock("./alertSound", () => ({ unlockSound: vi.fn(), playAlert: vi.fn(), stopVibration: vi.fn() }));
@@ -75,5 +78,16 @@ describe("StatusAndSound with the I'm still here prompt", () => {
     const heading = container.querySelector("#status-heading");
     expect(heading?.textContent).toBe(t.patient.calledHeading);
     expect(document.activeElement).toBe(heading);
+  });
+
+  it("moves focus to the status heading when staff Undo the arrival while focus is in the survey", () => {
+    const arrived: PatientView = { ...called, status: "arrived", closed: true, seen: true };
+    show(arrived);
+    const radio = container.querySelector<HTMLInputElement>('input[name="survey-score"]');
+    expect(radio).not.toBeNull();
+    radio?.focus();
+    show({ ...called, status: "on_the_way" });
+    expect(container.querySelector('input[name="survey-score"]')).toBeNull();
+    expect(document.activeElement).toBe(container.querySelector("#status-heading"));
   });
 });

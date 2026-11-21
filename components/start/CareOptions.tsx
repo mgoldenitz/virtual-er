@@ -6,10 +6,13 @@ import { textFor } from "@/lib/text";
 
 const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
+// The look that every link shares. py-1 gives space above and below the words.
+const baseStyle = "py-1 font-semibold text-brand underline underline-offset-2";
 // inline-block with py-1 makes each link a tap target of at least 24 by 24 pixels (WCAG 2.5.8).
-const linkStyle = "inline-block py-1 font-semibold text-brand underline underline-offset-2";
+const linkStyle = `inline-block ${baseStyle}`;
 // A link that stands alone (not inside a sentence) is at least 44 pixels high, like the buttons.
-const aloneStyle = `${linkStyle} min-h-11`;
+// inline-flex with items-center puts the words in the middle of that height, not at the top.
+const aloneStyle = `inline-flex min-h-11 items-center ${baseStyle}`;
 
 function External({ href, children, newTab, alone }: { href: string; children: string; newTab: string; alone?: boolean }) {
   return (

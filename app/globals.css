@@ -18,6 +18,13 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* While the head script waits for React to show the saved language (lib/languageScript.ts),
+   the main part of the screen is hidden, so the patient never sees English first.
+   visibility keeps the layout in place, so nothing jumps when it shows. The footer stays. */
+html[data-lang-wait] main {
+  visibility: hidden;
+}
+
 /* Patient screens (clean look): a plain white box on the light-grey page. */
 .clean-card {
   background-color: var(--color-card);

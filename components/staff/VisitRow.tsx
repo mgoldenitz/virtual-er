@@ -11,11 +11,13 @@ import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
 import { switchedAt } from "@/lib/switchToOffsite";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
+import { useReportFocusOnLeave } from "@/components/patient/useFocusRescue";
 import { Duration } from "./Duration";
 import { DemoTag } from "./DemoTag";
 import { FollowUpPanel } from "./FollowUpPanel";
 import { NewLinkPanel } from "./NewLinkPanel";
 import { RecallPanel } from "./RecallPanel";
+import { useRowFocusRescue } from "./useRowFocusRescue";
 
 type Props = {
   visit: Visit;
@@ -23,6 +25,8 @@ type Props = {
   onShowSlip: (visit: Visit) => void;
   /** Called after a change takes this patient off the list, so the page can say so and move focus. */
   onLeftList: (message: string) => void;
+  /** Called when the row leaves the page with focus inside it (another screen took the patient off the list). */
+  onFocusLost?: () => void;
 };
 
 const NOT_SAVED = "Not saved: the database could not be reached. Try again.";
@@ -62,7 +66,7 @@ function progress(visit: Visit, now: Date): ReactNode {
   );
 }
 
-export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
+export function VisitRow({ visit, now, onShowSlip, onLeftList, onFocusLost }: Props) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   /** A short "it worked" message, for a change that keeps the patient on the list. */
@@ -82,6 +86,11 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   };
   /** The progress line, which stays on the page when the "Recall patient" button leaves it. */
   const progressLine = useRef<HTMLParagraphElement>(null);
+  // When another screen changes this visit, a button with focus can leave the page (for example
+  // "Recall patient"): focus goes to the progress line. When the whole row leaves, the page is told.
+  const row = useRef<HTMLLIElement>(null);
+  const focusWatch = useRowFocusRescue(progressLine, visit);
+  useReportFocusOnLeave(row, onFocusLost);
   /** True once a recall from this row is saved. */
   const [recallSaved, setRecallSaved] = useState(false);
   /** True once focus has moved after that recall, so it moves only once. */
@@ -105,7 +114,7 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList }: Props) {
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
 
   return (
-    <li className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
+    <li ref={row} onFocus={focusWatch.onFocus} onBlur={focusWatch.onBlur}className="rounded-xl border-2 border-slate-300 bg-white p-4" data-testid={`row-${visit.code}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-mono text-xl font-bold tracking-widest">
           {visit.code}

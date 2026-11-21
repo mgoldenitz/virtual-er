@@ -16,6 +16,7 @@ vi.mock("@/data/patientVisit", () => ({ submitSurvey: vi.fn().mockResolvedValue(
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const s = textFor("en").survey;
+const p = textFor("en").patient;
 
 const arrived: PatientView = {
   code: "ABC234",
@@ -42,7 +43,8 @@ function show(view: PatientView) {
 }
 
 const radios = () => [...container.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
-const submit = () => [...container.querySelectorAll("button")].find((b) => b.textContent === s.submit);
+// Found by its type, because its words change to "Sending…" while the save runs.
+const submit = () => container.querySelector<HTMLButtonElement>('button[type="submit"]') ?? undefined;
 const pick = (n: number) => act(() => radios().find((r) => r.value === String(n))?.click());
 
 beforeEach(() => {
@@ -66,12 +68,109 @@ describe("SurveyBox", () => {
     expect(container.textContent).toContain(s.low);
     expect(container.textContent).toContain(s.high);
     expect(container.textContent).toContain(s.note);
+    expect(submit()?.textContent).toBe(s.submit);
+  });
+
+  it("puts the 0 and 10 labels before the scores, so a screen reader reads them first", () => {
+    show(arrived);
+    const id = container.querySelector("fieldset")?.getAttribute("aria-describedby") ?? "";
+    const scale = document.getElementById(id);
+    const first = radios()[0];
+    expect(scale && first && scale.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("sends nothing when Submit is pressed with no score picked", async () => {
     show(arrived);
     await act(async () => submit()?.click());
     expect(submitSurvey).not.toHaveBeenCalled();
+    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("grays out Submit until a score is picked, and keeps it a real button", () => {
+    show(arrived);
+    expect(submit()?.hasAttribute("disabled")).toBe(false);
+    pick(4);
+    expect(submit()?.getAttribute("aria-disabled")).toBe("false");
+  });
+
+  it("ties the 0 and 10 labels to the group of scores", () => {
+    show(arrived);
+    const id = container.querySelector("fieldset")?.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    const scale = document.getElementById(id ?? "");
+    expect(scale?.textContent).toContain(s.low);
+    expect(scale?.textContent).toContain(s.high);
+  });
+
+  it("says thank you and moves focus to it when the save worked, before the next read shows it", async () => {
+    show(arrived);
+    pick(8);
+    await act(async () => submit()?.click());
+    const thanks = [...container.querySelectorAll('[role="status"]')].find((p) => p.textContent === s.thanks);
+    expect(thanks).toBeDefined();
+    expect(document.activeElement).toBe(thanks);
+    expect(radios()).toHaveLength(0);
+  });
+
+  it("does not move focus to a thank-you that was already there", () => {
+    show({ ...arrived, surveyDone: true });
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("shows a new alert for a second failed save, so it is read out again", async () => {
+    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
+    show(arrived);
+    pick(5);
+    await act(async () => submit()?.click());
+    const first = container.querySelector('[role="alert"]');
+    await act(async () => submit()?.click());
+    const second = container.querySelector('[role="alert"]');
+    expect(second?.textContent).toBe(s.notSaved);
+    expect(second).not.toBe(first);
+  });
+
+  it("starts empty after an Undo and a second arrival", async () => {
+    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
+    show(arrived);
+    pick(5);
+    await act(async () => submit()?.click());
+    show({ ...arrived, status: "on_the_way", closed: false });
+    show(arrived);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(radios().some((r) => r.checked)).toBe(false);
+  });
+
+  it("sends once when Submit is pressed twice while the first save runs", async () => {
+    let finish: (answer: "saved") => void = () => {};
+    vi.mocked(submitSurvey).mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    show(arrived);
+    pick(6);
+    act(() => submit()?.click());
+    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
+    expect(submit()?.textContent).toBe(p.sending);
+    act(() => submit()?.click());
+    await act(async () => finish("saved"));
+    expect(submitSurvey).toHaveBeenCalledTimes(1);
+  });
+
+  it("moves focus to the thank-you also when the re-read shows the score before the save answers", async () => {
+    let finish: (answer: "saved") => void = () => {};
+    vi.mocked(submitSurvey).mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    show(arrived);
+    pick(6);
+    submit()?.focus();
+    act(() => submit()?.click());
+    show({ ...arrived, surveyDone: true });
+    await act(async () => finish("saved"));
+    const thanks = [...container.querySelectorAll('[role="status"]')].find((el) => el.textContent === s.thanks);
+    expect(document.activeElement).toBe(thanks);
+  });
+
+  it("sends a score of 0", async () => {
+    show(arrived);
+    pick(0);
+    await act(async () => submit()?.click());
+    expect(submitSurvey).toHaveBeenCalledWith("t", 0);
   });
 
   it("sends the picked score with the token", async () => {
@@ -108,111 +207,5 @@ describe("SurveyBox", () => {
   it("shows nothing for a visit that is not arrived and closed", () => {
     show({ ...arrived, status: "on_the_way", closed: false });
     expect(container.textContent).toBe("");
-  });
-});
-
-// The faults found in the Gemini Hydrogen 4 review (handoffs/archive/2026-11-20-gemini-review-survey.md).
-describe("SurveyBox after the Gemini review", () => {
-  const onSaved = vi.fn();
-  const onFocusLost = vi.fn();
-  function showWith(view: PatientView, saved = false) {
-    act(() =>
-      root.render(
-        <SurveyBox view={view} token="t" language="en" saved={saved} onSaved={onSaved} onFocusLost={onFocusLost} />,
-      ),
-    );
-  }
-  beforeEach(() => {
-    onSaved.mockClear();
-    onFocusLost.mockClear();
-  });
-
-  // Owner decision 2026-11-21. aria-disabled, not disabled, so a button with focus keeps it.
-  it("makes Submit look off until a score is picked, and never uses the disabled attribute", () => {
-    showWith(arrived);
-    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
-    expect(submit()?.hasAttribute("disabled")).toBe(false);
-    pick(4);
-    expect(submit()?.getAttribute("aria-disabled")).not.toBe("true");
-  });
-
-  it("keeps the disabled attribute off while the score is sending", async () => {
-    vi.mocked(submitSurvey).mockReturnValue(new Promise(() => {}));
-    showWith(arrived);
-    pick(4);
-    await act(async () => submit()?.click());
-    expect(submit()?.hasAttribute("disabled")).toBe(false);
-    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
-  });
-
-  it.each([0, 10])("sends the edge score %s", async (n) => {
-    showWith(arrived);
-    pick(n);
-    await act(async () => submit()?.click());
-    expect(submitSurvey).toHaveBeenCalledWith("t", n);
-  });
-
-  it("takes the not-saved line away at a new Submit, so a second failure is announced again", async () => {
-    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
-    showWith(arrived);
-    pick(5);
-    await act(async () => submit()?.click());
-    expect(container.querySelector('[role="alert"]')).not.toBeNull();
-    let answer: (r: "not_saved") => void = () => {};
-    vi.mocked(submitSurvey).mockReturnValue(new Promise((r) => (answer = r)));
-    await act(async () => submit()?.click());
-    expect(container.querySelector('[role="alert"]')).toBeNull();
-    await act(async () => answer("not_saved"));
-    expect(container.querySelector('[role="alert"]')?.textContent).toBe(s.notSaved);
-  });
-
-  it("takes the not-saved line away when the patient picks a new score", async () => {
-    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
-    showWith(arrived);
-    pick(5);
-    await act(async () => submit()?.click());
-    pick(6);
-    expect(container.querySelector('[role="alert"]')).toBeNull();
-  });
-
-  it("shows the 0 and 10 words before the scores and names them on the group", () => {
-    showWith(arrived);
-    const ids = container.querySelector("fieldset")?.getAttribute("aria-describedby")?.split(" ") ?? [];
-    const words = ids.map((id) => document.getElementById(id));
-    expect(words.map((w) => w?.textContent)).toEqual([s.low, s.high]);
-    const [low] = words;
-    const [firstRadio] = radios();
-    if (!low || !firstRadio) throw new Error("the low word or the first radio is missing");
-    expect(low.compareDocumentPosition(firstRadio) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("sends one time when Submit is pressed twice quickly", async () => {
-    showWith(arrived);
-    pick(7);
-    await act(async () => {
-      submit()?.click();
-      submit()?.click();
-    });
-    expect(submitSurvey).toHaveBeenCalledTimes(1);
-  });
-
-  it("reports the save, so the thank-you can show before the read is back", async () => {
-    showWith(arrived);
-    pick(7);
-    await act(async () => submit()?.click());
-    expect(onSaved).toHaveBeenCalledTimes(1);
-  });
-
-  it("says thank you when this phone saved the score, also if the read still says not done", () => {
-    showWith(arrived, true);
-    expect(container.textContent).toContain(s.thanks);
-    expect(radios()).toHaveLength(0);
-  });
-
-  it("reports lost focus when an Undo takes the form away with focus inside it", () => {
-    showWith(arrived);
-    radios()[3].focus();
-    showWith({ ...arrived, status: "on_the_way", closed: false });
-    expect(onFocusLost).toHaveBeenCalledTimes(1);
   });
 });

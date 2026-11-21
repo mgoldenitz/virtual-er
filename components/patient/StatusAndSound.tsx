@@ -1,12 +1,12 @@
 "use client";
 
 // The "I'm still here" prompt, the status screen and the sound box of the patient page, with the one
-// flag they share: when the prompt or the sound box leaves the page with focus inside it, the status
-// screen moves focus to its heading.
+// flag they share: when the prompt, the survey or the sound box leaves the page with focus inside it,
+// the status screen moves focus to its heading.
 // The survey box shows under the status screen once the visit has arrived and closed (SurveyBox).
 // The page and the click test both use this part, so the test checks the real wiring.
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import type { PatientView } from "@/lib/patientView";
 import { PatientStatus } from "./PatientStatus";
 import { SoundSwitch } from "./SoundSwitch";
@@ -25,11 +25,8 @@ type Props = {
 };
 
 export function StatusAndSound({ view, token, language, onOnMyWay, sending, online }: Props) {
-  // True when the prompt, the sound box or the survey form left the page with focus inside it; the status
-  // screen then moves focus to its heading.
+  // True when the prompt or the sound box left the page with focus inside it; the status screen then moves focus.
   const lostFocus = useRef(false);
-  // True once this phone has saved the survey score, so the thank-you shows before the visit is read again.
-  const [surveySaved, setSurveySaved] = useState(false);
   return (
     <>
       {token && view.status === "waiting" && (
@@ -44,8 +41,6 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
           view={view}
           token={token}
           language={language}
-          saved={surveySaved}
-          onSaved={() => setSurveySaved(true)}
           onFocusLost={() => {
             lostFocus.current = true;
           }}

@@ -44,16 +44,17 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 ## Checks before done
 
-- Before you report any task done, run `npm test`, `npm run lint` and `npm run build`, and paste the last lines of each (for `npm test`, use `npm test 2>&1 | grep -E "Test Files|Tests "`, because the last lines show only timing). A worker's "Done when:" check comes on top of these, not instead.
+- Before you report any task done, run `npm test`, `npm run lint` and `npm run build`, and paste the last lines of each (for `npm test`, use `npm test 2>&1 | grep -E "Test Files|Tests "`, because the last lines show only timing; for `npm run lint`, use `npm run lint >/dev/null 2>&1; echo "lint exit $?"`, because a clean lint prints nothing). A worker's "Done when:" check comes on top of these, not instead.
 - If a test fails, fix the code, not the test. Never skip, delete or weaken a test to make it pass.
 - For a bug: first write a test in lib/ that shows the bug, run it and see it fail, make a save point, then fix the code without changing that test. If the bug is in a React effect, the test renders the page in `<StrictMode>` (pattern: `app/patient/page.click.test.tsx`).
 - For a change that touches more than one folder, or the database: start in plan mode and get my OK on a plan that names the files, the order of the work, and the tests that prove it.
 - Before you write the plan, search the tests for the behaviour that the plan changes, and name each test that must change in the plan. Name each new function that decides something, and put it in lib/ with a test, also when it is only 3 lines in a component (for example a `beforeSend` filter).
+- Before a plan changes a number or a limit that SPEC.md names (bits, minutes, characters), quote the SPEC line in the plan.
 - If the plan writes to `visits` from the patient side (an RPC), the plan says whether the write raises `version`, and why a staff action after it should or should not be refused (known-issues.md, 2026-11-20).
 - Before you name a new migration, list the migrations on every branch that is open (`git ls-tree --name-only <branch> supabase/migrations/`, for `main` and each worktree branch), and use a number after the highest one. Two sessions can add migrations on the same day.
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
 - Before you remove an import, search the file for other uses of that name.
-- Change docs and code with the Edit tool, never with a Python, sed or heredoc script. In a worktree, a shell write to a project file can be refused.
+- Change or add to docs and code with the Edit tool, never with a Python or sed script or a heredoc (`cat >>`). In a worktree, a shell write to a project file can be refused.
 
 ## Keep the app organized so a beginner can read it
 
@@ -70,7 +71,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 ## Remind me when another model or agent is due
 
-I forget these handoffs. Whenever one of the steps below comes up, stop and give me a short note that starts with "Model handoff:". Name the model and effort level, the file or text to give it, the question to ask, and what to bring back to you. Then wait until I paste the answer back or say "skip". The full workflow is in ai_model_workflow_virtual_er.md. Nothing I paste into another model may contain keys, tokens, passwords or real patient data, so prepare the text with those left out.
+I forget these handoffs. Whenever one of the steps below comes up, stop and give me a short note that starts with "Model handoff:". Name the model and effort level, the file or text to give it, the question to ask, and what to bring back to you. Then wait until I paste the answer back or say "skip". The full workflow is in ai_model_workflow_virtual_er.md. Nothing I paste into another model may contain keys, tokens, passwords, project IDs or real patient data, so prepare the text with those left out; a code bundle leaves out `.mcp.json` and every `.env` file except `.env.example`.
 
 Save every handoff file in the handoffs/ folder of this project, never in a temporary folder. Name it date-model-topic.md (for example 2026-11-09-gemini-review-core-loop.md), and give that path in the "Model handoff:" note.
 
