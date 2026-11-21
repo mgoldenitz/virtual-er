@@ -53,3 +53,60 @@ Settled decisions, do not report them as faults:
 Bundle: `handoffs/2026-11-21-gemini-review-phase5-fixes-bundle.txt` (4762 lines, about 216 KB). It has the diff from `b2446fe^` to `b5cbbff` (docs and handoffs left out, 1386 lines), then the full current text of each changed file that is not a test, so the helpers that the changed lines call are in it. It also has the old `get_patient_visit` (`20261120000000_survey.sql`), the old `delete_old_visits` (`20261116110000_lock_key_and_cron_log_fix.sql`), the step-check trigger (`20261117000000`) and `lib/visit.ts`.
 
 Line counts of the changed files: app/patient/page.click.test.tsx 131, app/patient/page.tsx 126, components/Footer.tsx 12, components/patient/PatientStatus.click.test.tsx 112, components/patient/PatientStatus.sound.click.test.tsx 86, components/patient/PatientStatus.test.tsx 43, components/patient/StatusAndSound.click.test.tsx 107, components/patient/StatusAndSound.tsx 61, components/patient/StillHerePrompt.click.test.tsx 168, components/patient/StillHerePrompt.tsx 131, components/patient/SurveyBox.click.test.tsx 212, components/patient/VisitScreen.click.test.tsx 223, components/patient/VisitScreen.tsx 116, components/staff/CheckInPanel.click.test.tsx 197, components/staff/CheckInPanel.tsx 259, components/staff/FollowUpPanel.tsx 166, components/staff/RecentlyClosed.tsx 105, components/start/StartVisit.click.test.tsx 53, components/start/StartVisit.tsx 206, data/patientVisit.ts 172, data/sitePauses.test.ts 104, data/sitePauses.ts 80, lib/dashboardNumbers.test.ts 293, lib/dashboardNumbers.ts 171, lib/dashboardSynthetic.test.ts 95, lib/deadToken.test.ts 44, lib/followUp.ts 89, lib/notSavedAlert.test.ts 26, lib/notSavedAlert.ts 12, lib/patientView.ts 27, lib/patientViewFromRow.test.ts 84, lib/patientViewFromRow.ts 54, lib/queue.test.ts 98, lib/queue.ts 59, lib/startPage.test.ts 51, lib/stillHere.test.ts 66, lib/stillHere.ts 50, lib/survey.test.ts 72, lib/switchToOffsite.ts 71, lib/text/en.ts 202, lib/visitActions.test.ts 185, lib/visitActions.ts 230, supabase/checks/daily_stats.sql 236, supabase/checks/permissions.sql 74, supabase/migrations/20261121000000_patient_view_offered_at.sql 220.
+
+Added after this handoff was written (`2dd88a6`): `e2e/declined-switch.spec.ts` (52 lines) checks that no "Thank you." shows after a switch. With the fix removed for a short time it failed on phone and laptop ("Thank you." found 1 time); with the fix, the full `npm run e2e` gave 39 passed (2.1 min). The diff is at the end of the bundle.
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-21:
+
+## 1. `lastTapThisWait` (`lib/stillHere.ts`)
+
+* **Millisecond truncation can hide a real tap (or misclassify a sub-millisecond switch)** — `lib/stillHere.ts:33-38`
+* `lastTapThisWait` converts `triagedAt`, `lastStillHereAt`, and `offeredAt` with `new Date(...).getTime()`, discarding Postgres microsecond precision.
+* **Concrete case:** A visit is switched at `2026-11-21T12:00:00.100100Z` (`offered_at` and `last_still_here_at`) and a `record_still_here` RPC commits in the same millisecond at `2026-11-21T12:00:00.100800Z`. `offered === tapped` evaluates `true`, so `lastTapThisWait` returns `null` and hides the tap. (In normal UI use the `"I'm still here"` prompt does not appear until 30 minutes after the switch, so a UI tap only hits the same millisecond if the server clock steps backward; a direct RPC or sub-millisecond test call triggers it immediately.) Conversely, if a switch occurs within the same millisecond as triage (`2026-11-21T12:00:00.100100Z` vs `.100800Z`), `offered > triaged` is `false` and the switch stamp is treated as a real tap.
+* **Normal check-ins:** `applyTriage` (`lib/visitActions.ts:61-76`) clears `last_still_here_at: null` and sets `triaged_at` and `offered_at` to the same `nowIso` (and Postgres `visits_before_write` sets both to `now()`), so `offered > triaged` is `false` and a normal check-in does not match `isSwitchStamp`.
+
+## 2. `20261121000000_patient_view_offered_at.sql`
+
+* **`delete_old_visits` counts `survey_*` metrics on visits whose final status is not `arrived`** — `supabase/migrations/20261121000000_patient_view_offered_at.sql:153-160` (and `lib/dashboardNumbers.ts:102`)
+* The `survey_responses`, `survey_score_sum`, and `survey_9_or_10` branches filter only `where survey_score is not null and closed_at is not null` without requiring `status = 'arrived'`.
+* **Concrete case:** Staff mark a visit `arrived`, the patient submits `survey_score = 9`, staff click `Undo` (leaving `survey_score = 9` on the row), and the visit later closes as `removed` (`left` or `no_show`) or `unable_to_reach`. At 24 hours, `delete_old_visits` counts that non-`arrived` visit in all three survey columns on the new closure day.
+* **`get_patient_visit` and Toronto-date counting:** `get_patient_visit` (`20261121000000_patient_view_offered_at.sql:14-89`) returns all 14 columns expected by `lib/patientViewFromRow.ts:10-48` with `EXECUTE` granted only to `anon` and `authenticated`, and `delete_old_visits` (`lines 123-128, 164`) counts each visit once per metric on `(triaged_at at time zone 'America/Toronto')::date`.
+
+## 3. `VisitScreen.tsx`, `lib/notSavedAlert.ts`, and `app/patient/page.tsx`
+
+* **Alert appears on `arrived`, `removed`, `unable_to_reach`, or `on_the_way` if the status updates while `onOnMyWay` is in flight** — `components/patient/VisitScreen.tsx:48-55`, `app/patient/page.tsx:90-98`
+* `onOnMyWay` sets `notSaved = false` at tap start, which resets `failedIn` to `null` in `VisitScreen`. `VisitScreen` then latches `failedIn` to whatever `view.status` happens to be when `notSaved` next becomes `true`.
+* **Concrete case:** While `view.status === "called"`, the patient taps `"I'm on my way"`. Before `confirmOnMyWayByToken` finishes, a live update or background poll updates `view.status` to `"arrived"` (or `"removed"` / `"on_the_way"`). Then `confirmOnMyWayByToken` fails with a network/502 error (`"not_saved"`) and calls `setNotSaved(true)`. `VisitScreen` sees `failedIn === null` and sets `failedIn = "arrived"`, so `notSavedAlertShows("arrived", "arrived")` returns `true` and renders `"Your answer did not save. Staff do not know you are on your way."` on the `"Status: Ready at the desk"` (or ended) screen.
+* **In-flight `onOnMyWay` failure leaks onto a newly opened visit after `hashchange`** — `app/patient/page.tsx:39-44, 90-98`
+* `readLink` clears `setNotSaved(false)` when `#t=TOKEN_B` opens, but `onOnMyWay` does not check whether `token` changed before calling `setNotSaved(result === "not_saved")`.
+* **Concrete case:** The patient taps `"I'm on my way"` on Visit A (`#t=TOKEN_A`), then immediately opens Visit B (`#t=TOKEN_B`) in the same tab. When `confirmOnMyWayByToken("TOKEN_A")` resolves `"not_saved"`, `setNotSaved(true)` runs on Visit B, and `VisitScreen` sets `failedIn` to Visit B's current status and displays the failed-save alert on Visit B.
+* **Double-tap race while `sending` state has not re-rendered** — `app/patient/page.tsx:25, 90-98`
+* `onOnMyWay` guards only with React state `sending` rather than a synchronous `useRef`.
+* **Concrete case:** Two taps in the same render frame both enter `onOnMyWay`. Call 1 succeeds (`view.status` updates to `"on_the_way"`), while Call 2 fails with a network error (`"not_saved"`) after `view.status` is already `"on_the_way"`, latching `failedIn = "on_the_way"` and showing the alert on the `"on_the_way"` screen.
+
+## 4. Changed tests that check less than before
+
+* **`lib/queue.test.ts` (`lines 38-67` in diff)**
+* Removed `"averages the gaps between the last call-backs"`, `"never gives a gap under 5 minutes, even when call-backs come 1 minute apart"`, and the `averageCallGap([visit("a", 1)], "A")` assertion in `"uses 15 minutes per patient until there is call-back history"` (renamed to `"gives 35 to 60 minutes for place 3 with the 15-minute default gap"`). These covered the deleted `averageCallGap` helper; note that the replacement gap-clamping logic in `lib/patientViewFromRow.ts:30` (`Math.max(row.average_gap_minutes ?? DEFAULT_GAP_MINUTES, MIN_GAP_MINUTES)`) is not tested in any file in this diff.
+* **`lib/dashboardNumbers.test.ts` (`lines 98-100`)**
+* `"does not count a decline unless the offer was made today"` previously passed `visit({ status: "declined", offered_at: yesterday })` without overriding `triaged_at`, and now sets both `triaged_at: yesterday` and `offered_at: yesterday`. No test in the diff verifies the `v.offered_at !== null` guard on `declined` (`lib/dashboardNumbers.ts:113`) when `triaged_at` is today and `offered_at` is `null`.
+* **`lib/dashboardSynthetic.test.ts` (`lines 62-84`)**
+* Changing Visit 18's Site B expectation to `offered: 0, accepted: 0` changed `expect(share(B.accepted, B.offered)).toBe(100)` to `.toBeNull()`, which drops the `share(1, 1)` check on Site B (`0 / 0 -> null` was already tested on the preceding `share(B.offered, B.triaged)` line).
+
+## 5. Other faults in the diff
+
+* **`StillHerePrompt` lacks `key={token}`, leaking `notSaved` and `thanksSpoken` across visits** — `components/patient/StatusAndSound.tsx:31`, `components/patient/StillHerePrompt.tsx:32, 63`
+* Fix D added `key={token}` to `<SurveyBox>` (`StatusAndSound.tsx:41`), but omitted it on `<StillHerePrompt>` (`StatusAndSound.tsx:31`).
+* **Concrete case:** On Visit A (`#t=TOKEN_A`, `status: "waiting"`, prompt due), a tap fails while offline (`notSaved` becomes `true` in `StillHerePrompt`). Opening Visit B (`#t=TOKEN_B`, also `status: "waiting"`, prompt due) via a `#t=` hash link keeps `StillHerePrompt` mounted, so Visit B immediately displays Visit A's red `"Your tap did not save"` alert (and any in-flight `recordStillHere("A")` result lands on Visit B).
+* **`StillHerePrompt` retains stale `notSaved` across prompt cycles if the prompt closes without a tap on this phone** — `components/patient/StillHerePrompt.tsx:32, 72-79`
+* `notSaved` is stored on `StillHerePrompt` (which stays mounted as long as `view.status === "waiting"`) and is only cleared inside `onTap`.
+* **Concrete case:** The patient taps `"I'm still here"` offline (`notSaved` becomes `true`), then confirms from another tab/device (or a background retry succeeds) so `showing` turns `false` and `PromptCard` unmounts. Thirty minutes later, when the next prompt appears (`showing` turns `true`), `notSaved` is still `true` and immediately renders `"Your tap did not save"` before any tap. (Also, `onTap` uses React state `sending` instead of a ref, allowing same-frame double-taps.)
+* **`StartVisit` applies an in-flight start error (or navigation) to the newly chosen site** — `components/start/StartVisit.tsx:139-148, 173-184`
+* The site radio buttons stay enabled while `starting` is `true`.
+* **Concrete case:** The user selects Site A, taps `"Start a visit"` (`starting = true`, `problem = null`), and while `startVisitFromHome("A", language)` is still pending, clicks the Site B radio button (`setSite("B"); setProblem(null);`). When the Site A request fails (`"paused"`, `"busy"`, or `"not_saved"`), `setProblem(result)` displays Site A's error alert below Site B's button (and if it succeeds, navigates to Site A's visit despite Site B being selected).
+* **Duplicate paused banner when a site becomes paused after a `"paused"` submit failure** — `components/start/StartVisit.tsx:187-199`
+* When `problem === "paused"` and a background `/api/site-status` poll updates `pauses[site]` to `true`, `sitePaused` renders `s.paused` (`data-testid="site-paused"`) right above `problem && <p role="alert">` showing the exact same `s.paused` text a second time.
+* **`data/sitePauses.test.ts` still masks `setSitePaused`'s null-store omission with a priming save** — `data/sitePauses.test.ts:87-91`, `data/sitePauses.ts:68`
+* `setSitePaused` still only updates `state.pauses` immediately when `state.pauses` is already non-null (`if (result !== "not_saved" && state.pauses)`), and `data/sitePauses.test.ts:87` still runs an initial un-held `setSitePaused("A", true)` before mounting `Probe` and testing the held re-read, so an immediate update from `state.pauses === null` remains untested and broken.
