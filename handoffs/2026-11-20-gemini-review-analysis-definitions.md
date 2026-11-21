@@ -166,3 +166,29 @@ The current screen line (`"Each step counts the patients who reached that step t
 * **Problem:** A patient who accepts off-site waiting and returns to the desk before being recalled (`status = arrived`, `called_at = null`) counts in `Accepted` and `Answered survey`, bypassing `Recalled` and `Arrived after recall`. Staff see a drop between `Accepted` and `Arrived after recall` (plus surveys exceeding `Arrived after recall`) and assume patients walked out.
 * **Example visit:** `source: "desk"`, `ctas_level: 5`, `status: "arrived"`, `created_at: 2026-11-20T11:00:00-05:00`, `triaged_at: 2026-11-20T11:05:00-05:00`, `offered_at: 2026-11-20T11:05:00-05:00`, `called_at: null`, `arrived_at: 2026-11-20T11:30:00-05:00`, `closed_at: 2026-11-20T11:50:00-05:00`, `survey_score: 9`.
 * **Fix:** Clarify the survey step as **"Answered survey (any ended visit)"** or note on the Funnel that patients who arrive before recall are excluded from `Arrived after recall`.
+
+## Check of the response (Claude, 2026-11-20)
+
+Facts read in this session:
+- A survey is saved only when status is `arrived` and `closed_at` is set (`supabase/migrations/20261120000000_survey.sql:26-27`).
+- A declined-to-waiting switch moves `offered_at` to the switch moment (`lib/switchToOffsite.ts:33`); the database requires `offered_at` after `triaged_at` for a switched visit (`20261119010000_declined_switch_checks.sql:58`).
+- `home_reached_triage` counts on `created_at` in both the live count (`lib/dashboardNumbers.ts:107,152`) and the cleanup (`20261116110000_lock_key_and_cron_log_fix.sql:68`).
+- No allowed step goes from `called` back to `waiting`.
+
+Point by point:
+- 1a (days before the new columns have 0 wait data): valid. Fix: one start date in lib/, days before it show "-" for the new numbers on screen and empty cells in the CSV. Owner decision on the note.
+- 1b (Reached triage date): partly valid. Live and daily_stats agree (both on `created_at`), so no count drifts or drops. The funnel line is wrong for this step. Fix in wording, keep the rule (it is an existing SPEC number).
+- 1c (survey on `closed_at`): valid but not new; SPEC line 112 already sets `closed_at`. No change.
+- 1d (recalled with no triage time): valid as a consistency point. Fix: one filter for Recalled, the average and the bands: `called_at` and `offered_at` set. No new constraint in this plan.
+- 1e (two reads around a cleanup run; open visits deleted at 24 hours): the first is valid but not new; it applies to every dashboard number today, and the next read 15 seconds later corrects it. Fix: a known-issues line, not a new database function now (owner decision). The second is an existing decision (`open_at_deletion`, hard rule 4). No change.
+- 2 (keep all recalled visits): agreed. Label change, owner decision.
+- 3 (wrong start after a declined switch): valid problem; Gemini's new column is not needed. Fix: measure `called_at` minus `offered_at`.
+- 4A (seconds bands against a rounded average): valid. Fix: band by whole minutes rounded the same way as the average.
+- 4B (units): valid. Fix: follow the existing SPEC style, minutes in the label ("Average minutes from offer to recall: 52 (7 visits)"), bands "Under 30 minutes", "30 to 59 minutes", "60 to 119 minutes", "120 minutes or more".
+- 5 (funnel line): valid for desk visits and early arrivals. Not valid for the "left with a survey" example (only `arrived` visits can answer). Wording is an owner decision.
+- 6 (CSV): valid. Fix: keep today out, a message when there are no past days, empty cells instead of "-", raw count columns next to each share and average.
+- 7a (count next to a percent): valid. Fix: same form as Today, "8 of 10 (80%)".
+- 7b (`triaged` header): valid. Fix: "Triaged CTAS 4 or 5".
+- 7c (still-waiting patients not in the average): valid for the label. The longest current wait is a new number, not in this plan.
+- 7d (counts and date anchors in the trend): valid. Fix: counts in brackets, one note line.
+- 7e (early arrivals): valid; covered by the funnel wording.
