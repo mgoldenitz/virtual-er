@@ -84,9 +84,9 @@ describe("dashboardNumbers: triage and offers", () => {
   it("counts offers and declines made today, and works out accepted", () => {
     const n = siteA(
       [
-        visit({ offered_at: thisDay }),
-        visit({ offered_at: thisDay, status: "declined" }),
-        visit({ offered_at: thisDay, status: "declined" }),
+        visit({ triaged_at: thisDay, offered_at: thisDay }),
+        visit({ triaged_at: thisDay, offered_at: thisDay, status: "declined" }),
+        visit({ triaged_at: thisDay, offered_at: thisDay, status: "declined" }),
       ],
       [statsRow({ offered: 3, declined: 1 })],
     );
@@ -96,7 +96,16 @@ describe("dashboardNumbers: triage and offers", () => {
   });
 
   it("does not count a decline unless the offer was made today", () => {
-    const n = siteA([visit({ status: "declined", offered_at: yesterday })]);
+    const n = siteA([visit({ status: "declined", triaged_at: yesterday, offered_at: yesterday })]);
+    expect(n.declined).toBe(0);
+  });
+
+  it("counts a switched visit as offered on its triage day, not the switch day", () => {
+    const n = siteA([
+      visit({ triaged_at: yesterday, offered_at: thisDay, status: "waiting", ctas_level: 4 }),
+      visit({ triaged_at: yesterday, offered_at: thisDay, status: "declined", ctas_level: 4 }),
+    ]);
+    expect(n.offered).toBe(0);
     expect(n.declined).toBe(0);
   });
 });
@@ -233,7 +242,7 @@ describe("dashboardNumbers: demo and site rules", () => {
   });
 
   it("uses the Toronto date, so 04:30 UTC on the 19th is still the 18th", () => {
-    const n = siteA([visit({ offered_at: "2026-11-19T04:30:00.000Z" })]);
+    const n = siteA([visit({ triaged_at: "2026-11-19T04:30:00.000Z", offered_at: "2026-11-19T04:30:00.000Z" })]);
     expect(n.offered).toBe(1);
   });
 
@@ -251,7 +260,7 @@ describe("dashboardNumbers: demo and site rules", () => {
 
   it("adds stats to live visits", () => {
     const n = siteA(
-      [visit({ offered_at: thisDay }), visit({ offered_at: thisDay })],
+      [visit({ triaged_at: thisDay, offered_at: thisDay }), visit({ triaged_at: thisDay, offered_at: thisDay })],
       [statsRow({ offered: 3 })],
     );
     expect(n.offered).toBe(5);
