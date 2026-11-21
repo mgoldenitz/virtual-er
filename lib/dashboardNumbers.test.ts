@@ -100,6 +100,13 @@ describe("dashboardNumbers: triage and offers", () => {
     expect(n.declined).toBe(0);
   });
 
+  // A decline counts only with an offer time (Gemini review of the Phase 5 fixes, point 4b, 2026-11-21).
+  it("does not count a declined visit with no offer time", () => {
+    const n = siteA([visit({ status: "declined", triaged_at: thisDay, offered_at: null })]);
+    expect(n.offered).toBe(0);
+    expect(n.declined).toBe(0);
+  });
+
   it("counts a switched visit as offered on its triage day, not the switch day", () => {
     const n = siteA([
       visit({ triaged_at: yesterday, offered_at: thisDay, status: "waiting", ctas_level: 4 }),
