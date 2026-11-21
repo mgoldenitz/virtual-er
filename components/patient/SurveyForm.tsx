@@ -44,6 +44,11 @@ export function SurveyForm({ token, language, onSaved }: Props) {
     <form onSubmit={onSubmit} className="clean-card space-y-3">
       <fieldset aria-describedby={scaleId} className="space-y-3">
         <legend className="text-lg font-bold">{t.question}</legend>
+        {/* The 0 and 10 labels come before the scores, so a screen reader reads what the ends mean first. */}
+        <div id={scaleId} className="flex justify-between gap-2 text-sm">
+          <span>{t.low}</span>
+          <span>{t.high}</span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {SCORES.map((n) => (
             <label
@@ -62,14 +67,11 @@ export function SurveyForm({ token, language, onSaved }: Props) {
             </label>
           ))}
         </div>
-        <div id={scaleId} className="flex justify-between gap-2 text-sm">
-          <span>{t.low}</span>
-          <span>{t.high}</span>
-        </div>
       </fieldset>
       <p className="text-sm">{t.note}</p>
       <Button type="submit" aria-disabled={score === null || sending} className="w-full text-lg">
-        {t.submit}
+        {/* The same "Sending…" words as the "I'm on my way" button (PatientStatus.tsx). */}
+        {sending ? textFor(language).patient.sending : t.submit}
       </Button>
       {notSaved && (
         <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
