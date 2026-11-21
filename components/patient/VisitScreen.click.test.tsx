@@ -6,6 +6,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PatientView } from "@/lib/patientView";
+import type { VisitStatus } from "@/lib/visit";
 import { textFor } from "@/lib/text";
 import { playAlert, stopVibration, unlockSound } from "./alertSound";
 import { VisitScreen } from "./VisitScreen";
@@ -55,7 +56,7 @@ const show = (result: PatientView | null | "unavailable" | undefined, linkFailed
         onOnMyWay={() => {}}
         sending={false}
         online
-        notSaved={false}
+        notSavedIn={null}
       />,
     ),
   );
@@ -134,7 +135,7 @@ describe("VisitScreen when the whole screen changes", () => {
           onOnMyWay={() => {}}
           sending={false}
           online
-          notSaved={false}
+          notSavedIn={null}
         />,
       ),
     );
@@ -147,8 +148,8 @@ describe("VisitScreen when the whole screen changes", () => {
 });
 
 describe("VisitScreen did-not-save alert", () => {
-  /** Shows the visit with the on-my-way save marked as not saved. */
-  const showSaveFailure = (view: PatientView) =>
+  /** Shows the visit with the on-my-way save marked as not saved, in the status the patient tapped in. */
+  const showSaveFailure = (view: PatientView, tappedIn: VisitStatus) =>
     act(() =>
       root.render(
         <VisitScreen
@@ -160,24 +161,33 @@ describe("VisitScreen did-not-save alert", () => {
           onOnMyWay={() => {}}
           sending={false}
           online
-          notSaved
+          notSavedIn={tappedIn}
         />,
       ),
     );
+  const called: PatientView = { ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" };
 
   it("drops the did-not-save alert when the visit moves on to called after the failed save", () => {
-    showSaveFailure(waiting);
+    showSaveFailure(waiting, "waiting");
     expect(container.querySelector('[role="alert"]')?.textContent).toBe(p.notSaved);
-    showSaveFailure({ ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" });
+    showSaveFailure(called, "waiting");
     expect(container.querySelector('[role="alert"]')).toBeNull();
   });
 
   it("does not bring the old alert back when an Undo returns the visit to called", () => {
-    const called: PatientView = { ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" };
-    showSaveFailure(called);
+    showSaveFailure(called, "called");
     expect(container.querySelector('[role="alert"]')?.textContent).toBe(p.notSaved);
-    showSaveFailure({ ...called, status: "arrived", closed: true });
-    showSaveFailure(called);
+    showSaveFailure({ ...called, status: "arrived", closed: true }, "called");
+    showSaveFailure(called, "called");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  // Gemini review of the Phase 5 fixes, point 3a (2026-11-21): the tap was in "called", and staff
+  // moved the visit back to "waiting" before the failed reply came. The alert must not show.
+  it("shows no alert when the failed reply comes after staff changed the status", () => {
+    showSaveFailure(waiting, "called");
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    showSaveFailure(called, "called");
     expect(container.querySelector('[role="alert"]')).toBeNull();
   });
 });
@@ -197,7 +207,7 @@ describe("VisitScreen help on the no-visit, broken-link and replaced-link screen
           onOnMyWay={() => {}}
           sending={false}
           online
-          notSaved={false}
+          notSavedIn={null}
         />,
       ),
     );
