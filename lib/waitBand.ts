@@ -7,6 +7,8 @@ export type WaitBand = "under_30" | "30_to_59" | "60_to_119" | "120_plus";
 
 export function waitBand(seconds: number): WaitBand {
   const minutes = Math.round(seconds / 60);
-  // TODO(human): return the band for these whole minutes.
-  return "under_30";
+  if (minutes < 30) return "under_30";
+  if (minutes < 60) return "30_to_59";
+  if (minutes < 120) return "60_to_119";
+  return "120_plus";
 }
