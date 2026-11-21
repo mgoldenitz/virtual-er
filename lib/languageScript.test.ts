@@ -81,6 +81,11 @@ describe("languageScript", () => {
     expect(attrs[LANGUAGE_WAIT_ATTR]).toBe("fr");
   });
 
+  it("on the patient page, a link in English wins over a saved Arabic, so nothing is hidden", () => {
+    // The patient page saves the link's English, so React never renders Arabic.
+    expect(runScript("/patient", storageWith("ar"), "#t=abc&l=en").attrs).toEqual({});
+  });
+
   it("on the start page, does not read a language from the link", () => {
     expect(runScript("/", storageWith("ar"), "#l=fr").attrs.lang).toBe("ar");
   });

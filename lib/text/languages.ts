@@ -22,6 +22,12 @@ export const LANGUAGES: LanguageInfo[] = [
 
 export const LANGUAGE_CODES = LANGUAGES.map((l) => l.code);
 
+/** The browser storage key that remembers the language chosen on this phone. */
+export const LANGUAGE_KEY = "vwr.language";
+
+/** The "l=" part of a desk QR link. The head script (lib/languageScript.ts) uses the same rule. */
+export const LINK_LANGUAGE_PATTERN = /[#&]l=([a-z]{2,3})(?:&|$)/;
+
 /** The language's details; English for an unknown code. */
 export function languageInfo(code: string | null | undefined): LanguageInfo {
   return LANGUAGES.find((l) => l.code === code) ?? LANGUAGES[0];
@@ -37,7 +43,7 @@ export function menuLabel(info: LanguageInfo): string {
  * the visit, so a patient who scans the slip sees their language even before the visit loads.
  */
 export function linkLanguage(hash: string): string | null {
-  const match = hash.match(/[#&]l=([a-z]{2,3})(?:&|$)/);
+  const match = hash.match(LINK_LANGUAGE_PATTERN);
   return match && LANGUAGE_CODES.includes(match[1]) ? match[1] : null;
 }
 

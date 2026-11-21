@@ -3,9 +3,8 @@
 // Nothing else about the patient is stored.
 
 import { useSyncExternalStore } from "react";
-import { LANGUAGE_CODES } from "@/lib/text/languages";
+import { LANGUAGE_CODES, LANGUAGE_KEY } from "@/lib/text/languages";
 
-const LANGUAGE_KEY = "vwr.language";
 const listeners = new Set<() => void>();
 let chosen: string | null | undefined; // undefined = not read from storage yet
 
