@@ -60,7 +60,7 @@ export function RecentlyClosed({ visits, site, onUndoResult, onReopened }: Props
           : `Could not ${reopening ? "reopen" : "undo"} visit ${visit.code}: it changed since it was closed.`;
     setNotes({ ...notes, [visit.id]: note });
     if (result === "saved" && reopening) {
-      onUndoResult(`Reopened: visit ${visit.code} needs reassessment. Triage the patient again below.`, true);
+      onUndoResult(`Reopened: visit ${visit.code} needs reassessment. Triage the patient again in the check-in panel.`, true);
       onReopened(visit);
       return;
     }
