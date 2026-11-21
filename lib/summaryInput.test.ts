@@ -20,6 +20,12 @@ const KEYS = [
   "surveyResponses",
   "surveyScoreSum",
   "survey9or10",
+  "recalled",
+  "offerToCallSeconds",
+  "waitUnder30",
+  "wait30to59",
+  "wait60to119",
+  "wait120plus",
 ];
 
 function numbers(base: number): SiteNumbers {
@@ -31,7 +37,7 @@ function numbers(base: number): SiteNumbers {
 }
 
 describe("summary input", () => {
-  it("gives each site exactly the 17 SiteNumbers keys, all numbers", () => {
+  it("gives each site exactly the 23 SiteNumbers keys, all numbers", () => {
     const out = summaryInput({ A: numbers(1), B: numbers(100) }, true);
     expect(Object.keys(out.sites).sort()).toEqual(["A", "B"]);
     for (const site of ["A", "B"] as const) {
@@ -42,6 +48,10 @@ describe("summary input", () => {
     }
     expect(out.sites.B.waitingNow).toBe(100);
     expect(out.sites.A.survey9or10).toBe(1 + 16);
+    // The wait numbers (owner OK, 2026-11-21) keep their own values.
+    expect(out.sites.A.recalled).toBe(1 + 17);
+    expect(out.sites.A.offerToCallSeconds).toBe(1 + 18);
+    expect(out.sites.B.wait120plus).toBe(100 + 22);
   });
 
   it("leaves out an extra field that is not a SiteNumbers field, such as a visit code", () => {

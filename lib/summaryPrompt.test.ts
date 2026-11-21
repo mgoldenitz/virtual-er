@@ -15,6 +15,17 @@ describe("summary prompt", () => {
     expect(summarySystemPrompt()).toMatch(/never give medical or clinical advice/i);
   });
 
+  it("tells Claude how to read the wait numbers, and to give no average when recalled is 0", () => {
+    const waitRule = SUMMARY_RULES.find((r) => r.includes("offerToCallSeconds"));
+    expect(waitRule).toBeDefined();
+    expect(waitRule).toMatch(/sum/i);
+    expect(waitRule).toContain("recalled");
+    const bandRule = SUMMARY_RULES.find((r) => r.includes("waitUnder30"));
+    expect(bandRule).toBeDefined();
+    for (const band of ["wait30to59", "wait60to119", "wait120plus"]) expect(bandRule).toContain(band);
+    expect(SUMMARY_RULES.some((r) => /recalled is 0/.test(r))).toBe(true);
+  });
+
   it("has one rule per line", () => {
     expect(summarySystemPrompt().split("\n")).toHaveLength(SUMMARY_RULES.length);
   });
