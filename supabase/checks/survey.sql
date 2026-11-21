@@ -6,7 +6,10 @@
 -- The synthetic visits start as waiting (the step trigger refuses a new visit as arrived) and
 -- then move along allowed steps, as the staff screen does.
 --
--- Expected result: 11 rows, each with result = ok.
+-- Cases 12 and 13 (20261120010000_survey_keeps_version.sql): the score alone does not raise the
+-- version, so a staff Undo right after the survey is not refused; other changes still raise it.
+--
+-- Expected result: 13 rows, each with result = ok.
 
 begin;
 
@@ -25,6 +28,10 @@ update public.visits set status = 'on_the_way', confirmed_at = now() where code 
 update public.visits set status = 'removed', removed_reason = 'left', closed_at = now() where code = 'ZZZZ5C';
 
 create temp table survey_rows (check_case text, expected text, got text);
+
+-- The versions before the survey (case 12) and before another change (case 13).
+create temp table versions_before as
+  select code, version from public.visits where code in ('ZZZZ5A', 'ZZZZ5B');
 
 insert into survey_rows select '1 on the way, not closed: refused', 'false',
   public.submit_survey('ZZZZZZZZZZZZZZZZZZZZZZZZS1', 7)::text;
@@ -48,6 +55,14 @@ insert into survey_rows select '10 survey_done after the score', 'true',
   (select survey_done::text from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZS0'));
 insert into survey_rows select '11 survey_done with no score', 'false',
   (select survey_done::text from public.get_patient_visit('ZZZZZZZZZZZZZZZZZZZZZZZZS3'));
+insert into survey_rows select '12 the survey keeps the version',
+  (select version::text from versions_before where code = 'ZZZZ5A'),
+  (select version::text from public.visits where code = 'ZZZZ5A');
+
+update public.visits set last_still_here_at = now() where code = 'ZZZZ5B';
+insert into survey_rows select '13 another change still raises the version',
+  (select (version + 1)::text from versions_before where code = 'ZZZZ5B'),
+  (select version::text from public.visits where code = 'ZZZZ5B');
 
 select check_case, expected, got,
        case when got is not distinct from expected then 'ok' else 'FAIL' end as result
