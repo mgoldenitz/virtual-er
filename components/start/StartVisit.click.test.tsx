@@ -12,7 +12,9 @@ import { StartVisit } from "./StartVisit";
 // The start save, the saved phone token, the site pause switch and the router are replaced, so each test controls them.
 vi.mock("@/data/patientVisit", () => ({ startVisitFromHome: vi.fn(), usePatientView: () => null }));
 vi.mock("@/data/savedToken", () => ({ loadSavedToken: () => null }));
-vi.mock("@/data/sitePauses", () => ({ useSitePauses: () => ({ pauses: { A: false, B: false } }) }));
+// The pause switch value each test sets; the mock reads it on every render.
+let pausesNow: { A: boolean; B: boolean } = { A: false, B: false };
+vi.mock("@/data/sitePauses", () => ({ useSitePauses: () => ({ pauses: pausesNow }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 
 // Tells React that this file runs its updates inside act().
@@ -33,6 +35,7 @@ beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  pausesNow = { A: false, B: false };
   vi.mocked(startVisitFromHome).mockReset().mockResolvedValue("saved");
 });
 
@@ -49,5 +52,33 @@ describe("StartVisit start problem", () => {
     expect(alertBox()?.textContent).toBe(s.notSaved);
     await act(async () => siteRadios()[1]?.click());
     expect(alertBox()).toBeNull();
+  });
+
+  it("shows the paused text one time when a refused start's site becomes paused", async () => {
+    vi.mocked(startVisitFromHome).mockResolvedValueOnce("paused");
+    show();
+    await act(async () => startButton()?.click());
+    expect(alertBox()?.textContent).toBe(s.paused);
+    // The pause store now says site A is paused; the screen re-renders with that value.
+    pausesNow = { A: true, B: false };
+    show();
+    const pausedTexts = [...container.querySelectorAll("*")].filter((el) => el.textContent === s.paused);
+    expect(pausedTexts).toHaveLength(1);
+  });
+
+  it("locks the site radios while a start is saving", async () => {
+    let finishStart: (result: "not_saved") => void = () => {};
+    vi.mocked(startVisitFromHome).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishStart = resolve;
+      }),
+    );
+    show();
+    act(() => startButton()?.click());
+    // A radio is locked when it is disabled itself or sits in a disabled fieldset.
+    const locked = (radio: HTMLInputElement) => radio.disabled || radio.closest("fieldset")?.disabled === true;
+    expect(siteRadios().every(locked)).toBe(true);
+    await act(async () => finishStart("not_saved"));
+    expect(siteRadios().some(locked)).toBe(false);
   });
 });
