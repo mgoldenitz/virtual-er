@@ -52,6 +52,11 @@ describe("SiteNumbers", () => {
       "Survey responses",
       "Average score (0 to 10)",
       "Scored 9 or 10",
+      "Average minutes from offer to recall",
+      "Under 30 minutes",
+      "30 to 59 minutes",
+      "60 to 119 minutes",
+      "120 minutes or more",
     ];
     for (const label of labels) expect(text()).toContain(label);
   });
@@ -67,6 +72,19 @@ describe("SiteNumbers", () => {
     expect(container.innerHTML).toContain("no data yet");
     expect(text()).toContain("0 of 0 triaged (-no data yet)");
     expect(text()).not.toContain("NaN");
+  });
+
+  it("shows the average off-site wait with its count, and the 4 band counts", () => {
+    // 3 recalled visits, 9000 seconds in all: 50 minutes on average.
+    show({ ...zero, recalled: 3, offerToCallSeconds: 9000, waitUnder30: 1, wait30to59: 0, wait60to119: 2, wait120plus: 0 });
+    expect(text()).toContain("Average minutes from offer to recall50 (3 visits)");
+    expect(text()).toContain("Under 30 minutes1");
+    expect(text()).toContain("60 to 119 minutes2");
+  });
+
+  it("shows the no-data dash for the off-site wait when no one was recalled", () => {
+    show(zero);
+    expect(text()).toContain("Average minutes from offer to recall-no data yet (0 visits)");
   });
 
   it("says 1 visit in the singular", () => {
