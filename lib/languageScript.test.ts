@@ -74,6 +74,15 @@ describe("languageScript", () => {
     expect(runScript("/dashboard", storageWith("ar")).attrs).toEqual({});
   });
 
+  it("does nothing on a path that only starts like the patient page", () => {
+    // A 404 such as /patient/unknown never runs the language hook, so nothing would show the page.
+    for (const path of ["/patient/unknown", "/patients"]) {
+      const { attrs, timers } = runScript(path, storageWith("ar"), "#t=abc&l=fr");
+      expect(attrs).toEqual({});
+      expect(timers).toEqual([]);
+    }
+  });
+
   it("on the patient page, uses the language in the link before the saved one", () => {
     const { attrs } = runScript("/patient", storageWith("ar"), "#t=abc&l=fr");
     expect(attrs.lang).toBe("fr");
