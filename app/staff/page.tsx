@@ -23,6 +23,7 @@ import { VisitSlip } from "@/components/staff/VisitSlip";
 import { WaitingOnSite } from "@/components/staff/WaitingOnSite";
 import { StaffShell } from "@/components/staff/StaffShell";
 import { Button } from "@/components/Button";
+import { useRescueFocus } from "@/components/patient/useFocusRescue";
 import { useNow } from "@/components/useNow";
 
 export default function StaffPage() {
@@ -43,6 +44,10 @@ export default function StaffPage() {
     if (homeVisit) document.getElementById("checkin-heading")?.focus();
   }, [homeVisit]);
   const listHeading = useRef<HTMLHeadingElement>(null);
+  // Another screen took a patient off the list while a button in that row had focus:
+  // focus goes to the list heading, so it is never lost.
+  const lostRowFocus = useRef(false);
+  const markRowLost = useRescueFocus("list-heading", lostRowFocus);
 
   // A patient just left the list: say so, and move keyboard focus from the vanished row
   // to the list heading, so it is never lost.
@@ -161,6 +166,7 @@ export default function StaffPage() {
                   now={now}
                   onShowSlip={setSlip}
                   onLeftList={onLeftList}
+                  onFocusLost={markRowLost}
                 />
               ))}
             </ol>
