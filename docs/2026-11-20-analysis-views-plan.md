@@ -52,6 +52,11 @@ Each step: a `builder` brief with a "Done when:" check, my own run of that check
    - `CsvButton.tsx` (new): "Download past 7 days (CSV)", a Blob download named `virtual-er-stats-real-2026-11-20.csv` (or `-demo-`).
    - `DashboardView.tsx`: adds the 3 new parts under the site numbers.
    Save point.
+8. Claude summary (owner OK, 2026-11-21; only after step 7, so the summary never names a number staff cannot see):
+   - `lib/summaryInput.ts`: copy the 6 wait fields by name (`recalled`, `offerToCallSeconds`, the 4 band counts) and remove the `SummarySite` Omit type. 23 fields per site.
+   - `lib/summaryPrompt.ts`: new lines in `SUMMARY_RULES`: `offerToCallSeconds` is a total in seconds over `recalled` visits; the 4 bands count only recalled visits; say "no data yet" when `recalled` is 0.
+   - `lib/summaryInput.test.ts`: the key check goes from 17 to 23 keys. `lib/summaryPrompt.test.ts`: the rule-count test follows `SUMMARY_RULES`, so no change.
+   - Model handoff: Gemini Hydrogen 4, High, in a new chat, a short review of the 6 new fields against SPEC rule 1 and of the new rule lines. Save point.
 
 ## Tests that must change
 
