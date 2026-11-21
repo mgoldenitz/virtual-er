@@ -110,8 +110,13 @@ A "Show" switch with two buttons, Real (first, and on when the page opens; not s
 - No-shows (status removed, removed_reason no_show), Unable to reach (nurse confirmed) (status unable_to_reach), Left (status removed, removed_reason left): on closed_at.
 - Started from home: source home, on created_at. Reached triage: those of them with triaged_at set.
 - Survey responses, Average score (0 to 10), Scored 9 or 10: visits with a survey_score, on closed_at.
+- Recalled: called_at and offered_at set, on called_at. A visit is called only once. All recalled visits count, also when they later became needs_reassessment, no_show or unable_to_reach.
+- Average minutes from offer to recall: "52 (7 visits)". called_at minus offered_at, over the Recalled visits, on called_at. It starts at offered_at, because a declined-to-waiting switch moves offered_at to the switch time. Patients still waiting are not in it.
+- Wait bands: the same visits, by whole minutes rounded like the average: "Under 30 minutes", "30 to 59 minutes", "60 to 119 minutes", "120 minutes or more".
 
 Percentages and minutes round to whole numbers; the average score rounds to one decimal place. A share or average whose bottom number is 0 shows "-" on screen, with the screen-reader text "no data yet". (Owner, 2026-11-18, the Gemini metric review and the dashboard plan: replaces the earlier list, whose offered percentage was always 100%.)
+
+"Past 7 days": the 7 dates before today, each counted by the same rules as "Today". A share shows its count ("8 of 10 (80%)"), and an average shows its count in brackets. The wait numbers start on the date their migration runs. A day before that date shows "-" with the note "Wait numbers start on <date>." A funnel of today's counts (Started from home, Reached triage, Triaged CTAS 4 or 5, Offered, Accepted, Recalled, Arrived after recall, Answered survey) shows counts only, with the line "Each row counts what happened today. Desk patients join at Triaged, and some patients come back before a recall, so a lower row can be larger." Staff can download the past 7 days as CSV, for the mode on screen. The CSV has the same numbers plus the raw counts, has empty cells before the start date, and does not include today, codes, tokens or visit times. (Owner, 2026-11-20, the Gemini review of the analysis definitions.)
 
 ### Demo mode (staff only)
 
