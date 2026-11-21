@@ -13,6 +13,7 @@ import { startVisitFromHome, usePatientView, type StartResult } from "@/data/pat
 import { loadSavedToken } from "@/data/savedToken";
 import { useSitePauses } from "@/data/sitePauses";
 import { startPageState } from "@/lib/startPage";
+import { startProblemShows } from "@/lib/startProblem";
 import { fill, textFor } from "@/lib/text";
 import type { Site } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -163,7 +164,8 @@ export function StartVisit({ language }: { language: string }) {
           {s.startHeading}
         </h2>
         <p>{s.startIntro}</p>
-        <fieldset>
+        {/* Locked while a start saves, so a failed start's alert never shows under the other site. */}
+        <fieldset disabled={starting}>
           <legend className="font-semibold">{s.siteQuestion}</legend>
           <div className="mt-2 flex flex-wrap gap-3">
             {(["A", "B"] as const).map((option) => (
@@ -195,7 +197,7 @@ export function StartVisit({ language }: { language: string }) {
             {starting ? s.starting : s.startButton}
           </Button>
         )}
-        {problem && (
+        {problem && startProblemShows(problem, sitePaused) && (
           <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">
             {problemText[problem]}
           </p>

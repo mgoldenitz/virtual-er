@@ -4,9 +4,8 @@ import type { StartResult } from "@/data/patientVisit";
 
 export type StartProblem = Exclude<StartResult, "saved">;
 
-/** Stub: always shows the problem. The real rule is written after the test. */
+/** True when the problem text shows. A "paused" refusal hides while the site-paused box already says the same words. */
 export function startProblemShows(problem: StartProblem | null, sitePaused: boolean): boolean {
-  void problem;
-  void sitePaused;
-  return true;
+  if (problem === null) return false;
+  return !(problem === "paused" && sitePaused);
 }
