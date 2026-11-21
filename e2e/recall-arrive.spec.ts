@@ -7,6 +7,8 @@ import { openPatient } from "./helpers/patient";
 import { openStaff } from "./helpers/staff";
 
 const EMERGENCY = "If your symptoms get worse, call 911 or come back to the emergency department now.";
+// The survey's fieldset has this question as its name. (The text size switch has radio buttons too.)
+const SURVEY = "How would you rate your waiting experience?";
 
 test("recall, on the way, arrived, the survey, then undo and arrive again",async ({ browser }) => {
   const staff = await openStaff(browser);
@@ -43,7 +45,7 @@ test("recall, on the way, arrived, the survey, then undo and arrive again",async
     await patient.getByRole("radio", { name: "8" }).check();
     await patient.getByRole("button", { name: "Submit" }).click();
     await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toBeVisible();
-    await expect(patient.getByRole("radio")).toHaveCount(0);
+    await expect(patient.getByRole("group", { name: SURVEY })).toHaveCount(0);
     expect(await axeFaults(patient)).toEqual([]);
 
     // Undo in Recently closed: the row shows on the list again.
@@ -58,7 +60,7 @@ test("recall, on the way, arrived, the survey, then undo and arrive again",async
     await row.getByRole("button", { name: "Mark arrived" }).click();
     await expect(patient.getByRole("heading", { name: "Status: Ready at the desk" })).toBeVisible();
     await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toBeVisible();
-    await expect(patient.getByRole("radio")).toHaveCount(0);
+    await expect(patient.getByRole("group", { name: SURVEY })).toHaveCount(0);
   } finally {
     await staff.context().close();
     await patient.context().close();
