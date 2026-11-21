@@ -58,7 +58,8 @@ export function TrendTable({ site, trend }: Props) {
 
   return (
     <section className="glass-panel space-y-2">
-      <div className="overflow-x-auto" role="region" aria-label={caption} tabIndex={0}>
+      {/* "relative" keeps the absolute sr-only words inside this box, or the phone page scrolls sideways. */}
+      <div className="relative overflow-x-auto" role="region" aria-label={caption} tabIndex={0}>
         <table className="w-full border-collapse text-sm">
           <caption className="mb-2 text-left text-lg font-bold">{caption}</caption>
           <thead>
