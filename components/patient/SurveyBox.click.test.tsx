@@ -110,3 +110,107 @@ describe("SurveyBox", () => {
     expect(container.textContent).toBe("");
   });
 });
+
+// The faults found in the Gemini Hydrogen 4 review (handoffs/2026-11-20-gemini-review-survey.md).
+describe("SurveyBox after the Gemini review", () => {
+  const onSaved = vi.fn();
+  const onFocusLost = vi.fn();
+  function showWith(view: PatientView, saved = false) {
+    act(() =>
+      root.render(
+        <SurveyBox view={view} token="t" language="en" saved={saved} onSaved={onSaved} onFocusLost={onFocusLost} />,
+      ),
+    );
+  }
+  beforeEach(() => {
+    onSaved.mockClear();
+    onFocusLost.mockClear();
+  });
+
+  // Owner decision 2026-11-21. aria-disabled, not disabled, so a button with focus keeps it.
+  it("makes Submit look off until a score is picked, and never uses the disabled attribute", () => {
+    showWith(arrived);
+    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
+    expect(submit()?.hasAttribute("disabled")).toBe(false);
+    pick(4);
+    expect(submit()?.getAttribute("aria-disabled")).not.toBe("true");
+  });
+
+  it("keeps the disabled attribute off while the score is sending", async () => {
+    vi.mocked(submitSurvey).mockReturnValue(new Promise(() => {}));
+    showWith(arrived);
+    pick(4);
+    await act(async () => submit()?.click());
+    expect(submit()?.hasAttribute("disabled")).toBe(false);
+    expect(submit()?.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it.each([0, 10])("sends the edge score %s", async (n) => {
+    showWith(arrived);
+    pick(n);
+    await act(async () => submit()?.click());
+    expect(submitSurvey).toHaveBeenCalledWith("t", n);
+  });
+
+  it("takes the not-saved line away at a new Submit, so a second failure is announced again", async () => {
+    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
+    showWith(arrived);
+    pick(5);
+    await act(async () => submit()?.click());
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    let answer: (r: "not_saved") => void = () => {};
+    vi.mocked(submitSurvey).mockReturnValue(new Promise((r) => (answer = r)));
+    await act(async () => submit()?.click());
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    await act(async () => answer("not_saved"));
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(s.notSaved);
+  });
+
+  it("takes the not-saved line away when the patient picks a new score", async () => {
+    vi.mocked(submitSurvey).mockResolvedValue("not_saved");
+    showWith(arrived);
+    pick(5);
+    await act(async () => submit()?.click());
+    pick(6);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("shows the 0 and 10 words before the scores and names them on the group", () => {
+    showWith(arrived);
+    const ids = container.querySelector("fieldset")?.getAttribute("aria-describedby")?.split(" ") ?? [];
+    const words = ids.map((id) => document.getElementById(id));
+    expect(words.map((w) => w?.textContent)).toEqual([s.low, s.high]);
+    const firstRadio = radios()[0];
+    expect(words[0]?.compareDocumentPosition(firstRadio) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("sends one time when Submit is pressed twice quickly", async () => {
+    showWith(arrived);
+    pick(7);
+    await act(async () => {
+      submit()?.click();
+      submit()?.click();
+    });
+    expect(submitSurvey).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the save, so the thank-you can show before the read is back", async () => {
+    showWith(arrived);
+    pick(7);
+    await act(async () => submit()?.click());
+    expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it("says thank you when this phone saved the score, also if the read still says not done", () => {
+    showWith(arrived, true);
+    expect(container.textContent).toContain(s.thanks);
+    expect(radios()).toHaveLength(0);
+  });
+
+  it("reports lost focus when an Undo takes the form away with focus inside it", () => {
+    showWith(arrived);
+    radios()[3].focus();
+    showWith({ ...arrived, status: "on_the_way", closed: false });
+    expect(onFocusLost).toHaveBeenCalledTimes(1);
+  });
+});

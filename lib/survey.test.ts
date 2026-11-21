@@ -50,6 +50,16 @@ describe("which survey step the patient sees (SPEC line 69, hard rule 5)", () =>
     expect(surveyStep({ ...arrived, status, closed: false })).toBeNull();
     expect(surveyStep({ ...arrived, status, surveyDone: true })).toBeNull();
   });
+
+  // The phone saved the score, but the read after it failed, so surveyDone is still false.
+  it("says thank you when this phone saved the score and the read is not back yet", () => {
+    expect(surveyStep(arrived, true)).toBe("thanks");
+  });
+
+  it("shows nothing after an Undo, also when this phone saved the score", () => {
+    expect(surveyStep({ ...arrived, status: "on_the_way", closed: false }, true)).toBeNull();
+    expect(surveyStep({ ...arrived, closed: false }, true)).toBeNull();
+  });
 });
 
 describe("a survey score", () => {
