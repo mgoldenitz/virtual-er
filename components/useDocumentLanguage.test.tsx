@@ -22,6 +22,7 @@ const html = () => document.documentElement;
 beforeEach(() => {
   html().setAttribute("lang", "en");
   html().setAttribute("dir", "ltr");
+  html().removeAttribute("data-lang-wait");
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -57,6 +58,24 @@ describe("useDocumentLanguage", () => {
       ),
     );
     expect(seen).toBe("rtl");
+    act(() => root.unmount());
+  });
+
+  it("shows the hidden page only when it renders the language the head script waits for", () => {
+    // The head script (lib/languageScript.ts) set this before React loaded.
+    html().setAttribute("data-lang-wait", "ur");
+    // While loading, React first renders in English, as the server did: the page stays hidden.
+    act(() => root.render(<Screen language="en" />));
+    expect(html().getAttribute("data-lang-wait")).toBe("ur");
+    // Then React renders with the saved language: the page shows.
+    act(() => root.render(<Screen language="ur" />));
+    expect(html().hasAttribute("data-lang-wait")).toBe(false);
+    act(() => root.unmount());
+  });
+
+  it("does not hide a page that was not hidden", () => {
+    act(() => root.render(<Screen language="ar" />));
+    expect(html().hasAttribute("data-lang-wait")).toBe(false);
     act(() => root.unmount());
   });
 

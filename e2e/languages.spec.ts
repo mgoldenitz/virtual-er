@@ -34,6 +34,9 @@ for (const { lang, dir, text } of CASES) {
       const main = patient.locator("main");
       await expect(main).toHaveAttribute("lang", lang);
       await expect(main).toHaveAttribute("dir", dir);
+      // The head script hid the screen until it showed this language; now it shows again.
+      await expect(patient.locator("html")).not.toHaveAttribute("data-lang-wait", /.*/);
+      await expect(main).toBeVisible();
 
       // The waiting heading and the 911 line are in this language, and the English heading is not shown.
       await expect(patient.getByRole("heading", { name: text.patient.waitingHeading })).toBeVisible();
