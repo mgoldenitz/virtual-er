@@ -129,3 +129,12 @@ Checked against the code on 2026-11-21.
 5e. Null store in `setSitePaused` not tested: rejected. `PauseSwitch.tsx` shows the switch only after the first read (`paused === null` shows "Checking..."), so `setSitePaused` never runs with an empty store.
 
 Not checked: 3b and 5a in a browser.
+
+Fixes (owner OK to all accepted points and to locked site radios, 2026-11-21). Each one: test first, seen to fail, then the fix.
+
+- 4b: `0a2c5f9` (test only; it passed at once, it guards code that was already right).
+- 5d and 5c: failing tests `6aff81f`, fix `e432f64`.
+- 5a and 5b: failing tests `5cdff19`, fix `bc85469`.
+- 3a and 3b: failing tests `84e5f21`, fix `3c034a2`.
+
+Checked after `3c034a2`: 95 test files, 631 tests pass; lint exit 0; build passed; full e2e 39 passed on the second run (the first run had 1 failure in `timed-steps.spec.ts:84`, a known flaky test, see docs/known-issues.md).
