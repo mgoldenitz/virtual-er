@@ -107,7 +107,8 @@ describe("TrendTable", () => {
   });
 
   it("has no start note when every day is on or after the start date", () => {
-    show(trendWith("2026-11-22"));
+    // The 7 days before 2026-11-29 are 2026-11-22 to 2026-11-28, all after the start date.
+    show(trendNumbers([], [], "2026-11-29", false));
     expect(container.textContent).toContain("Each number counts on the date of its own event.");
     expect(container.textContent).not.toContain("Wait numbers start on");
   });
