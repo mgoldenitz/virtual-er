@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   callBack,
   checkInAtDesk,
+  checkInHomeVisit,
   confirmOnMyWay,
   issueNewLink,
   markArrived,
   markRemoved,
   markSeen,
+  startFromHome,
   undoClose,
 } from "./visitActions";
 
@@ -159,5 +161,25 @@ describe("issue a new link", () => {
   it("refuses declined and not-eligible visits (they never got a slip)", () => {
     expect(issueNewLink(checkInAtDesk(input, "declined", t0), "NEWTOKEN")).toBeNull();
     expect(issueNewLink(checkInAtDesk(input, "not_eligible", t0), "NEWTOKEN")).toBeNull();
+  });
+});
+
+describe("triage from home clears old offer and still-here stamps", () => {
+  const homeStart = new Date("2026-11-10T08:00:00Z");
+  const triageTime = new Date("2026-11-10T08:30:00Z");
+  const oldStamp = "2026-11-10T08:00:00.000Z";
+  const fromHome = { ...startFromHome(input, homeStart), offered_at: oldStamp, last_still_here_at: oldStamp };
+  const triage = { ctas_level: 4 as const, language: "en" };
+
+  it("not eligible: clears the old offered_at and last_still_here_at", () => {
+    const v = checkInHomeVisit(fromHome, triage, "not_eligible", triageTime)!;
+    expect(v.offered_at).toBeNull();
+    expect(v.last_still_here_at).toBeNull();
+  });
+
+  it("accepted: sets a new offered_at and clears the old last_still_here_at", () => {
+    const v = checkInHomeVisit(fromHome, triage, "waiting", triageTime)!;
+    expect(v.offered_at).toBe(triageTime.toISOString());
+    expect(v.last_still_here_at).toBeNull();
   });
 });
