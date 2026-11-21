@@ -4,9 +4,38 @@
 import type { SiteNumbers } from "./dashboardNumbers";
 import type { Site } from "./visit";
 
+/** The 23 numbers per site that may go to Claude, named one by one.
+ * A field added later to SiteNumbers is not in this list, so it is not sent. */
+type SummarySite = Pick<
+  SiteNumbers,
+  | "waitingNow"
+  | "recalledNow"
+  | "reassessmentNow"
+  | "triaged"
+  | "offered"
+  | "declined"
+  | "accepted"
+  | "arrivedAfterRecall"
+  | "recallToArrivalSeconds"
+  | "noShows"
+  | "unableToReach"
+  | "left"
+  | "startedFromHome"
+  | "homeReachedTriage"
+  | "surveyResponses"
+  | "surveyScoreSum"
+  | "survey9or10"
+  | "recalled"
+  | "offerToCallSeconds"
+  | "waitUnder30"
+  | "wait30to59"
+  | "wait60to119"
+  | "wait120plus"
+>;
+
 /** What the summary route sends to Claude: the two sites' totals and whether the numbers are demo numbers.
  * The wait numbers were added with the owner's OK on 2026-11-21. */
-export type SummaryInput = { isDemo: boolean; sites: Record<Site, SiteNumbers> };
+export type SummaryInput = { isDemo: boolean; sites: Record<Site, SummarySite> };
 
 /** Copies the 23 SiteNumbers fields for sites A and B into new objects, and nothing else. */
 export function summaryInput(numbers: Record<Site, SiteNumbers>, isDemo: boolean): SummaryInput {
@@ -22,7 +51,7 @@ export function parseSummaryBody(body: unknown): { isDemo: boolean } | null {
 }
 
 // Copies one site's 23 fields by name.
-function siteTotals(n: SiteNumbers): SiteNumbers {
+function siteTotals(n: SiteNumbers): SummarySite {
   return {
     waitingNow: n.waitingNow,
     recalledNow: n.recalledNow,
