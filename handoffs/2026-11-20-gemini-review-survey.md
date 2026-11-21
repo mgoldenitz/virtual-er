@@ -949,3 +949,114 @@ async function changeVisit(id: string, step: (visit: Visit) => Visit | null): Pr
 ```
 
 The original trigger body: the first function in supabase/migrations/20261110090134_visit_version_and_database_times.sql. It is the same as the new one, except that its update branch has only `new.version := old.version + 1;`.
+
+---
+
+## Response
+
+Pasted from Gemini Hydrogen 4, High, on 2026-11-21, as given.
+
+### 1. `submit_survey` (`supabase/migrations/20261120000000_survey.sql` and `data/patientVisit.ts`)
+
+In `submit_survey` (`supabase/migrations/20261120000000_survey.sql`, lines 16–32), the `WHERE` predicates (`access_token = p_token`, `status = 'arrived'`, `closed_at is not null`, `survey_score is null`, `p_score between 0 and 10`) block saves for another visit, non-arrived or unclosed visits, already-scored visits, `NULL` inputs, and scores outside `0`–`10`. Under Postgres `READ COMMITTED`, two concurrent `Submit` calls serialize on the row lock: the second waits, re-evaluates `survey_score is null` against the committed row, updates 0 rows, and returns `false`. (Not sure whether `public.visits` itself has a `CHECK (survey_score between 0 and 10)` constraint since the table schema is not in the diff.)
+
+* **Post-save read failure or exception tells the patient their saved score did not save**
+* **File and line:** `data/patientVisit.ts`, lines 162–171; `components/patient/SurveyBox.tsx`, lines 43–46.
+* **Concrete case:** A patient taps Submit; `submit_survey` commits the score and returns `true`, then `await refreshPatientView(token)` (line 166) either hits a transient read failure (`readFromDatabase` returns `"failed"`, keeping `entry.shown.surveyDone === false` when `entry.failures` is `1`) or throws into the `catch` block (lines 168–170). If it throws, `submitSurvey` returns `"not_saved"` and `SurveyBox` shows `"Your answer did not save. Please try again."` even though the score saved. If the read fails softly once, `step` remains `"ask"` (because `SurveyBox` relies solely on `view.surveyDone` to switch to `"thanks"`), so the patient taps Submit again, `submit_survey` returns `false` (`"refused"`), and line 46 shows `"Your answer did not save. Please try again."`.
+* **Smallest fix:** Wrap `await refreshPatientView(token);` in its own `try { await refreshPatientView(token); } catch {}` in `data/patientVisit.ts` line 166, and track a local `savedLocally` flag in `SurveyBox.tsx` when `result === "saved"` (reset when `step === null` or `token` changes) so the screen advances to `"thanks"` immediately.
+
+### 2. Version trigger (`supabase/migrations/20261120010000_survey_keeps_version.sql`)
+
+* **Yes, the order of `created_at` and the `now()` lines after the `to_jsonb` check matters**
+* **File and line:** `supabase/migrations/20261120010000_survey_keeps_version.sql`, lines 32–46.
+* **Concrete case:** Line 32 compares `(to_jsonb(new) - 'survey_score' - 'version')` to `(to_jsonb(old) - 'survey_score' - 'version')` *before* line 37 resets `new.created_at := old.created_at` and lines 38–46 overwrite changed `*_at` timestamps with `now()`. If an `UPDATE` supplies a different `created_at` (which line 37 immediately discards), or updates `called_at` to another value within the same transaction where `old.called_at` already equals `now()` (which line 41 resets back to `now()`), line 32 sees a difference and increments `new.version` even though no column in the saved row actually changed.
+* **Smallest fix:** Move `new.created_at := old.created_at;` and the nine `now()` normalization lines (lines 37–46) above the `if (to_jsonb(new) ...)` check (lines 32–36) so the trigger compares the final row values.
+* **Other column / score-only questions**
+* **Another column changes and `version` stays:** Not for existing `visits` columns (beyond `survey_score` and `version`), because `to_jsonb` includes every column (with `null` keys preserved, full microsecond `timestamptz` precision, and normalized `numeric` scale). Note that if SQL ever overwrites an existing `survey_score` (`7` -> `8`) or clears it to `NULL` without touching other columns, `version` also stays unchanged.
+* **Only `survey_score` changes and `version` goes up:** Not from `visits_before_write` alone; not sure whether any other `BEFORE UPDATE` trigger ordered alphabetically before `visits_before_write` or any stored generated column depending on `survey_score` exists on `public.visits` (though case 12 in `supabase/checks/survey.sql` passed on the live database).
+
+### 3. `SurveyBox.tsx` and `StatusAndSound.tsx`
+
+* **Focus drops to `document.body` after a successful Submit, and iOS VoiceOver may drop the thank-you announcement**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 31–37 and 77; `components/patient/StatusAndSound.tsx`, line 39.
+* **Concrete case:** A keyboard or screen-reader user activates Submit; when `view.surveyDone` turns `true`, `SurveyBox` unmounts `<form>` (removing the focused Submit button) and mounts `<p role="status">{t.thanks}</p>`. `SurveyBox` does not move focus and `StatusAndSound` does not pass `lostFocus` to `SurveyBox`, so focus falls to `document.body`; newly mounted `role="status"` regions are also frequently missed by iOS VoiceOver.
+* **Smallest fix:** Focus a `tabIndex={-1}` ref on the thank-you element when transitioning from `"ask"` to `"thanks"` after a submit (avoiding `role="status"` on the focused element itself if you want to prevent double announcements, or keeping a persistent empty `<div role="status">` mounted and updating its text).
+
+* **Focus drops to `document.body` when staff click Undo while focus is inside `SurveyBox`**
+* **File and line:** `components/patient/StatusAndSound.tsx`, lines 3–6 and 39; `components/patient/SurveyBox.tsx`, lines 30–37 and 50–85.
+* **Concrete case:** While the visit is `arrived` (`closed: true`), a keyboard user focuses a radio button, Submit, or the thank-you card, and staff click **Undo** (`status` returns to `on_the_way`, `closed: false`). `SurveyBox` returns `null` (line 30) and unmounts the focused element, while `PatientStatus` switches to `"Please head back now"`. Because `StatusAndSound.tsx` line 39 does not pass `lostFocus` to `SurveyBox`, `PatientStatus` never rescues focus to `#status-heading` and focus drops to `document.body`.
+* **Smallest fix:** Pass an `onFocusLost` callback (setting `lostFocus.current = true`) from `StatusAndSound.tsx` line 39 into `SurveyBox` and wrap `SurveyBox`'s non-null output with `useReportFocusOnLeave`.
+
+* **Double Submit race before React re-renders**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 25 and 41–44.
+* **Concrete case:** `sending` is React state, so `setSending(true)` (line 42) does not update `sending` synchronously inside `onSubmit`. Two rapid activations in the same tick (e.g., pressing Enter twice or double-tapping before re-render) both pass `if (... || sending) return;` and fire two `submitSurvey` calls; the second call is refused by the database and can flip `sending` back early or set `notSaved = true`.
+* **Smallest fix:** Guard `onSubmit` with a synchronous `const sendingRef = useRef(false);` alongside `sending` state.
+
+* **Focus loss while sending and after a failed save**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 42–46 and 77.
+* **Concrete case:** `components/Button.tsx` is not in the diff, so not sure whether `<Button disabled="{sending}">` renders a native `disabled` attribute or `aria-disabled`. If it sets native `disabled`, pressing Submit immediately drops focus from the button to `document.body` while `sending` is `true`, and focus remains stranded on `document.body` when `setSending(false)` runs after a failed save.
+* **Smallest fix:** Use `aria-disabled={sending}` (with the `sendingRef` guard) so the button stays focusable while sending.
+
+* **Second consecutive failed save does not re-announce `role="alert"`**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 40–46 and 80–84.
+* **Concrete case:** After a first failed submit sets `notSaved = true`, `<p role="alert">{t.notSaved}</p>` stays mounted. Tapping Submit a second time without leaving `"ask"` never calls `setNotSaved(false)` before `await submitSurvey(...)`, so on a second failure `notSaved` stays `true`, the DOM node does not change, and screen readers make no new announcement.
+* **Smallest fix:** Call `setNotSaved(false);` at the start of `onSubmit` (line 42) and when picking a radio score (`onChange`, line 64).
+
+* **Scale labels (`t.low` / `t.high`) are not tied to the radio group and appear after all 11 radios**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 51–75.
+* **Concrete case:** `<fieldset>` + `<legend>` and `<label>` wrapping each `<input type="radio">` give each button a numeric label (`"0"`–`"10"`), but `t.low` (`"0 = Very poor"`) and `t.high` (`"10 = Excellent"`) sit in `<span>` elements *after* the radios (lines 71–74) with no programmatic link. A screen-reader user tabbing into the group hears `"0, radio button"` without knowing whether `0` is best or worst until navigating past all 11 options.
+* **Smallest fix:** Move lines 71–74 above the radios (under `<legend>`) and connect them via `aria-describedby` on `<fieldset>` (or include `sr-only` scale hints inside the `0` and `10` `<label>` elements).
+
+* **Pressing Submit with no score is a silent no-op**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 41 and 76–79.
+* **Concrete case:** Submit is enabled when `score === null`, and `t.note` says `"Answering is optional."`. A patient who taps Submit to skip—or taps before picking a score—hits `if (score === null ...)` (line 41) and gets no visual or screen-reader feedback.
+* **Smallest fix:** Set `aria-disabled={score === null || sending}` and show an inline `role="status"` hint if activated while `score === null`.
+
+* **Stale `score` and `notSaved` survive Undo and a second arrival**
+* **File and line:** `components/patient/SurveyBox.tsx`, lines 24–30 and 46.
+* **Concrete case:** Patient picks `8`, Submit fails (`score = 8`, `notSaved = true`), staff click Undo (`step === null`, `SurveyBox` stays mounted returning `null`), and staff later click Mark arrived (`step === "ask"`). The survey reopens with `8` pre-selected and the red `"Your answer did not save"` error already showing.
+* **Smallest fix:** Render the `<form>` inside a child component mounted only when `step === "ask"` so leaving `"ask"` resets `score` and `notSaved`.
+
+* **Offline state is not shown or framed on `SurveyBox`**
+* **File and line:** `components/patient/StatusAndSound.tsx`, lines 36–39; `components/patient/SurveyBox.tsx`, lines 50–85.
+* **Concrete case:** When `!online`, `StatusAndSound` wraps `PatientStatus` in the dashed `status-frame` border (lines 36–38), while `SurveyBox` renders outside it at full prominence with an enabled Submit button. An offline patient picks a score, taps Submit, and only then sees `"Your answer did not save. Please try again."`.
+* **Smallest fix:** Pass `online` into `SurveyBox` (or include `SurveyBox` inside the offline frame) and warn/disable submission while `!online`.
+
+### 4. Missing states on the phone
+
+* **Survey saved → staff Undo → visit ends as `removed` or `unable_to_reach` (and `daily_stats`)**
+* **File and line:** `lib/survey.ts`, lines 13–17; `supabase/migrations/20261120000000_survey.sql`, lines 23–28.
+* **Concrete case:** On the phone, `surveyStep` returns `null` for `removed` and `unable_to_reach` even when `surveyDone` is `true`, so the phone does not show `"Thank you for your feedback."` on the ended screen. In Postgres, however, because Undo keeps `survey_score`, a visit marked `arrived` by mistake, scored, undone, and later closed as `removed` or `unable_to_reach` keeps a non-null `survey_score` on a non-arrived visit. Because `delete_old_visits` / `daily_stats` is not in the diff, not sure whether `daily_stats` filters survey metrics by `status = 'arrived'` or counts any row with `survey_score is not null`.
+* **Smallest fix:** If `daily_stats` does not already check `status = 'arrived'` for survey metrics, add `and status = 'arrived'` there (or clear `survey_score` when closing a visit as `removed` or `unable_to_reach`).
+
+* **Saved-on-server but read-failed UI state** and **offline survey state:** Covered in sections 1 and 3 above.
+
+### 5. Tests that pass for the wrong reason
+
+* **`SurveyBox.click.test.tsx` never transitions `view` after `"saved"`, never tests boundary scores `0`/`10`, and never tests `StatusAndSound` wiring**
+* **File and line:** `components/patient/SurveyBox.click.test.tsx`, lines 13, 46, 63–65, and 77–90; `components/patient/StatusAndSound.tsx`, line 6.
+* **Concrete cases:**
+  * `submitSurvey` is mocked to return `"saved"` without triggering a re-render to `{ ...arrived, surveyDone: true }`, so lines 77–89 pass even if `SurveyBox` fails to clear `notSaved` or loses focus on transition.
+  * `pick(n)` and line 64 inspect `input[type="radio"]` by `r.value`, passing even if `<label>` associations were broken (`<div>` instead of `<label>`).
+  * Only scores `8`, `3`, `9`, and `5` are picked; a classic `if (!score ...)` bug in `SurveyBox.tsx` line 41 would silently block score `0` while every test passes.
+  * `StatusAndSound.tsx` line 6 claims the click test uses `StatusAndSound` to check real wiring, yet `SurveyBox.click.test.tsx` renders `<SurveyBox>` directly—so dropping `<SurveyBox>` or `token` from `StatusAndSound.tsx` line 39 passes all unit tests.
+  * Double Submit (pending promise), retry-after-failure (`"not_saved"` then `"saved"`), and non-English `notSaved` strings are untested.
+* **Smallest fix:** Add a `StatusAndSound` wiring test, select radios by `<label>` text, test boundary scores `0` and `10`, and test double-click while pending plus failure-then-`"saved"` recovery.
+
+* **`supabase/checks/survey.sql` skips boundary scores `0`/`10`, `NULL`, `anon` execution, and Undo + re-arrival**
+* **File and line:** `supabase/checks/survey.sql`, lines 36–65.
+* **Concrete cases:**
+  * Only `7` (inside) and `-1`/`11` (outside) are tested, so `p_score > 0 and p_score < 10` (excluding `0` and `10`) would pass all 13 checks.
+  * All calls run as the SQL Editor role rather than `set local role anon;`, so missing `GRANT EXECUTE ... TO anon` would pass `survey.sql` (caught only by inspecting `permissions.sql`).
+  * `closed_at is null` on `status = 'arrived'`, `NULL` arguments, and an Undo + second arrival on `ZZZZ5A` are untested in SQL.
+* **Smallest fix:** Add cases for `0`, `10`, `NULL`, `set local role anon` around a `submit_survey` + `get_patient_visit` check, and an Undo + re-arrival check on `ZZZZ5A`.
+
+* **`e2e/recall-arrive.spec.ts` does not check that the thank-you message disappears during Undo**
+* **File and line:** `e2e/recall-arrive.spec.ts`, lines 55–57.
+* **Concrete case:** After Undo, lines 56–57 check `"Please head back now"` and `"Status: Ready at the desk"` (`toHaveCount(0)`), but never assert `"Thank you for your feedback."` is hidden while `on_the_way`; a bug leaving `"thanks"` rendered on `on_the_way` would pass.
+* **Smallest fix:** Assert `await expect(patient.getByRole("status").filter({ hasText: "Thank you for your feedback." })).toHaveCount(0);` at line 58.
+
+* **`data/patientVisit.ts` (`submitSurvey`) and `lib/patientViewFromRow.test.ts`**
+* **File and line:** `data/patientVisit.ts`, lines 162–171; `lib/patientViewFromRow.test.ts` (not in diff).
+* **Concrete case:** No unit test in the diff exercises `submitSurvey` directly (`SurveyBox.click.test.tsx` mocks it), leaving error/exception/refusal branches in `data/patientVisit.ts` untested in Vitest; not sure what the 78 lines of `lib/patientViewFromRow.test.ts` cover because its diff is omitted.
+* **Smallest fix:** Add unit tests for `submitSurvey` covering `"saved"`, `"refused"`, `"not_saved"`, and `refreshPatientView` failure/throw.
