@@ -22,6 +22,11 @@ const fake = vi.hoisted(() => {
         call.filters.push([column, value]);
         return query;
       },
+      // Recorded with ">=" after the column name, so a test can tell it from an eq filter.
+      gte(column: string, value: unknown) {
+        call.filters.push([`${column}>=`, value]);
+        return query;
+      },
       then(resolve: (r: Result) => unknown, reject: (e: unknown) => unknown) {
         return Promise.resolve(state.results[table]).then(resolve, reject);
       },
@@ -79,7 +84,9 @@ describe("loadDashboard", () => {
     const stats = fake.state.calls.find((c) => c.table === "daily_stats");
     expect(visits?.filters).toContainEqual(["is_demo", true]);
     expect(stats?.filters).toContainEqual(["is_demo", true]);
-    expect(stats?.filters).toContainEqual(["day", "2026-11-18"]);
+    // One read covers today and the 7 past days for the trend view: from 2026-11-11 on.
+    expect(stats?.filters).toContainEqual(["day>=", "2026-11-11"]);
+    expect(stats?.filters).not.toContainEqual(["day", "2026-11-18"]);
   });
 
   it("keeps the old visits and marks out of date when daily_stats fails", async () => {
