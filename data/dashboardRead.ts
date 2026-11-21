@@ -1,8 +1,9 @@
-// One job: read the staff dashboard's numbers from the database (today's daily_stats rows and the
-// visits table, for demo or real visits), keep them in memory, and read them again like
-// data/visitCache.ts does. It never reads access_token or code.
+// One job: read the staff dashboard's numbers from the database (the daily_stats rows for today and
+// the 7 past days, and the visits table, for demo or real visits), keep them in memory, and read them
+// again like data/visitCache.ts does. It never reads access_token or code.
 
 import type { DailyStatsRow, DashboardVisit } from "@/lib/dashboardNumbers";
+import { pastDays } from "@/lib/pastDays";
 import { torontoDay } from "@/lib/torontoDay";
 import { DASHBOARD_VISIT_FIELDS } from "./dashboardFields";
 import { keepFresh } from "./keepFresh";
@@ -55,7 +56,7 @@ function show(store: Store, next: DashboardData): void {
   store.listeners.forEach((tell) => tell());
 }
 
-/** Read today's numbers for one mode. Both reads must work, or the copy on screen is kept and marked out of date. */
+/** Read the numbers for today and the 7 past days, for one mode. Both reads must work, or the copy on screen is kept and marked out of date. */
 export async function loadDashboard(isDemo: boolean): Promise<void> {
   const store = storeFor(isDemo);
   const thisLoad = ++store.latest;
@@ -65,7 +66,8 @@ export async function loadDashboard(isDemo: boolean): Promise<void> {
     const db = supabaseBrowser();
     const [visitRead, statsRead] = await Promise.all([
       db.from("visits").select(DASHBOARD_VISIT_FIELDS).eq("is_demo", isDemo),
-      db.from("daily_stats").select("*").eq("is_demo", isDemo).eq("day", today),
+      // From the first past day on, so one read covers today and the trend view (dashboardNumbers picks each day's rows).
+      db.from("daily_stats").select("*").eq("is_demo", isDemo).gte("day", pastDays(today)[0]),
     ]);
     if (!visitRead.error && !statsRead.error && Array.isArray(visitRead.data) && Array.isArray(statsRead.data)) {
       next = {
