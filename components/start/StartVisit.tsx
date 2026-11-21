@@ -176,7 +176,10 @@ export function StartVisit({ language }: { language: string }) {
                   name="site"
                   className="size-5"
                   checked={site === option}
-                  onChange={() => setSite(option)}
+                  onChange={() => {
+                    setSite(option);
+                    setProblem(null); // a problem with one site does not carry over to the other
+                  }}
                 />
                 {fill(t.siteName, { site: option })}
               </label>

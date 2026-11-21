@@ -137,6 +137,7 @@ export function CheckInPanel({
     if (!code) return;
     setCtas(null);
     setTicked({});
+    setLanguage("en"); // back to English for the next patient
     setMessage(
       outcome === "waiting"
         ? `Visit ${code} is now waiting off-site.`

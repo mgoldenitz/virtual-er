@@ -72,6 +72,7 @@ export function StillHerePrompt({ view, token, language, lostFocus }: Props) {
   async function onTap() {
     if (sending) return;
     setSending(true);
+    setNotSaved(false); // a new tap clears the last failed save's alert while it saves
     const result = await recordStillHere(token);
     setSending(false);
     setNotSaved(result === "not_saved");

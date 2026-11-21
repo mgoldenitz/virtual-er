@@ -38,6 +38,7 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
       </div>
       {token && (
         <SurveyBox
+          key={token}
           view={view}
           token={token}
           language={language}
