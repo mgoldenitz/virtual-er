@@ -59,10 +59,12 @@ describe("dashboard numbers: Gemini's synthetic visits", () => {
     });
   });
 
-  it("gives the hand-checked counts for site B (no triage today, one offer)", () => {
+  // Visit 18 was triaged before midnight and offered after it. Since the owner decision of
+  // 2026-11-21 (fault 2), an offer counts on the triage day, so site B has no offer today.
+  it("gives the hand-checked counts for site B (no triage today, no offer)", () => {
     expect(numbers.B).toEqual({
       waitingNow: 0, recalledNow: 1, reassessmentNow: 0,
-      triaged: 0, offered: 1, declined: 0, accepted: 1,
+      triaged: 0, offered: 0, declined: 0, accepted: 0,
       arrivedAfterRecall: 0, recallToArrivalSeconds: 0,
       noShows: 0, left: 0, unableToReach: 0,
       startedFromHome: 0, homeReachedTriage: 0,
@@ -78,7 +80,7 @@ describe("dashboard numbers: Gemini's synthetic visits", () => {
     expect(averageScore(A.surveyScoreSum, A.surveyResponses)).toBe(6.8);
     expect(share(A.survey9or10, A.surveyResponses)).toBe(50);
     expect(share(B.offered, B.triaged)).toBeNull();
-    expect(share(B.accepted, B.offered)).toBe(100);
+    expect(share(B.accepted, B.offered)).toBeNull();
     expect(averageMinutes(B.recallToArrivalSeconds, B.arrivedAfterRecall)).toBeNull();
     expect(averageScore(B.surveyScoreSum, B.surveyResponses)).toBeNull();
   });
