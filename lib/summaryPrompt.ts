@@ -14,6 +14,10 @@ export const SUMMARY_RULES: string[] = [
   "Never give medical or clinical advice, and never suggest a change to triage or to who waits off-site.",
   // The totals hold sums, not averages; this stops a wrong average.
   "recallToArrivalSeconds and surveyScoreSum are sums. Divide recallToArrivalSeconds by arrivedAfterRecall for the average minutes from recall to arrival, and surveyScoreSum by surveyResponses for the average score. If the count is 0, do not give that average.",
+  // The wait total is a sum in seconds, like recallToArrivalSeconds.
+  "offerToCallSeconds is the sum, in seconds, of the time from offer to recall over the recalled visits. Divide it by recalled, then by 60, for the average minutes from offer to recall. If recalled is 0, do not give that average.",
+  // The 4 bands count only recalled visits, so they add up to recalled.
+  "waitUnder30, wait30to59, wait60to119 and wait120plus count the recalled visits by minutes from offer to recall: under 30, 30 to 59, 60 to 119, and 120 or more. If recalled is 0, say there is no wait data yet.",
   // A count of 0 is normal early in the day.
   "If most counts are 0, say that there is not much to report yet.",
   // Staff must never read demo numbers as real ones.

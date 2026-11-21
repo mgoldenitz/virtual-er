@@ -4,17 +4,11 @@
 import type { SiteNumbers } from "./dashboardNumbers";
 import type { Site } from "./visit";
 
-/** The 17 numbers per site that may go to Claude. The wait and recall numbers (2026-11-21) are not sent;
- * sending them is an owner decision. */
-type SummarySite = Omit<
-  SiteNumbers,
-  "recalled" | "offerToCallSeconds" | "waitUnder30" | "wait30to59" | "wait60to119" | "wait120plus"
->;
+/** What the summary route sends to Claude: the two sites' totals and whether the numbers are demo numbers.
+ * The wait numbers were added with the owner's OK on 2026-11-21. */
+export type SummaryInput = { isDemo: boolean; sites: Record<Site, SiteNumbers> };
 
-/** What the summary route sends to Claude: the two sites' totals and whether the numbers are demo numbers. */
-export type SummaryInput = { isDemo: boolean; sites: Record<Site, SummarySite> };
-
-/** Copies the 17 SiteNumbers fields for sites A and B into new objects, and nothing else. */
+/** Copies the 23 SiteNumbers fields for sites A and B into new objects, and nothing else. */
 export function summaryInput(numbers: Record<Site, SiteNumbers>, isDemo: boolean): SummaryInput {
   return { isDemo, sites: { A: siteTotals(numbers.A), B: siteTotals(numbers.B) } };
 }
@@ -27,8 +21,8 @@ export function parseSummaryBody(body: unknown): { isDemo: boolean } | null {
   return { isDemo };
 }
 
-// Copies one site's 17 fields by name.
-function siteTotals(n: SiteNumbers): SummarySite {
+// Copies one site's 23 fields by name.
+function siteTotals(n: SiteNumbers): SiteNumbers {
   return {
     waitingNow: n.waitingNow,
     recalledNow: n.recalledNow,
@@ -47,5 +41,11 @@ function siteTotals(n: SiteNumbers): SummarySite {
     surveyResponses: n.surveyResponses,
     surveyScoreSum: n.surveyScoreSum,
     survey9or10: n.survey9or10,
+    recalled: n.recalled,
+    offerToCallSeconds: n.offerToCallSeconds,
+    waitUnder30: n.waitUnder30,
+    wait30to59: n.wait30to59,
+    wait60to119: n.wait60to119,
+    wait120plus: n.wait120plus,
   };
 }
