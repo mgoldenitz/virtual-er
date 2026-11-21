@@ -91,4 +91,17 @@ describe("StatusAndSound with the I'm still here prompt", () => {
     expect(container.querySelector('input[name="survey-score"]')).toBeNull();
     expect(document.activeElement).toBe(container.querySelector("#status-heading"));
   });
+
+  it("starts the survey empty when the visit's token changes, so a picked score does not carry over", () => {
+    const arrived: PatientView = { ...called, status: "arrived", closed: true, seen: true };
+    show(arrived);
+    const eight = container.querySelector<HTMLInputElement>('input[name="survey-score"][value="8"]');
+    act(() => eight?.click());
+    expect(eight?.checked).toBe(true);
+    act(() =>
+      root.render(<StatusAndSound view={arrived} token="B" language="en" onOnMyWay={() => {}} sending={false} online />),
+    );
+    const checked = [...container.querySelectorAll<HTMLInputElement>('input[name="survey-score"]')].filter((r) => r.checked);
+    expect(checked).toHaveLength(0);
+  });
 });

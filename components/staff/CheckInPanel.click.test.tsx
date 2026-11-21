@@ -150,6 +150,26 @@ describe("CheckInPanel taps after a failed pause read", () => {
   });
 });
 
+describe("CheckInPanel language after a check-in", () => {
+  it("sets the language back to English after a check-in saves, for the next patient", async () => {
+    vi.mocked(createDeskVisit).mockResolvedValueOnce(deskVisit);
+    showPanel({ offsitePaused: false, pauseReadFailed: false });
+    fillForm();
+    const menu = () => container.querySelector<HTMLSelectElement>("select");
+    act(() => {
+      const select = menu();
+      if (!select) throw new Error("No language menu");
+      select.value = "fr";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(menu()?.value).toBe("fr");
+    await press("Not eligible");
+    expect(createDeskVisit).toHaveBeenCalledTimes(1);
+    expect(resultLine()).toContain("Visit DESK01 recorded as not eligible");
+    expect(menu()?.value).toBe("en");
+  });
+});
+
 describe("CheckInPanel on Enter while only on-site waiting is offered", () => {
   it("saves nothing and says so first while the pause switch could not be read", async () => {
     showPanel({ offsitePaused: null });

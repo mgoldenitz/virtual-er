@@ -154,4 +154,15 @@ describe("StillHerePrompt tap", () => {
     expect(alert?.textContent).toBe("Your tap did not save. Staff may not know you are still waiting. Please try again.");
     expect(alert?.textContent).not.toBe(textFor("en").patient.notSaved);
   });
+
+  it("clears the did-not-save alert as soon as a new tap starts saving", async () => {
+    vi.mocked(recordStillHere).mockResolvedValueOnce("not_saved").mockReturnValueOnce(new Promise<"saved">(() => {}));
+    show(due);
+    await act(async () => button()?.click());
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+    act(() => {
+      button()?.click();
+    });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
 });

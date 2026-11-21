@@ -146,6 +146,33 @@ describe("VisitScreen when the whole screen changes", () => {
   });
 });
 
+describe("VisitScreen did-not-save alert", () => {
+  /** Shows the visit with the on-my-way save marked as not saved. */
+  const showSaveFailure = (view: PatientView) =>
+    act(() =>
+      root.render(
+        <VisitScreen
+          loading={false}
+          result={view}
+          linkFailed={false}
+          token="t"
+          language="en"
+          onOnMyWay={() => {}}
+          sending={false}
+          online
+          notSaved
+        />,
+      ),
+    );
+
+  it("drops the did-not-save alert when the visit moves on to called after the failed save", () => {
+    showSaveFailure(waiting);
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(p.notSaved);
+    showSaveFailure({ ...waiting, status: "called", placeInLine: null, calledAt: "2026-11-16T12:00:00Z" });
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
 describe("VisitScreen help on the no-visit, broken-link and replaced-link screens", () => {
   /** Shows a screen with no visit. */
   const showNone = (linkFailed: boolean, linkReplaced: boolean) =>
