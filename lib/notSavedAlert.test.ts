@@ -12,6 +12,10 @@ describe("notSavedAlertShows", () => {
     expect(notSavedAlertShows("waiting", "called")).toBe(false);
   });
 
+  it("stays hidden once the visit has left that status, also if it comes back to it", () => {
+    expect(notSavedAlertShows("gone", "called")).toBe(false);
+  });
+
   it("hides when no save failed", () => {
     expect(notSavedAlertShows(null, "waiting")).toBe(false);
   });

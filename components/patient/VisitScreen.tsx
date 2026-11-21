@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { notSavedAlertShows } from "@/lib/notSavedAlert";
+import { type FailedIn, notSavedAlertShows } from "@/lib/notSavedAlert";
 import type { PatientView } from "@/lib/patientView";
 import { fill, textFor } from "@/lib/text";
 import { FocusBox } from "./FocusBox";
@@ -42,11 +42,17 @@ export function VisitScreen({ loading, result, linkFailed, linkReplaced = false,
   // True when the old screen left with focus inside it; then focus goes to the new heading.
   const lostFocus = useRef(false);
   const markLost = useRescueFocus("status-heading", lostFocus);
-  // The status the failed save was in. Set during render (not in an effect), and cleared when the
-  // save flag clears, so the alert can tell when the visit has moved on from that status.
-  const [failedIn, setFailedIn] = useState<PatientView["status"] | null>(null);
-  if (notSaved && view && failedIn === null) setFailedIn(view.status);
-  if (!notSaved && failedIn !== null) setFailedIn(null);
+  // The status the failed save was in, or "gone" once the visit has left that status (so an Undo
+  // back to it does not bring the old alert back). Set during render, not in an effect, and
+  // cleared when the save flag clears.
+  const [failedIn, setFailedIn] = useState<FailedIn>(null);
+  if (!notSaved) {
+    if (failedIn !== null) setFailedIn(null);
+  } else if (view && failedIn === null) {
+    setFailedIn(view.status);
+  } else if (view && failedIn !== "gone" && failedIn !== view.status) {
+    setFailedIn("gone");
+  }
 
   // Which of the 4 screens shows. "Loading…" comes first: while loading, result can be undefined.
   const screen: Screen = loading ? "loading" : result === "unavailable" ? "unavailable" : !view ? "none" : "visit";
