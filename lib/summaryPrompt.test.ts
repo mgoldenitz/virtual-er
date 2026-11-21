@@ -15,15 +15,31 @@ describe("summary prompt", () => {
     expect(summarySystemPrompt()).toMatch(/never give medical or clinical advice/i);
   });
 
-  it("tells Claude how to read the wait numbers, and to give no average when recalled is 0", () => {
-    const waitRule = SUMMARY_RULES.find((r) => r.includes("offerToCallSeconds"));
+  // Gemini review 2026-11-21 and the owner's choices for 1 and 0 recalled visits.
+  it("tells Claude how to read the wait total: minutes, rounded, one visit, and none at a site", () => {
+    const waitRule = SUMMARY_RULES.find((r) => r.startsWith("offerToCallSeconds"));
     expect(waitRule).toBeDefined();
     expect(waitRule).toMatch(/sum/i);
-    expect(waitRule).toContain("recalled");
+    expect(waitRule).toMatch(/divide it by recalled, then by 60, and round to the nearest whole minute/i);
+    expect(waitRule).toMatch(/if recalled is 1, .*one recalled visit, not as an average/i);
+    expect(waitRule).toMatch(/if recalled is 0 at a site, give no wait numbers for that site/i);
+  });
+
+  it("tells Claude the 4 bands count recalled visits by rounded minutes", () => {
     const bandRule = SUMMARY_RULES.find((r) => r.includes("waitUnder30"));
     expect(bandRule).toBeDefined();
     for (const band of ["wait30to59", "wait60to119", "wait120plus"]) expect(bandRule).toContain(band);
-    expect(SUMMARY_RULES.some((r) => /recalled is 0/.test(r))).toBe(true);
+    expect(bandRule).toMatch(/rounded to the nearest whole minute/i);
+    expect(bandRule).toMatch(/under 30, 30 to 59, 60 to 119, and 120 or more/);
+  });
+
+  it("no longer says 'no wait data yet', which did not name a site", () => {
+    expect(summarySystemPrompt()).not.toMatch(/no wait data yet/i);
+  });
+
+  it("tells Claude to turn recallToArrivalSeconds into rounded minutes too", () => {
+    const rule = SUMMARY_RULES.find((r) => r.includes("recallToArrivalSeconds"));
+    expect(rule).toMatch(/by arrivedAfterRecall, then by 60, and round to the nearest whole minute/);
   });
 
   it("has one rule per line", () => {

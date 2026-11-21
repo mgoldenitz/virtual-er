@@ -48,10 +48,9 @@ describe("summary input", () => {
     }
     expect(out.sites.B.waitingNow).toBe(100);
     expect(out.sites.A.survey9or10).toBe(1 + 16);
-    // The wait numbers (owner OK, 2026-11-21) keep their own values.
-    expect(out.sites.A.recalled).toBe(1 + 17);
-    expect(out.sites.A.offerToCallSeconds).toBe(1 + 18);
-    expect(out.sites.B.wait120plus).toBe(100 + 22);
+    // Each field keeps its own value, so 2 swapped fields fail (Gemini review 2026-11-21).
+    expect(out.sites.A).toEqual(numbers(1));
+    expect(out.sites.B).toEqual(numbers(100));
   });
 
   it("leaves out an extra field that is not a SiteNumbers field, such as a visit code", () => {
