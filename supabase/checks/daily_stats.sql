@@ -1,13 +1,16 @@
 -- Check for the 24-hour clean-up (made in migration 20261116100000_daily_stats_and_cleanup.sql;
 -- the newest copy of delete_old_visits is in 20261121000000_patient_view_offered_at.sql).
 -- Run the whole file at once in the Supabase SQL Editor, after those migrations. It saves nothing:
--- everything happens inside "begin ... rollback", so the synthetic visits, the paused trigger,
+-- everything happens inside "begin ... rollback", so the synthetic visits, the 2 paused triggers,
 -- the real visits that the clean-up deletes and the daily_stats rows all come back as they were.
 -- If a number is wrong, the run stops with an error that names the row, what it got and what
 -- it expected (and still saves nothing). If all is right, it shows the 5 rows below.
 --
 -- Why the trigger is paused: visits_before_write sets every new time to now(), so this check
--- could not make visits that are more than 24 hours old.
+-- could not make visits that are more than 24 hours old. visits_check_step (migration
+-- 20261117000000) is paused too, because it lets a new visit start only as pre_arrival,
+-- waiting, declined or not_eligible, and this check inserts visits that are already closed.
+-- Both come back at the rollback.
 -- Why the year 2000: no real visit can count on those dates. Toronto is on EST (UTC-5) in
 -- January and on EDT (UTC-4) in July.
 -- D1 = 2000-01-01, D2 = 2000-01-02, D3 = 2000-07-01, D4 = 2000-07-02, all Toronto dates.
@@ -60,6 +63,7 @@
 begin;
 
 alter table public.visits disable trigger visits_before_write;
+alter table public.visits disable trigger visits_check_step;
 
 insert into public.daily_stats (day, site, is_demo, triaged_ctas_4_5, survey_responses, survey_score_sum)
 values ('2000-01-02', 'A', false, 100, 5, 40);
