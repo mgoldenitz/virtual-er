@@ -36,6 +36,8 @@ test("declined, then switched to off-site waiting, then undone", async ({ browse
     await openSlipLink(patient, slip.link);
     await expect(patient.getByRole("heading", { name: "Status: Waiting" })).toBeVisible();
     await expect(patient.getByText(EMERGENCY).first()).toBeVisible();
+    // The switch stamps last_still_here_at, but the patient did not tap: no "Thank you." (fault 1, 2026-11-21).
+    await expect(patient.getByText("Thank you.")).toHaveCount(0);
     expect(await axeFaults(patient)).toEqual([]);
 
     // Staff press Undo switch: the visit is back on-site, and its row leaves the off-site line.
