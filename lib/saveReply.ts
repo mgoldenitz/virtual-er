@@ -3,7 +3,5 @@
 
 /** True when the reply is for the link that is open now (the tap's link is still the current one). */
 export function replyIsForCurrentLink(tapToken: string | null, currentToken: string | null): boolean {
-  void tapToken;
-  void currentToken;
-  return true; // stub: the failing test comes first
+  return tapToken !== null && tapToken === currentToken;
 }
