@@ -620,3 +620,30 @@ Gemini Hydrogen 4, High, new chat, 2026-11-20. Pasted by the owner, as given.
 * **Radio Enter-submit and score `0` / `10` unit tests:**
   * **Concrete case:** `SurveyBox.click.test.tsx` tests button `.click()` with no score, never pressing Enter inside a radio input while `score === null` or `sending === true`, and (based on the diff) we cannot see lines 1–71 to verify whether `SurveyBox.click.test.tsx` tests submitting `0` and `10` in React (not sure without the rest of the file).
   * **Smallest fix:** Add unit cases submitting `0`, `10`, and `Enter` on a radio while `sending` is pending.
+
+## Claude's check of the response
+
+Checked against the code on 2026-11-20 (`c87d41a`).
+
+Real problems (fix):
+
+- 1.3 Staff Undo while focus is in the survey: focus falls to the page body. True: `StatusAndSound.tsx` line 39 gives `SurveyBox` no `onFocusLost`, but `StillHerePrompt` and `SoundSwitch` report lost focus to `lostFocus`. Fix: wrap the non-null output of `SurveyBox` in the existing `FocusBox` (`components/patient/FocusBox.tsx`) and pass `onFocusLost` from `StatusAndSound.tsx`. The box stays when the step goes from "ask" to "thanks", so it reports only when the survey leaves the page.
+- 2.1 No "Sending…" while the save runs. True, and the on-my-way button already does it (`PatientStatus.tsx` line 84: `sending ? p.sending : p.onMyWay`). Fix: the same pattern on Submit, with the existing `patient.sending` text. No new text.
+- 4 The 0/10 labels come after the 11 radios in reading order. True (`SurveyForm.tsx` lines 65 to 68). Fix: move the scale above the radios, keep `aria-describedby`. Whether VoiceOver reads `aria-describedby` on a `fieldset`: not checked (no real screen reader).
+- 7.2 No test for `aria-disabled` "true" while sending. True: removing `|| sending` passes all tests. Fix: assert it in the double-Submit test while the promise is pending.
+- 7.3 No test where the re-read (`surveyDone: true`) comes before "saved". True. Fix: add that test; focus must end on the thank-you.
+- 7.5 (part) No test that score 0 is sent. Score 0 is falsy, so a later `if (!score)` would break it silently. Fix: add a test that sends 0.
+
+Not a problem (no change):
+
+- 1.1 The two-commit case: the form goes, then focus moves to the thank-you one commit later. Focus still ends on the thank-you. A double announcement is "not sure" in the answer; a `role="status"` element that is added with its text is usually not announced as a change, and the focus then reads it once. The new test from 7.3 covers the order.
+- 1.2 Focus after the "unavailable" screen: this is the whole patient screen, not the survey; the same happens for every part of the page. Out of scope for this change.
+- 2.2 and 7.1 The double-Submit race: each real click is a separate discrete event, and React commits `sending = true` at the end of each one, so the second click runs the new handler. Two clicks in one `act()` is not a real browser case. The database also refuses a second score (check case 8).
+- 3 Same-frame alert: the offline fetch fails in milliseconds, not in the same event. "Not sure" in the answer; needs a real screen reader. Goes to the real-tester list in Phase 5, not a code change now.
+- 5 `refreshPatientView` cannot throw: `readFromDatabase` catches every error and gives "failed" (`data/patientVisit.ts` lines 71 to 79), `JSON.stringify` of the view cannot throw, and the listeners only tell React to read again.
+- 6 Case 16: the saved score 9 proves the call worked. `permissions.sql` already checks that `anon` has no table rights on `visits`. The e2e test saves a score through the real RPC over HTTP (37 passed, two times).
+- 7.4 and 7.5 (Enter in a radio): happy-dom does not run a form submit on Enter, so the test would prove nothing; the guard is the same line for click and Enter.
+
+Owner decision needed:
+
+- 2.3 Submit with no score does nothing and says nothing. Options: add a hint line ("Pick a score from 0 to 10 first."), which is new patient text in 5 languages (drafts, reviewed later by a fluent human); or keep it as it is (Submit is grayed out, and the note says answering is optional).
