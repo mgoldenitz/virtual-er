@@ -36,6 +36,17 @@ describe("CareOptions", () => {
     }
   });
 
+  it("keeps the 2 links inside sentences inline-block, so they stay in the line of text", () => {
+    const t = textFor("en").start;
+    const html = renderToStaticMarkup(<CareOptions language="en" />);
+    for (const words of ["811", t.hoursLink]) {
+      const tag = html.match(new RegExp(`<a [^>]*>${words.replace(/'/g, "&#x27;")}`))?.[0] ?? "";
+      const classes = tag.match(/class="([^"]*)"/)?.[1].split(" ") ?? [];
+      expect(classes).toContain("inline-block");
+      expect(classes).not.toContain("inline-flex");
+    }
+  });
+
   it("makes the 2 links that stand alone 44 pixels high", () => {
     // The 811 link and the hours link sit inside sentences, so WCAG 2.5.8 lets them stay small.
     const t = textFor("en").start;

@@ -105,3 +105,25 @@ Questions for part 2:
 - The links on a real phone, in a browser, or with a screen reader.
 - The full e2e run after this change.
 - Note B in a browser (count of `main` elements and whether one is hidden).
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-21 (pasted by the owner).
+
+Part 1, questions 1 to 4: no problem found for wrapping at 390 px, the `sr-only` span layout, the underline on two lines, or right-to-left text. Side note on question 2: the leading space in `<span className="sr-only"> {newTab}</span>` can collapse because the span is absolutely positioned (already true with `inline-block`); the "(" in `newTab` still separates the words in speech.
+
+Problems found in part 1:
+1. `CareOptions.test.tsx`, the `for (const classes of links)` loop: it no longer checks that links inside sentences stay `inline-block`. If `aloneStyle` went on an in-sentence link (for example `hoursLink`), all tests would pass. Fix: check that each link outside `[t.virtualCare, t.waitTimesLink]` has `inline-block` and not `inline-flex`.
+2. The new test does not check `min-h-11`; removing it would shrink the tap targets and the test would still pass. Also, `words` goes into `new RegExp(...)` without escaping regex characters or entities such as `&`. Fix: add `expect(classes).toContain("min-h-11")`, and escape `words` or query the DOM.
+
+Part 2:
+5. Note A: when `high < 60`, `low` is a bare number by design ("20 to 45 minutes"). Bug only for an inverted range (`high < 60 <= low`, for example 90 and 45 gives "90 to 45 minutes"). For 35 and 60 the result is "35 minutes to 1 hour", so the note likely came from the e2e regex matching "35 minutes to 1". Fix if callers do not guarantee `low <= high`: clamp `low = Math.min(low, high)`; tighten the e2e regex.
+6. Note B: the reason is right. `Activity mode="hidden"` sets `display: none` on the `/` page, so only one `main` is in the accessibility tree. Problems a hidden page can still cause: (1) duplicate `id`s shared by `/` and `/patient` (labels, `aria-labelledby`, skip links, focus targets) resolve to the first element in the DOM, which can be the hidden one; fix with `useId()` or scope lookups to the visible `main`. (2) `page.locator("main")` and `querySelectorAll("main")` match both; use `getByRole("main")`. (3) Screen readers are affected only through item 1 or a portal outside `Activity`.
+
+## Claude's check
+
+- Part 1, item 1: accepted. New test "keeps the 2 links inside sentences inline-block" (811 and `hoursLink`: `inline-block`, not `inline-flex`). It passes at once, as a guard, because the code is already right.
+- Part 1, item 2: rejected. `min-h-11` is checked by the existing test "makes the 2 links that stand alone 44 pixels high". Regex escaping: rejected; the link texts are fixed and the old test uses the same pattern.
+- Side note on the `sr-only` space: not from this change; left as it is.
+- Note A, inverted range: rejected. `waitRange` in `lib/queue.ts` line 66 gives `high = Math.max(low + 5, ...)`, so `high` is always more than `low`; `components/patient/PatientStatus.tsx` line 56 is the only caller. The e2e regex stays (it matches the real text).
+- Note B: the reason is confirmed. Duplicate `id`s: none. Ids on `/`: `options-heading`, `start-heading`, `saved-heading`, `start-paused`, `site-paused`. Ids on `/patient`: `status-heading`, `still-here-heading`, `still-here-thanks`, `still-here-card`, `still-here`, `sound-on`, `sound-failed`, `sound-off-called`, `confirmed`. `LanguageSwitch` wraps the `select` in its `label` (no `id`). `e2e/home-start.spec.ts` line 35 already filters `main` by text.
