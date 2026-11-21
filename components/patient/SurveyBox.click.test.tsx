@@ -111,7 +111,7 @@ describe("SurveyBox", () => {
   });
 });
 
-// The faults found in the Gemini Hydrogen 4 review (handoffs/2026-11-20-gemini-review-survey.md).
+// The faults found in the Gemini Hydrogen 4 review (handoffs/archive/2026-11-20-gemini-review-survey.md).
 describe("SurveyBox after the Gemini review", () => {
   const onSaved = vi.fn();
   const onFocusLost = vi.fn();

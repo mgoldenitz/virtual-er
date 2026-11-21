@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // The survey inside the real patient wiring (StatusAndSound), in StrictMode: where focus goes when
 // the form leaves the page, and that an Undo and a second arrival start a new, empty form.
-// Faults from the Gemini Hydrogen 4 review (handoffs/2026-11-20-gemini-review-survey.md).
+// Faults from the Gemini Hydrogen 4 review (handoffs/archive/2026-11-20-gemini-review-survey.md).
 
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
