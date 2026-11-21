@@ -27,7 +27,7 @@ export const PLAN_LIMITS: Record<DemoPlanField, Limit> = {
   still_here_chance: { normal: 0.7, min: 0.3, max: 0.95, meaning: "chance a demo patient answers I'm still here" },
   arrive_chance: { normal: 0.5, min: 0.2, max: 0.9, meaning: "chance a demo patient on the way arrives in a tick" },
   quick_recall_chance: { normal: 0.5, min: 0.3, max: 0.7, meaning: "chance the next recall comes after 12 minutes, not 18" },
-  home_start_chance: { normal: 0.1, min: 0.02, max: 0.3, meaning: "share of new demo visits that start from home" },
+  home_start_chance: { normal: 0.1, min: 0.02, max: 0.3, meaning: "chance a new demo visit starts from home in a tick" },
   desk_offer_chance: { normal: 0.8, min: 0.5, max: 0.95, meaning: "share of new desk visits offered the virtual wait" },
   english_share: { normal: 0.7, min: 0.3, max: 0.9, meaning: "share of new demo visits in English" },
 };
