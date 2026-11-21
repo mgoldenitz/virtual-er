@@ -16,6 +16,23 @@ describe("lastTapThisWait", () => {
     expect(lastTapThisWait({ triagedAt: triaged, lastStillHereAt: null })).toBeNull();
     expect(lastTapThisWait({ triagedAt: null, lastStillHereAt: "2026-11-10T12:35:00Z" })).toBeNull();
   });
+
+  it("does not count the switch stamp as a tap", () => {
+    const switched = {
+      triagedAt: triaged,
+      offeredAt: "2026-11-10T12:40:00Z",
+      lastStillHereAt: "2026-11-10T12:40:00Z",
+    };
+    expect(lastTapThisWait(switched)).toBeNull();
+    expect(lastTapThisWait({ ...switched, lastStillHereAt: "2026-11-10T12:50:00Z" })).toBe(
+      "2026-11-10T12:50:00Z",
+    );
+    const checkIn = { triagedAt: triaged, offeredAt: triaged, lastStillHereAt: "2026-11-10T12:35:00Z" };
+    expect(lastTapThisWait(checkIn)).toBe("2026-11-10T12:35:00Z");
+    expect(lastTapThisWait({ triagedAt: triaged, lastStillHereAt: "2026-11-10T12:35:00Z" })).toBe(
+      "2026-11-10T12:35:00Z",
+    );
+  });
 });
 
 describe("stillHereState", () => {
