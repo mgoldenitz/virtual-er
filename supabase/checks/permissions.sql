@@ -13,12 +13,16 @@
 -- revoked from them, so the list stays the same. 20261118010000_clear_demo_data.sql gives
 -- authenticated EXECUTE on clear_demo_data (staff only, the function checks is_staff), so that
 -- one line is added to the list. 20261118120000_daily_stats_staff_read.sql gives authenticated
--- SELECT on daily_stats (the policy lets only staff see rows), so that line is added too:
+-- SELECT on daily_stats (the policy lets only staff see rows), so that line is added too.
+-- 20261120000000_survey.sql gives anon and authenticated EXECUTE on submit_survey (SPEC hard
+-- rule 5: the patient submits the survey score once; it needs the visit's token), so those
+-- two lines are added:
 --   anon           table     change_signal       SELECT
 --   anon           function  confirm_on_my_way   EXECUTE
 --   anon           function  get_patient_visit   EXECUTE
 --   anon           function  record_seen         EXECUTE
 --   anon           function  record_still_here   EXECUTE
+--   anon           function  submit_survey       EXECUTE
 --   authenticated  table     change_signal       SELECT
 --   authenticated  table     daily_stats         SELECT
 --   authenticated  table     site_settings       SELECT, UPDATE
@@ -29,12 +33,13 @@
 --   authenticated  function  is_staff            EXECUTE
 --   authenticated  function  record_seen         EXECUTE
 --   authenticated  function  record_still_here   EXECUTE
+--   authenticated  function  submit_survey       EXECUTE
 -- Also listed, and fine: rls_auto_enable, for both roles. Supabase made it when the project
 -- was created; it turns on row-level security for each new table. It is an event trigger
 -- function, which Postgres refuses to run as an ordinary call.
 -- Also expected: every table listed has row-level security on (see the second query).
 -- Supabase's security advisor warns that anon can run get_patient_visit, record_seen,
--- confirm_on_my_way and record_still_here. That is on purpose (SPEC hard rule 5); each needs the visit's token.
+-- confirm_on_my_way, record_still_here and submit_survey. That is on purpose (SPEC hard rule 5); each needs the visit's token.
 
 -- Table rights use has_table_privilege, not information_schema.role_table_grants: that view
 -- shows only roles the current user belongs to, so through the read-only Supabase connection
