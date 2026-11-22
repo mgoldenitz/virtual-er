@@ -50,6 +50,11 @@ test("paused site B: the start page and the check-in offer no off-site waiting",
     await expect(patient.getByTestId("site-paused")).toHaveText(PAUSED_START_TEXT);
     await expect(patient.getByRole("button", { name: "Start a visit" })).toHaveCount(0);
 
+    // The server refuses too: a direct call to the start route gets "paused", and no visit is made.
+    const startAnswer = await patient.request.post("/api/start-visit", { data: { site: "B", language: "en" } });
+    expect(startAnswer.status()).toBe(409);
+    expect(await startAnswer.json()).toEqual({ result: "paused" });
+
     // The check-in for site B says the site is paused, offers "Waits on-site", and no "Start off-site waiting".
     await expect(staff.getByText(PAUSED_AT_SITE_TEXT)).toBeVisible();
     await expect(staff.getByRole("button", { name: "Waits on-site" })).toBeVisible();
