@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { startVisitFromHome, usePatientView, type StartResult } from "@/data/patientVisit";
 import { loadSavedToken } from "@/data/savedToken";
 import { useSitePauses } from "@/data/sitePauses";
@@ -32,6 +32,12 @@ export function StartVisit({ language }: { language: string }) {
   const [problem, setProblem] = useState<Exclude<StartResult, "saved"> | null>(null);
   const [starting, setStarting] = useState(false);
   const [wantsNew, setWantsNew] = useState(false);
+  const startHeading = useRef<HTMLHeadingElement>(null);
+  // Move focus to the form heading when "Start a new demo visit" opens the form, so keyboard and
+  // screen-reader users keep their place instead of falling back to the top of the page.
+  useEffect(() => {
+    if (wantsNew) startHeading.current?.focus();
+  }, [wantsNew]);
   const { pauses } = useSitePauses();
   const sitePaused = pauses?.[site] === true;
   // Screen readers hear the paused message once when the chosen site becomes paused (live, or
@@ -160,7 +166,7 @@ export function StartVisit({ language }: { language: string }) {
     <>
       {announcer}
       <section aria-labelledby="start-heading" className="clean-card space-y-4">
-        <h2 id="start-heading" className="text-2xl font-bold">
+        <h2 id="start-heading" ref={startHeading} tabIndex={-1} className="text-2xl font-bold">
           {s.startHeading}
         </h2>
         <p>{s.startIntro}</p>

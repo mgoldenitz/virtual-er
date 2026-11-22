@@ -49,16 +49,19 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
       <Button variant="secondary" onClick={writeSummary} disabled={waiting || resting}>
         Write a short summary
       </Button>
-      {waiting && <p role="status">Writing the summary...</p>}
-      {message?.kind === "text" && (
-        <>
-          <p>{message.text}</p>
-          <p className="text-sm text-muted">
-            {"Written by an AI model from today's totals. Check the numbers above."}
-          </p>
-        </>
-      )}
-      {message?.kind === "note" && <p role="status">{message.text}</p>}
+      {/* One live box, always on the page, so screen readers hear the summary or the note when it comes. */}
+      <div role="status" className="space-y-3">
+        {waiting && <p>Writing the summary...</p>}
+        {message?.kind === "text" && (
+          <>
+            <p>{message.text}</p>
+            <p className="text-sm text-muted">
+              {"Written by an AI model from today's totals. Check the numbers above."}
+            </p>
+          </>
+        )}
+        {message?.kind === "note" && <p>{message.text}</p>}
+      </div>
     </section>
   );
 }

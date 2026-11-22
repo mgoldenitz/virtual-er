@@ -5,7 +5,7 @@ import { textFor } from "@/lib/text";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-line bg-canvas px-4 py-4 text-center text-sm text-muted">
+    <footer lang="en" dir="ltr" className="mt-auto border-t border-line bg-canvas px-4 py-4 text-center text-sm text-muted">
       {textFor("en").footer}
     </footer>
   );

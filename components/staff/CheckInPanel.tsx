@@ -4,7 +4,7 @@
 // "start off-site waiting", "offered, declined" or "not eligible". It checks in either a new
 // desk visit, or a visit the patient started from home (chosen from Expected arrivals).
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
 import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
@@ -53,6 +53,7 @@ export function CheckInPanel({
   const [language, setLanguage] = useState("en");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   // A different home visit was chosen: start the form fresh, with the language the patient picked.
   const [formFor, setFormFor] = useState<string | null>(null);
@@ -74,6 +75,9 @@ export function CheckInPanel({
     setLanguage("en");
     setMessage("");
     onHomeDone();
+    // Cancel hides the button that had focus. Move focus to the heading first, so keyboard and
+    // screen-reader users keep their place instead of falling back to the top of the page.
+    heading.current?.focus();
   }
 
   /** Save the check-in; returns the visit code, or null after showing why it was not saved. */
@@ -152,7 +156,7 @@ export function CheckInPanel({
 
   return (
     <form onSubmit={onSubmit} className="glass-panel space-y-4" aria-labelledby="checkin-heading">
-      <h2 id="checkin-heading" tabIndex={-1} className="text-2xl font-bold">
+      <h2 id="checkin-heading" ref={heading} tabIndex={-1} className="text-2xl font-bold">
         {homeVisit ? `Check in visit ${homeVisit.code} after triage` : "Check in a patient after triage"}
       </h2>
       {homeVisit && (
