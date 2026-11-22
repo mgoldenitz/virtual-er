@@ -1,4 +1,4 @@
-# Virtual ER Waiting Room: concept prototype spec
+# WaitWell: A virtual ER waiting room (concept prototype spec)
 
 Read this whole file before writing code. Build one phase at a time and stop at the end of each phase so I can test it. I am new to coding: explain each new file in one plain sentence, and tell me exactly what to click or type when I have to do something myself. Never ask me to paste API keys or passwords into chat; tell me which file or settings page they go in.
 
@@ -10,7 +10,7 @@ It is a concept prototype. It is not affiliated with any hospital, uses only inv
 
 "Concept prototype. Not affiliated with or endorsed by Trillium Health Partners. Demo data only."
 
-App name: TBD (I will choose it). Use "Virtual Waiting Room" as a placeholder.
+App name: WaitWell. The main header uses the full name, "WaitWell: A virtual ER waiting room". Subheaders and other places use "WaitWell". (Owner, 2026-11-22.)
 
 ## Stack
 
