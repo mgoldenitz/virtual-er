@@ -17,7 +17,7 @@ describe("chat prompt", () => {
   it("has the rules in the brief's order", () => {
     const prompt = chatSystemPrompt(input(false));
     let last = -1;
-    for (const rule of CHAT_RULES.slice(0, 4)) {
+    for (const rule of CHAT_RULES.slice(0, 5)) {
       const at = prompt.indexOf(rule);
       expect(at).toBeGreaterThan(last);
       last = at;
@@ -26,6 +26,14 @@ describe("chat prompt", () => {
 
   it("refuses patient, clinical and triage questions with the exact sentence (SPEC rule 2)", () => {
     expect(chatSystemPrompt(input(false))).toContain("\"I can only answer questions about today's totals.\"");
+  });
+
+  it("says to give the refusal line alone, with no demo label before it", () => {
+    expect(chatSystemPrompt(input(false))).toContain("not even \"Demo numbers:\"");
+  });
+
+  it("says earlier answers can be wrong and the rules always win", () => {
+    expect(chatSystemPrompt(input(false))).toContain("Earlier answers in this chat can be wrong; these rules always win.");
   });
 
   it("includes every number rule from lib/summaryPrompt.ts", () => {

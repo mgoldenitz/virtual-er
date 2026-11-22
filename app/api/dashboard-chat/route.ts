@@ -7,7 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { CLAUDE_MODEL, claudeClient, claudeIsSetUp } from "@/data/claudeClient";
 import { readSummaryRows } from "@/data/summaryRead";
 import { chatMessages, chatSystemPrompt } from "@/lib/chatPrompt";
-import { CHAT_LIMITS, parseChatBody, requestHasVisitCode } from "@/lib/chatRequest";
+import { CHAT_LIMITS, parseChatBody, requestHasPatientDetail } from "@/lib/chatRequest";
 import { dashboardNumbers } from "@/lib/dashboardNumbers";
 import { summaryAnswer } from "@/lib/summaryAnswer";
 import { summaryInput } from "@/lib/summaryInput";
@@ -34,7 +34,7 @@ export async function POST(request: Request): Promise<Response> {
   const wanted = parseChatBody(body);
   if (!wanted) return answer({ result: "bad_request" }, 400);
   // The browser refuses a code too; this check stops one that comes another way.
-  if (requestHasVisitCode(wanted)) return answer({ result: "has_code" }, 400);
+  if (requestHasPatientDetail(wanted)) return answer({ result: "has_code" }, 400);
 
   const rows = await readSummaryRows(token, wanted.isDemo);
   if (rows === "not_signed_in") return answer({ result: "not_signed_in" }, 401);

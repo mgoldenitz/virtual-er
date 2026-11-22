@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { CHAT_LIMITS, hasVisitCode, parseChatBody, requestHasVisitCode, type ChatRequest } from "./chatRequest";
+import { makeAccessToken, groupToken } from "./codes";
+import {
+  CHAT_LIMITS, hasAccessToken, hasLongNumber, hasPatientDetail, hasVisitCode, parseChatBody, requestHasPatientDetail, type ChatRequest,
+} from "./chatRequest";
 
 const base = { isDemo: true, question: "How many are waiting?", history: [] };
 
@@ -119,8 +122,24 @@ describe("hasVisitCode", () => {
     expect(hasVisitCode("abc234")).toBe(true);
   });
 
-  it("does not join two words split by a hyphen", () => {
-    expect(hasVisitCode("ABC-234")).toBe(false);
+  it("joins a code split by a hyphen", () => {
+    expect(hasVisitCode("ABC-234")).toBe(true);
+  });
+
+  it("joins a code split by a space", () => {
+    expect(hasVisitCode("Where is ABC 234?")).toBe(true);
+  });
+
+  it("finds a code after a word that is not a code", () => {
+    expect(hasVisitCode("THE ABC 234")).toBe(true);
+  });
+
+  it("does not join 4 and 2 characters into a code", () => {
+    expect(hasVisitCode("WERE 23")).toBe(false);
+  });
+
+  it("does not join a site letter and a number", () => {
+    expect(hasVisitCode("site B 234")).toBe(false);
   });
 
   it("does not count 'BEDS12' as a code, because 1 is not in CODE_ALPHABET", () => {
@@ -145,25 +164,101 @@ describe("hasVisitCode", () => {
   });
 });
 
-describe("requestHasVisitCode", () => {
+describe("hasAccessToken", () => {
+  // A fixed set of bytes, so the token is the same on every run.
+  const fixed = (length: number) => new Uint8Array(length).fill(7);
+  const token = makeAccessToken(fixed);
+
+  it("finds a plain token from makeAccessToken", () => {
+    expect(hasAccessToken(token)).toBe(true);
+  });
+
+  it("finds the same token through groupToken", () => {
+    expect(hasAccessToken(groupToken(token))).toBe(true);
+  });
+
+  it("finds a grouped token typed in lower case", () => {
+    expect(hasAccessToken(groupToken(token).toLowerCase())).toBe(true);
+  });
+
+  it("finds a #t= link", () => {
+    expect(hasAccessToken("see #t=abc")).toBe(true);
+  });
+
+  it("needs a digit in 26 letters", () => {
+    expect(hasAccessToken("ABCDEFGHJKMNPQRSTVWXYZABCD")).toBe(false);
+  });
+
+  it("is false for an ordinary question", () => {
+    expect(hasAccessToken("How many waited today?")).toBe(false);
+  });
+});
+
+describe("hasLongNumber", () => {
+  it("finds a phone number with hyphens", () => {
+    expect(hasLongNumber("416-555-0199")).toBe(true);
+  });
+
+  it("finds 7 digits in a row", () => {
+    expect(hasLongNumber("1234567")).toBe(true);
+  });
+
+  it("finds a phone number with spaces", () => {
+    expect(hasLongNumber("416 555 0199")).toBe(true);
+  });
+
+  it("needs 7 digits, not 6", () => {
+    expect(hasLongNumber("123456")).toBe(false);
+  });
+
+  it("does not join numbers split by words", () => {
+    expect(hasLongNumber("between 30 and 59")).toBe(false);
+    expect(hasLongNumber("30 and 59")).toBe(false);
+  });
+});
+
+describe("hasPatientDetail", () => {
+  it("is true for a visit code", () => {
+    expect(hasPatientDetail("Where is ABC234?")).toBe(true);
+  });
+
+  it("is true for a token", () => {
+    expect(hasPatientDetail(makeAccessToken((n) => new Uint8Array(n).fill(7)))).toBe(true);
+  });
+
+  it("is true for a phone number", () => {
+    expect(hasPatientDetail("Call 416-555-0199")).toBe(true);
+  });
+
+  it("is false for a question about the site", () => {
+    expect(hasPatientDetail("How many waiting at site B?")).toBe(false);
+  });
+});
+
+describe("requestHasPatientDetail", () => {
   const request = (question: string, history: ChatRequest["history"]): ChatRequest => ({ isDemo: true, question, history });
 
   it("finds a code in the question", () => {
-    expect(requestHasVisitCode(request("Where is ABC234?", []))).toBe(true);
+    expect(requestHasPatientDetail(request("Where is ABC234?", []))).toBe(true);
   });
 
   it("finds a code in a staff (user) turn of the history", () => {
     const history = [{ role: "user" as const, text: "Check ABC234" }, { role: "assistant" as const, text: "Noted." }];
-    expect(requestHasVisitCode(request("How many waiting?", history))).toBe(true);
+    expect(requestHasPatientDetail(request("How many waiting?", history))).toBe(true);
   });
 
-  it("ignores a code in an assistant turn", () => {
+  it("finds a code in an assistant turn", () => {
     const history = [{ role: "user" as const, text: "How many waiting?" }, { role: "assistant" as const, text: "ABC234 is fine" }];
-    expect(requestHasVisitCode(request("How many recalled?", history))).toBe(false);
+    expect(requestHasPatientDetail(request("How many recalled?", history))).toBe(true);
+  });
+
+  it("finds a phone number in a user turn", () => {
+    const history = [{ role: "user" as const, text: "Call 416-555-0199" }, { role: "assistant" as const, text: "Noted." }];
+    expect(requestHasPatientDetail(request("How many recalled?", history))).toBe(true);
   });
 
   it("is false when there is no code anywhere", () => {
-    expect(requestHasVisitCode(request("How many waiting?", []))).toBe(false);
+    expect(requestHasPatientDetail(request("How many waiting?", []))).toBe(false);
   });
 });
 

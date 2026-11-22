@@ -1,9 +1,11 @@
 // Decides what the staff chat panel shows for the chat route's answer: Claude's text, or one plain staff line that says why there is no answer.
 
+import { CHAT_LIMITS } from "./chatRequest";
+
 export type ChatMessage = { kind: "text" | "note"; text: string };
 
 /** The text for the one visit-code case, so it can be checked on its own. */
-export const CHAT_CODE_TEXT = "Please remove the visit code. The AI sees only today's totals.";
+export const CHAT_CODE_TEXT = "Please remove the visit code or number. The AI sees only today's totals.";
 
 const NOTES: Record<string, string> = {
   refusal: "No answer could be written for this question. The numbers above are still correct.",
@@ -14,7 +16,7 @@ const NOTES: Record<string, string> = {
   not_staff: "Only staff accounts can ask questions.",
   busy: "The chat service is busy. Please try again in a minute.",
   has_code: CHAT_CODE_TEXT,
-  bad_request: "Please write a question of 300 characters or fewer.",
+  bad_request: `Please write a question of ${CHAT_LIMITS.questionCharacters} characters or fewer.`,
 };
 const FALLBACK = "No answer just now. The numbers above are still correct.";
 

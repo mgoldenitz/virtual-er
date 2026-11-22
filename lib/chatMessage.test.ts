@@ -29,7 +29,7 @@ describe("chat message", () => {
 
   it("gives the visit-code note for has_code", () => {
     expect(chatMessage(200, { result: "has_code" })).toEqual({ kind: "note", text: CHAT_CODE_TEXT });
-    expect(CHAT_CODE_TEXT).toBe("Please remove the visit code. The AI sees only today's totals.");
+    expect(CHAT_CODE_TEXT).toBe("Please remove the visit code or number. The AI sees only today's totals.");
   });
 
   it("says the chat is off for status 204", () => {
