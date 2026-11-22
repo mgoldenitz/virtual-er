@@ -10,7 +10,7 @@ import { Button } from "@/components/Button";
 import { fetchChatAnswer } from "@/data/dashboardChat";
 import { chatHistory, type ChatEntry } from "@/lib/chatHistory";
 import { CHAT_CODE_TEXT } from "@/lib/chatMessage";
-import { CHAT_LIMITS, hasVisitCode } from "@/lib/chatRequest";
+import { CHAT_LIMITS, hasPatientDetail } from "@/lib/chatRequest";
 
 const WAIT_BETWEEN_QUESTIONS_MS = 10_000;
 
@@ -21,6 +21,15 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
   const [codeNote, setCodeNote] = useState(false);
   const [resting, setResting] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const questionBox = useRef<HTMLTextAreaElement>(null);
+
+  // After a Real or Demo switch, start a new empty list, so a switch back does not show the old one.
+  const [shownFor, setShownFor] = useState(isDemo);
+  if (shownFor !== isDemo) {
+    setShownFor(isDemo);
+    setChat({ forDemo: isDemo, entries: [] });
+    setCodeNote(false);
+  }
 
   // When the dashboard closes, stop the 10-second timer.
   useEffect(() => {
@@ -38,8 +47,8 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
     const asked = question.trim();
     // The timer ref changes at once, so it also stops a second press that comes before React redraws.
     if (asked === "" || waiting || resting || timer.current !== null) return;
-    // SPEC rule 1: a visit code never leaves the app. The server checks this too.
-    if (hasVisitCode(asked)) {
+    // SPEC rule 1: a visit code, token or long number never leaves the app. The server checks this too.
+    if (hasPatientDetail(asked)) {
       setCodeNote(true);
       return;
     }
@@ -65,6 +74,8 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
   function clearChat() {
     setChat({ forDemo: isDemo, entries: [] });
     setCodeNote(false);
+    // The Clear chat button goes away, so keyboard focus goes to the question box.
+    questionBox.current?.focus();
   }
 
   return (
@@ -96,6 +107,7 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
         </label>
         <textarea
           id="chat-question"
+          ref={questionBox}
           value={question}
           onChange={(event) => {
             setQuestion(event.target.value);
@@ -111,7 +123,8 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
         </p>
         {codeNote && <p role="alert">{CHAT_CODE_TEXT}</p>}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" variant="secondary" disabled={waiting || resting}>
+          {/* Only grayed out (aria-disabled), so keyboard focus stays on it; the guard in ask() stops a press. */}
+          <Button type="submit" variant="secondary" aria-disabled={waiting || resting}>
             Ask
           </Button>
           {entries.length > 0 && (

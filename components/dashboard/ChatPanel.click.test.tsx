@@ -85,11 +85,12 @@ describe("ChatPanel", () => {
   it("rests Ask for 10 seconds after a question", async () => {
     render(false);
     await ask("First question");
-    expect(askButton().disabled).toBe(true);
+    expect(askButton().getAttribute("aria-disabled")).toBe("true");
+    expect(askButton().disabled).toBe(false);
     await ask("Second question");
     expect(fetchChatAnswer).toHaveBeenCalledTimes(1);
     act(() => vi.advanceTimersByTime(10_000));
-    expect(askButton().disabled).toBe(false);
+    expect(askButton().getAttribute("aria-disabled")).toBe("false");
     await ask("Second question");
     expect(fetchChatAnswer).toHaveBeenCalledTimes(2);
     // The second call carries the first question and its answer.
@@ -121,5 +122,19 @@ describe("ChatPanel", () => {
     act(() => clearButton()?.click());
     expect(log().textContent).toBe("");
     expect(clearButton()).toBeUndefined();
+  });
+
+  it("moves keyboard focus to the question box after Clear chat", async () => {
+    render(false);
+    await ask("How many waiting?");
+    act(() => clearButton()?.click());
+    expect(document.activeElement).toBe(container.querySelector("textarea"));
+  });
+
+  it("refuses a phone number and makes no call", async () => {
+    render(false);
+    await ask("Call 416-555-0199 about the wait");
+    expect(fetchChatAnswer).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(CHAT_CODE_TEXT);
   });
 });

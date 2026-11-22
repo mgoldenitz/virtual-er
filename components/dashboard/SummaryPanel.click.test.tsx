@@ -70,4 +70,13 @@ describe("SummaryPanel status box", () => {
     expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
     await act(async () => finish({ kind: "text", text: SUMMARY }));
   });
+
+  it("only grays out the button while it rests, and a second click makes no call", async () => {
+    act(() => root.render(<SummaryPanel isDemo={false} />));
+    await act(async () => summaryButton()?.click());
+    expect(summaryButton()?.getAttribute("aria-disabled")).toBe("true");
+    expect(summaryButton()?.disabled).toBe(false);
+    await act(async () => summaryButton()?.click());
+    expect(fetchDashboardSummary).toHaveBeenCalledTimes(1);
+  });
 });

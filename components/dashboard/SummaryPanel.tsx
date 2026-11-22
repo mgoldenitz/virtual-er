@@ -46,7 +46,8 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
 
   return (
     <section aria-label="Summary" className="space-y-3 rounded-lg border-2 border-line bg-card p-4">
-      <Button variant="secondary" onClick={writeSummary} disabled={waiting || resting}>
+      {/* Only grayed out (aria-disabled), so keyboard focus stays on it; the guard in writeSummary() stops a click. */}
+      <Button variant="secondary" onClick={writeSummary} aria-disabled={waiting || resting}>
         Write a short summary
       </Button>
       {/* One live box, always on the page, so screen readers hear the summary or the note when it comes.
