@@ -18,6 +18,14 @@ describe("summary answer", () => {
     expect(summaryAnswer(reply({ stop_reason: "max_tokens" }))).toEqual({ kind: "none", reason: "cut_off" });
   });
 
+  it("gives none with reason cut_off when stop_reason is pause_turn", () => {
+    expect(summaryAnswer(reply({ stop_reason: "pause_turn" }))).toEqual({ kind: "none", reason: "cut_off" });
+  });
+
+  it("gives none with reason cut_off when stop_reason is null", () => {
+    expect(summaryAnswer(reply({ stop_reason: null }))).toEqual({ kind: "none", reason: "cut_off" });
+  });
+
   it("checks the stop reason before the text, so a refusal with text is still none", () => {
     expect(summaryAnswer(reply({ stop_reason: "refusal" }))).toEqual({ kind: "none", reason: "refusal" });
   });
