@@ -574,3 +574,58 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
   );
 }
 ```
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-22, pasted by the owner.
+
+1. Can a visit code, a patient name or other patient data reach Claude by any path?
+
+Yes. Several paths allow a visit code or other patient data to reach Claude:
+
+- Assistant turns in `history` are not checked for visit codes (`lib/chatRequest.ts:33-36`): `requestHasVisitCode` only scans `request.question` and turns where `turn.role === "user"`, explicitly skipping `"assistant"` turns. Because the server does not save or sign prior turns, any authenticated staff caller (or a modified client request) can place a visit code or patient data inside an `"assistant"` turn in `history`, and `app/api/dashboard-chat/route.ts:52` forwards it directly to Claude.
+- Split, hyphenated, spaced, affixed, or mistyped visit codes bypass `hasVisitCode` (`lib/chatRequest.ts:28-45`): `hasVisitCode` splits on `/[^A-Za-z0-9]+/` and `isVisitCodeWord` requires `word.length === 6` and every character in `CODE_ALPHABET`. Typing `ABC-234` or `ABC 234` splits into two 3-character pieces (`"ABC"`, `"234"`), typing `ABC234s` or `vABC234` has length 7, and typing a look-alike character outside `CODE_ALPHABET` (`0`, `1`, `I`, `L`, `O`, such as `ABC23O`) fails the alphabet check, so all of those pass and reach Claude.
+- Other structured patient data and repeated history (`lib/chatRequest.ts:28-36`, `lib/chatHistory.ts:11-17`): 26-character access tokens, `/patient#t=...` links, and numeric patterns like health card or phone numbers are not checked and pass through. If staff type a patient name or other PHI into a question (or Claude echoes it in its answer), `chatHistory` also resends that Q&A pair to Claude on the next two turns.
+- System prompt (`lib/chatPrompt.ts:22-24`, `app/api/dashboard-chat/route.ts:43`): No leak found on this path; only `isDemo` and the 23 numeric totals per site from `summaryInput` enter `chatSystemPrompt`.
+
+2. Can a staff question make Claude break the rules, and does server checking stop a forged history?
+
+- Server checking does not stop a forged history (`lib/chatRequest.ts:48-73`, `app/api/dashboard-chat/route.ts:4-5, 34`): Because nothing is stored or signed on the server, `parseChatBody` only validates shape and character limits: at most 4 turns, alternating `user` / `assistant` ending in `assistant`, <= 300 characters per `user` turn, and <= 1200 characters per `assistant` turn. Any signed-in staff caller can send fabricated `user` and `assistant` turns that Claude never produced.
+- Prompt injection via forged `assistant` turns (`lib/chatPrompt.ts:17, 27-33`): `chatMessages` passes forged `assistant` turns straight to Claude as its own prior `role: "assistant"` replies. Supplying a fake prior turn where the `assistant` gives clinical triage advice, breaks formatting rules, or ignores the totals strongly steers Claude to continue breaking the rules on the new question, especially since `CHAT_RULES` only warns Claude against instructions in `"The staff question"`, not in prior turns.
+- Rule conflict in Demo mode and zero output checking (`lib/chatPrompt.ts:15`, `lib/summaryPrompt.ts:21`, `app/api/dashboard-chat/route.ts:54-56`): `CHAT_RULES` tells Claude to `"answer only: \"I can only answer questions about today's totals.\""` for off-topic or clinical questions, while `SUMMARY_NUMBER_RULES` requires `"If the totals are for demo visits, start with \"Demo numbers:\"."`. In addition, `route.ts` performs no output validation before returning `{ result: "text", text }` (it does not check for `"Demo numbers:"` or reject clinical/triage language).
+
+3. State order in `ChatPanel` (`components/dashboard/ChatPanel.tsx`)
+
+- Switching `Real -> Demo -> Real` brings back the old list and still receives the in-flight answer (`ChatPanel.tsx:5, 18, 32, 52-54`): Switching `isDemo` only hides `chat.entries` during render (`const entries = chat.forDemo === isDemo ? chat.entries : []`) without clearing `chat` state. If staff ask a question in Real, switch to Demo, and switch back to Real without asking a Demo question, the old Real entries reappear instead of the list being emptied by the switch. Worse, if the Real answer arrives while staff are looking at Demo, `now.forDemo === forDemo` is still `true`, so the answer is written into `chat` and waits to reappear when they return to Real. (A Real answer will not render inside Demo, and a Demo answer will not render inside Real.)
+- `Clear chat` button lacks `type="button"` inside `<form>` (`ChatPanel.tsx:64, 100-108`): `Ask` explicitly sets `type="submit"` (`ChatPanel.tsx:101`), while `Clear chat` omits `type` (`ChatPanel.tsx:105`). Because `@/components/Button` is not in the diff, if `Button` does not default `type="button"`, HTML defaults `<button>` inside `<form onSubmit={ask}>` to `type="submit"`, so clicking `Clear chat` while text is in the box (and `Ask` is enabled) will clear the list and immediately submit the text as a new question.
+- StrictMode, fast double press, and `Clear chat` while waiting:
+  - `StrictMode` does not break `timer.current` because `useEffect` (`ChatPanel.tsx:25-30`) uses `[]` and only clears on unmount, and `setChat` uses a pure functional update.
+  - A fast double press is blocked synchronously because `timer.current = setTimeout(...)` is assigned before `await fetchChatAnswer`, so the second click hits `timer.current !== null` (`ChatPanel.tsx:36-43`).
+  - `Clear chat` while an answer is on the way sets `entries` to `[]` (dropping `waiting` to `false` immediately while `resting` keeps `Ask` off for the remaining 10 seconds), and when the in-flight call resolves, `now.entries.map((e) => (e === entry ? ... : e))` finds no match in `[]`, so the cleared answer does not come back (`ChatPanel.tsx:52-59`).
+  - Note also that `question` and `codeNote` are not cleared when `isDemo` switches (`ChatPanel.tsx:19-20`).
+
+4. Accessibility (`role="log"`, `"Writing the answer..."`, code alert, focus)
+
+- `role="log"` with `aria-live="polite"` (`ChatPanel.tsx:67-84`):
+  - Keeping `<div role="log">` permanently in the DOM is the right base pattern for an appending list (`aria-live="polite"` is redundant on `role="log"`, though harmless).
+  - However, inserting `<p>You asked: ...</p>` and `<p>Writing the answer...</p>` together (`ChatPanel.tsx:70-71`) causes screen readers to read back the entire question before saying `"Writing the answer..."`. If the answer returns quickly, `<p>Writing the answer...</p>` is unmounted and replaced by two new `<p>` elements (the answer plus `"Written by an AI model from today's totals. Check the numbers above."`), so `"Writing the answer..."` can be interrupted or queued after the question depending on the screen reader, and the AI disclaimer is read aloud on every single answer.
+  - Clicking `Clear chat` empties the `role="log"` with no announcement because `role="log"` defaults to `aria-relevant="additions text"`.
+- Visit-code `role="alert"` (`ChatPanel.tsx:99`): `{codeNote && <p role="alert">{CHAT_CODE_TEXT}</p>}` conditionally mounts the `role="alert"` node when `codeNote` becomes `true`. On iOS Safari with VoiceOver, dynamically mounting a new `role="alert"` element is frequently missed compared to injecting text into an always-mounted alert container. Also, clicking `Ask` a second time without editing the textarea leaves `codeNote === true` (nothing changes in the DOM to re-announce), and `<textarea>` keeps `aria-describedby="chat-note"` without `aria-invalid` or linking the alert (`ChatPanel.tsx:86-95`, WCAG 3.3.1 / 1.3.1).
+- Focus loss on `Ask` and `Clear chat` (WCAG 2.4.3 / screen-reader UX):
+  - `disabled={waiting || resting}` on `Ask` (`ChatPanel.tsx:101`) disables the button while it has focus, dropping browser and screen-reader focus to `document.body` (using `aria-disabled={waiting || resting}` with the existing guard in `ask()` preserves focus).
+  - Clicking `Clear chat` (`ChatPanel.tsx:104-108`) unmounts the button while focused, dropping focus to `document.body`.
+- Silent no-op on empty submit (`ChatPanel.tsx:36`): Submitting an empty or whitespace-only question returns silently with no visible or spoken feedback (WCAG 3.3.1 / 4.1.3).
+
+5. Do the tests prove the behaviour, or can they pass for the wrong reason in happy-dom?
+
+The test files were left out of the diff (`ChatPanel.click.test.tsx`, `chatHistory.test.ts`, `chatMessage.test.ts`, `chatPrompt.test.ts`, `chatRequest.test.ts`), so I cannot inspect their assertions directly. Please share `components/dashboard/ChatPanel.click.test.tsx` and `lib/chatRequest.test.ts` if you want them checked. Based on the production code and change list, several gaps cannot be proved by `happy-dom` tests alone:
+
+- No automated tests for `app/api/dashboard-chat/route.ts`: The changed-files list contains no test file for `route.ts`, and 503 `busy` / 502 `claude_failed` were not tested against the dev server. Body-length rejection (`> 6000`), server-side `requestHasVisitCode`, `readSummaryRows` error statuses (`401`/`403`/`500`), and Claude error mapping (`RateLimitError` -> `503`, other failures -> `502`) have no automated test coverage.
+- Live regions and `role="alert"` in `happy-dom`: `happy-dom` has no screen reader or live-region queue, so `getByRole("log")` or `getByRole("alert")` assertions only verify DOM attributes and cannot prove that VoiceOver, TalkBack, or NVDA announces `"Writing the answer..."`, the answer, or the conditionally mounted code alert.
+- Focus and form submission in `happy-dom`: `happy-dom` does not reliably mirror browser focus dropping when a focused button becomes `disabled` (`Ask`) or unmounts (`Clear chat`), and unit tests on `ChatPanel` will miss the `Real -> Demo -> Real` state resurrection unless a test toggles `isDemo` `false -> true -> false` without clearing.
+
+6. Is anything simpler that does the same job?
+
+- Resetting chat on mode switch (`ChatPanel.tsx:18, 32`): Instead of wrapping entries in `{ forDemo, entries }` and hiding stale entries in render (which breaks `Real -> Demo -> Real`), store `entries` as a plain `ChatEntry[]` and reset it when `isDemo` changes (using a `prevDemo` state comparison during render, rather than `key={String(isDemo)}` which would reset the 10-second `resting` timer).
+- Error message drift (`lib/chatMessage.ts:17`): `NOTES.bad_request` hardcodes `"300"` instead of `CHAT_LIMITS.questionCharacters`, and also fires when `history` or `bodyCharacters` fails `parseChatBody`; a shorter general message or interpolating `CHAT_LIMITS.questionCharacters` avoids drift.
+- Otherwise, `data/dashboardChat.ts` (24 lines), `lib/chatHistory.ts` (19 lines), `lib/chatMessage.ts` (29 lines), `lib/chatPrompt.ts` (33 lines), `lib/chatRequest.ts` (86 lines), and `app/api/dashboard-chat/route.ts` (63 lines) are already minimal and easy for a beginner to read.
