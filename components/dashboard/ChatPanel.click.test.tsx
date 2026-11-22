@@ -107,6 +107,14 @@ describe("ChatPanel", () => {
     expect(log().textContent).toBe("");
   });
 
+  it("keeps the list empty after Real, then Demo, then Real again", async () => {
+    render(false);
+    await ask("How many waiting?");
+    render(true);
+    render(false);
+    expect(log().textContent).toBe("");
+  });
+
   it("empties the list with Clear chat", async () => {
     render(false);
     await ask("How many waiting?");
