@@ -48,6 +48,25 @@ describe.each(Object.entries(LANGUAGES))("%s", (_name, text) => {
   });
 });
 
+// "How it works", "Questions" and "Before you leave" name buttons and statuses, so they must use their exact words.
+describe.each(Object.entries({ en, ...LANGUAGES }))("%s Part 2 sections", (_name, text) => {
+  const s = text.start;
+  it("has 5 written steps and 4 before-you-leave items", () => {
+    expect(s.howSteps).toHaveLength(5);
+    expect(text.patient.beforeItems).toHaveLength(4);
+  });
+
+  it("names each button and status exactly", () => {
+    expect(s.howSteps[0]).toContain(s.startButton);
+    expect(s.howSteps[2]).toContain(text.stillHere.button);
+    expect(s.howSteps[3]).toContain(text.patient.calledHeading);
+    expect(s.howSteps[3]).toContain(text.patient.onMyWay);
+    expect(text.patient.beforeItems[1]).toContain(text.sound.turnOn);
+    expect(s.questions.stillHere.q).toContain(text.stillHere.button);
+    expect(s.questions.noReply.a).toContain(text.patient.onMyWay);
+  });
+});
+
 // The "Sound is off" line tells the patient which button to tap, so it must use the button's exact words.
 describe.each(Object.entries({ en, ...LANGUAGES }))("%s sound lines", (_name, text) => {
   it("names the Turn on sound button exactly", () => {
