@@ -20,7 +20,7 @@ Staff screens (login needed):
 - /dashboard: counts for today and the past 7 days, a funnel of today's counts, wait bands and a CSV download. It has a Real view and a Demo view. Real and demo visits are never mixed.
 - A demo simulator plays both sides at Demo Site A and Demo Site B, so the screens look busy. Staff can clear all demo data with one button.
 
-Languages: English, French, Urdu, Arabic and Mandarin (Simplified Chinese). Urdu and Arabic screens run right to left. Only English is marked as checked by a fluent speaker. The other four show a draft notice until a fluent speaker checks them.
+Languages: English, French, Urdu, Arabic and Chinese (Simplified). Urdu and Arabic screens run right to left. Only English is marked as checked by a fluent speaker. The other four show a draft notice until a fluent speaker checks them.
 
 Accessibility features:
 
@@ -82,7 +82,9 @@ Steps:
    - E2E_STAFF_EMAIL and E2E_STAFF_PASSWORD: a test staff account, used only by the end-to-end tests. Leave them empty if you do not run those tests.
    Never paste these values into chat, into a shared file or into a screenshot.
 4. Set up the database. In Supabase, open the SQL Editor. Open each file in supabase/migrations/ and run it in order. Sort the files by name, lowest first. Each name starts with a timestamp.
-5. Create a staff user in Supabase, under Authentication, Users. The user needs the staff role. The first migration file (supabase/migrations/20261110060756_tables_and_security.sql) says which accounts count as staff. Ask the project owner for the exact steps to set the role.
+5. Create a staff user in Supabase, under Authentication, Users. Then give the user the staff role. In the SQL Editor, run this line, with the user's email in place of STAFF_EMAIL:
+   `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"staff"}' where email = 'STAFF_EMAIL';`
+   The app reads this role from `app_metadata` (see supabase/migrations/20261110060756_tables_and_security.sql). Users cannot change it themselves. If the user is signed in, they must sign out and sign in again before the role works.
 6. Start the app with `npm run dev`. This runs scripts/dev.mjs. It starts the Next.js development server. Before it starts, it tells Node to trust the same certificates as Windows. This stops an antivirus that checks secure web traffic (the file names Norton) from blocking the app's calls to the database.
 7. Open the address that the terminal shows. It is usually http://localhost:3000. Open /staff to sign in, or /patient on a phone.
 
@@ -123,7 +125,3 @@ GitHub runs `npm test`, `npm run lint` and `npm run build` on every push and eve
 - The "I'm still here" tap tells staff the patient is still following the visit. It is not a clinical check. If symptoms change, the 911 line applies.
 - Before real testers use the app, staff must clear the demo data.
 - The app has no login for patients. A patient opens a visit with the link saved on their phone, or with the QR code on a desk slip.
-
-## Credits
-
-The project was built with AI help. Claude Code wrote much of the code. Gemini models reviewed each step, and a fluent human reviewer will check the translations. The project owner made the product decisions.
