@@ -9,8 +9,8 @@ import { useChosenLanguage } from "@/data/savedLanguage";
 import { textFor } from "@/lib/text";
 import { languageInfo } from "@/lib/text/languages";
 import { EmergencyLine } from "@/components/EmergencyLine";
-import { LanguageSwitch } from "@/components/LanguageSwitch";
-import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
+import { PatientHeader } from "@/components/PatientHeader";
+import { SafetyCard } from "@/components/SafetyCard";
 import { CareOptions } from "@/components/start/CareOptions";
 import { StartVisit } from "@/components/start/StartVisit";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
@@ -24,12 +24,8 @@ export function StartPageBody() {
   useDocumentLanguage(language);
   return (
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-6 px-4 py-6">
-      <h1 className="text-3xl font-bold">{t.appName}</h1>
-      <LanguageSwitch language={language} />
-      <TextSizeSwitch language={language} />
-      <p className="rounded-lg border-2 border-red-700 bg-red-50 p-3 text-lg font-bold text-red-900">
-        {t.start.emergencyCheck}
-      </p>
+      <PatientHeader language={language} />
+      <SafetyCard strong>{t.start.emergencyCheck}</SafetyCard>
       <div className="clean-card">
         <CareOptions language={language} />
       </div>

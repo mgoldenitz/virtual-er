@@ -9,16 +9,14 @@ import { chooseLanguage, useChosenLanguage } from "@/data/savedLanguage";
 import { forgetSavedToken, takeTokenFromLink } from "@/data/savedToken";
 import { useOnline } from "@/data/useOnline";
 import { EmergencyLine } from "@/components/EmergencyLine";
-import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { PatientHeader } from "@/components/PatientHeader";
 import { PatientShell } from "@/components/PatientShell";
 import { OfflineBanner } from "@/components/patient/OfflineBanner";
-import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 import { VisitScreen } from "@/components/patient/VisitScreen";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 import { isDeadToken } from "@/lib/deadToken";
 import { replyIsForCurrentLink } from "@/lib/saveReply";
 import type { VisitStatus } from "@/lib/visit";
-import { textFor } from "@/lib/text";
 import { languageInfo, patientLanguage } from "@/lib/text/languages";
 
 export default function PatientPage() {
@@ -68,7 +66,6 @@ export default function PatientPage() {
   const view = result === "unavailable" ? null : result;
   // The phone's own choice first, so even "Loading…" and the 911 line are in that language.
   const language = patientLanguage(chosenLanguage, view?.language);
-  const t = textFor(language);
   useDocumentLanguage(language);
 
   // The first time the called screen is actually on screen, record seen_at
@@ -112,9 +109,7 @@ export default function PatientPage() {
   return (
     <PatientShell>
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-5 px-4 py-6">
-      <h1 className="text-3xl font-bold">{t.appName}</h1>
-      <LanguageSwitch language={language} />
-      <TextSizeSwitch language={language} />
+      <PatientHeader language={language} />
       <EmergencyLine language={language} />
       <OfflineBanner language={language} />
 
