@@ -3,11 +3,8 @@
 
 import type { SummaryInput } from "./summaryInput";
 
-/** The rules Claude follows when it writes the summary. Each line is one rule. */
-export const SUMMARY_RULES: string[] = [
-  "You write a short summary of today's numbers for emergency department staff.",
-  // Keeps the answer short and easy to read on the dashboard.
-  "Write 2 or 3 short sentences in plain English. No headings, lists, bold or emoji.",
+/** The rules about reading the numbers. The chat in lib/chatPrompt.ts uses the same list. */
+export const SUMMARY_NUMBER_RULES: string[] = [
   // Keeps Claude to facts that are in the totals.
   "Use only the numbers you are given. Do not guess why a number is high or low.",
   // SPEC rule 2: the app never makes clinical decisions.
@@ -22,6 +19,14 @@ export const SUMMARY_RULES: string[] = [
   "If most counts are 0, say that there is not much to report yet.",
   // Staff must never read demo numbers as real ones.
   "If the totals are for demo visits, start with \"Demo numbers:\".",
+];
+
+/** The rules Claude follows when it writes the summary. Each line is one rule. */
+export const SUMMARY_RULES: string[] = [
+  "You write a short summary of today's numbers for emergency department staff.",
+  // Keeps the answer short and easy to read on the dashboard.
+  "Write 2 or 3 short sentences in plain English. No headings, lists, bold or emoji.",
+  ...SUMMARY_NUMBER_RULES,
 ];
 
 /** The system prompt: the rules joined into one block of text. */

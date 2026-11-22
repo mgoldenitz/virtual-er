@@ -1,13 +1,14 @@
 "use client";
 
 // The dashboard's body: the Real or Demo switch, the day's numbers for both sites, today's steps,
-// the past 7 days and the CSV download, and the words for loading and out-of-date reads.
+// the past 7 days and the CSV download, the AI summary and chat, and the words for loading and out-of-date reads.
 // Real visits show unless staff choose Demo; the choice is not saved.
 
 import { useState } from "react";
 import { useDashboard } from "@/data/useDashboard";
 import { dashboardNumbers } from "@/lib/dashboardNumbers";
 import { trendNumbers } from "@/lib/trendNumbers";
+import { ChatPanel } from "@/components/dashboard/ChatPanel";
 import { FunnelView } from "@/components/dashboard/FunnelView";
 import { ModeSwitch } from "@/components/dashboard/ModeSwitch";
 import { PastDaysView } from "@/components/dashboard/PastDaysView";
@@ -44,6 +45,7 @@ export function DashboardView() {
           <FunnelView numbers={counts} />
           <PastDaysView trend={trend} today={today} isDemo={isDemo} />
           <SummaryPanel isDemo={isDemo} />
+          <ChatPanel isDemo={isDemo} />
         </>
       ) : outOfDate ? (
         <p>No numbers to show yet.</p>
