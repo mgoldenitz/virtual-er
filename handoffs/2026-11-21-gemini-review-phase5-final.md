@@ -38,7 +38,7 @@ Mark each fault "access", "token", "api", "privacy" or "rule". Report a hardenin
 
 - `npm test`: 95 test files, 631 tests pass. `npm run lint`: exit 0. `npm run build`: passed (2026-11-21, after `3c034a2`; later commits change only docs and the run skill).
 - GitHub checks (test, lint, build) passed on `ca9cf88` (run 44944146594).
-- `supabase/checks/permissions.sql` ran live in the Supabase SQL Editor (owner, 2026-11-20): 17 rows plus `rls_auto_enable` for 2 roles, no table without RLS.
+- `supabase/checks/permissions.sql` gave this live result on 2026-11-20 (docs/progress.md): 17 rows plus `rls_auto_enable` for 2 roles, no table without RLS.
 - Earlier reviews: Phase 2 security and architecture (2026-11-10), the Phase 5 code review and the Phase 5 database review (2026-11-21). Their fixes are in the code.
 
 ### Not checked
@@ -65,7 +65,7 @@ Mark each fault "wcag", "screen reader", "rtl", "wording" or "readability". For 
 
 - `npm test`: 95 test files, 631 tests pass, including click tests for focus after a screen change and a contrast test (`lib/contrast.ts`). Lint exit 0, build passed.
 - `npm run e2e` (Playwright, phone 390 x 844 and laptop 1280 x 800): 39 passed on the last run (2026-11-21); one check is flaky (`e2e/timed-steps.spec.ts:84`, in known-issues.md).
-- A WCAG 2.2 AA pass was done in Phase 3 (2026-11-17).
+- A WCAG 2.2 AA check with axe-core 4.14.0 ran on the patient and staff screens in Phase 3 (2026-11-17). Later screens (survey, run-time fixes) were not checked with axe.
 
 ### Not checked
 
