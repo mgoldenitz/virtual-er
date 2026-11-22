@@ -195,3 +195,16 @@ describe("CheckInPanel on Enter while only on-site waiting is offered", () => {
     expect(namesAButtonOnScreen(resultLine())).toBe(true);
   });
 });
+
+describe("CheckInPanel focus after Cancel", () => {
+  it("moves focus to the panel heading after Cancel gives up the home visit", () => {
+    const onHomeDone = vi.fn();
+    showPanel({ homeVisit, onHomeDone, offsitePaused: false, pauseReadFailed: false });
+    const cancel = button("Cancel:");
+    if (!cancel) throw new Error('No button "Cancel:"');
+    act(() => cancel.focus());
+    act(() => cancel.click());
+    expect(onHomeDone).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(container.querySelector("#checkin-heading"));
+  });
+});

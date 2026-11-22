@@ -2,15 +2,18 @@
 // Taps "Start a visit" in a test browser: when a start fails and the patient then picks the other
 // site, the failure message must go, because it no longer describes the site on the screen.
 
-import { act } from "react";
+import { StrictMode, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { startVisitFromHome } from "@/data/patientVisit";
+import type { PatientView } from "@/lib/patientView";
 import { textFor } from "@/lib/text";
 import { StartVisit } from "./StartVisit";
 
 // The start save, the saved phone token, the site pause switch and the router are replaced, so each test controls them.
-vi.mock("@/data/patientVisit", () => ({ startVisitFromHome: vi.fn(), usePatientView: () => null }));
+// The saved visit on this phone: null (none) unless a test sets it.
+let savedNow: PatientView | null = null;
+vi.mock("@/data/patientVisit", () => ({ startVisitFromHome: vi.fn(), usePatientView: () => savedNow }));
 vi.mock("@/data/savedToken", () => ({ loadSavedToken: () => null }));
 // The pause switch value each test sets; the mock reads it on every render.
 let pausesNow: { A: boolean; B: boolean } = { A: false, B: false };
@@ -36,6 +39,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   pausesNow = { A: false, B: false };
+  savedNow = null;
   vi.mocked(startVisitFromHome).mockReset().mockResolvedValue("saved");
 });
 
@@ -80,5 +84,33 @@ describe("StartVisit start problem", () => {
     expect(siteRadios().every(locked)).toBe(true);
     await act(async () => finishStart("not_saved"));
     expect(siteRadios().some(locked)).toBe(false);
+  });
+});
+
+describe("StartVisit focus after 'Start a new demo visit'", () => {
+  it("moves focus to the start heading when the new visit form opens (StrictMode)", () => {
+    // A closed visit is saved on this phone, so the page first offers "Start a new demo visit".
+    savedNow = {
+      code: "ABC234",
+      site: "A",
+      language: "en",
+      status: "called",
+      placeInLine: null,
+      waitLow: null,
+      waitHigh: null,
+      calledAt: "2026-11-16T11:58:00Z",
+      lastStillHereAt: null,
+      triagedAt: "2026-11-16T11:50:00Z",
+      offeredAt: null,
+      seen: true,
+      closed: true,
+      expired: false,
+      surveyDone: false,
+    };
+    act(() => root.render(<StrictMode><StartVisit language="en" /></StrictMode>));
+    const newVisit = [...container.querySelectorAll("button")].find((b) => b.textContent === s.startNew);
+    if (!newVisit) throw new Error(`No button "${s.startNew}"`);
+    act(() => newVisit.click());
+    expect(document.activeElement).toBe(container.querySelector("#start-heading"));
   });
 });
