@@ -72,7 +72,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 
 ## Remind me when another model or agent is due
 
-I forget these handoffs. Whenever one of the steps below comes up, stop and give me a short note that starts with "Model handoff:". Name the model and effort level, the file or text to give it, the question to ask, and what to bring back to you. Then wait until I paste the answer back or say "skip". The full workflow is in ai_model_workflow_virtual_er.md. Nothing I paste into another model may contain keys, tokens, passwords, project IDs or real patient data, so prepare the text with those left out; a code bundle leaves out `.mcp.json` and every `.env` file except `.env.example`.
+I forget these handoffs. Whenever one of the steps below comes up, stop and give me a short note that starts with "Model handoff:". Name the model and effort level, the file or text to give it, the question to ask, and what to bring back to you. Say in one line if you recommend it now, and why. In a list of fixes or options, mark the ones you recommend. Then wait until I paste the answer back or say "skip". The full workflow is in ai_model_workflow_virtual_er.md. Nothing I paste into another model may contain keys, tokens, passwords, project IDs or real patient data, so prepare the text with those left out; a code bundle leaves out `.mcp.json` and every `.env` file except `.env.example`.
 
 Save every handoff file in the handoffs/ folder of this project, never in a temporary folder. Name it date-model-topic.md (for example 2026-11-09-gemini-review-core-loop.md), and give that path in the "Model handoff:" note.
 
