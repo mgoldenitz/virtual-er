@@ -97,3 +97,75 @@ Off-site waiting needs a phone. A patient without a phone waits in the emergency
 2. The character count of the longest item in each section.
 3. Problems: each with the ID, the rule or fact it touches, and a fix.
 4. Any fact above that you think is unclear or wrong, as a separate note. The owner decides.
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-21 (pasted by the owner):
+
+### 1. English text
+
+H: How it works
+
+- H0: How it works
+- H1: 1. Tap "Start a visit" at home or in the waiting room. Starting does not hold a place in line.
+- H2: 2. Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first.
+- H3: 3. Staff decide if you can wait off-site. They give you a paper slip if you did not start on your phone.
+- H4: 4. Follow your place in line, status, and simulated wait range on your phone. Tap "I'm still here" every 30 minutes.
+- H5: 5. When your status is "Please head back now", tap "I'm on my way". Come back within 20 minutes.
+- H6: 6. Go to the emergency department desk when you return. Staff mark you as arrived.
+
+B: Before you leave
+
+- B0: Before you leave
+- B1: Keep this page open. Sound and vibration work only while the page is open.
+- B2: Keep your phone unlocked. The app cannot wake a locked phone.
+- B3: Keep your phone charged and turn sound on.
+- B4: Stay within 20 minutes of the emergency department.
+- B5: Keep your paper slip if you have one.
+
+Q: Questions
+
+- Q0: Questions
+- Q1: Does starting a visit at home hold my place? / Starting from home does not hold a place in line. Your place starts when a nurse sees you at triage.
+- Q2: Why did my place in line change? / Your place can change if more urgent patients arrive. The most urgent patients are always seen first.
+- Q3: What happens if I do not tap "I'm still here"? / After 10 minutes, staff see a notice on your visit. Tapping this button only tells staff you are still waiting.
+- Q4: What happens if I do not reply after staff call me back? / A second alert shows on your screen after 10 minutes. After 20 minutes, staff will review your visit if you do not respond.
+- Q5: What if my symptoms get worse? / If your symptoms get worse, call 911 or come back to the emergency department now.
+- Q6: What does the app save about me? / The app saves no names, health card numbers, phone numbers, or symptoms. Visits are deleted after 24 hours.
+- Q7: How do I open my visit again? / Open this site again in the same browser on your phone. A different phone or a private browser window will not have your visit.
+
+N: No-phone line
+
+- N1: Off-site waiting needs a phone. If you do not have one, wait in the emergency department as usual.
+
+### 2. Longest item per section
+
+H4 116 characters; B1 74; Q4 180 (question and answer), Q7 answer alone 127; N1 97.
+
+### 3. Problems (summary of each, with Gemini's fix)
+
+- H1: "in the waiting room" can read as a check-in without triage; "Starting" has no object. Fix: `1. Tap "Start a visit" at home or while waiting at the hospital. Starting a visit does not hold a place in line.`
+- H2 / Q1: "triage" is jargon. Fix: keep F4 in H2; Q1 second sentence `Your place starts when a nurse checks you in at the hospital.`
+- H3: "off-site" is jargon; reads as if every walk-in gets a slip; leaves out "agree" and "20 minutes". Fix: `3. Staff decide if you can wait away from the hospital. If you agree and can return in 20 minutes, they give you a paper slip to scan if needed.`
+- H4: "simulated" is hard and can sound fake; 3 items wrap. Fix: `4. Watch your place in line and demo wait range on your phone. Tap "I'm still here" every 30 minutes.`
+- H5 / Q4: "head back" is an idiom (kept, fixed name); "call me back" reads as a phone call (rule 4). Fix Q4 question: `What happens if I do not reply when asked to return?`
+- H6: "desk" may not match signs; "Staff mark you as arrived" is a staff action. Fix: `6. Go to the emergency department desk when you return. Tell staff you are back so they can check you in.`
+- B1 / B2 / B3: open and unlocked are split; "work" reads as a promise; "turn sound on" is unclear. Fix: `B1: Keep this page open and your phone unlocked. Alerts cannot wake a locked phone.` and `B2: Keep your phone charged and tap to turn sound on, if your phone allows it.`
+- B5: no reason given. Fix: `Keep your paper slip if you got one so you can scan the code again.`
+- Q3: "flag" is jargon; no answer to what happens next; add "not your symptoms". Fix: `After 10 minutes, staff see a notice on your visit. Tapping this button only tells staff you are still waiting, not how you feel.`
+- Q4: "review" is vague; "respond" does not say how. Fix: `A second alert shows after 10 minutes. If you do not tap "I'm on my way" within 20 minutes, staff will review your visit.`
+- Q6: "Visits are deleted" can read as the hospital record. Fix: `The app saves no names, health card numbers, phone numbers, or symptoms. App records are deleted after 24 hours.`
+- Q7: "browser" and "private browser window" are technical; no mention of the slip. Fix: `Open this website again in the same app on your phone, or scan your paper slip. Another phone or a private window will not have it.`
+- N1: "off-site" jargon; "a phone" includes flip phones. Fix: `You need a smartphone with internet to wait away from the hospital. If you do not have one, wait in the emergency department as usual.`
+
+### 4. Notes on the facts (for the owner)
+
+- "Has a phone" should be a smartphone with a web browser and internet.
+- Pause (F5) is not explained in "How it works" or "Questions".
+- What happens to the place in line after a missed "I'm still here" is not stated.
+- Does "I'm on my way" stop F6 at 20 minutes? What does "review your visit" mean for the place in line?
+- "Call back" in the spec invites a phone-call reading; "ask the patient to return" is safer.
+- A QR scan can open an in-app browser, so the saved visit is not in Safari or Chrome later; a shared phone overwrites the saved link.
+- When and where the slip is given is not stated; a patient who started at home has no slip.
+- The survey (fact 10) has no section.
+- Can a visit near 24 hours be deleted mid-wait, and do totals stay after 24 hours?
