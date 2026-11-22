@@ -113,4 +113,32 @@ describe("StartVisit focus after 'Start a new demo visit'", () => {
     act(() => newVisit.click());
     expect(document.activeElement).toBe(container.querySelector("#start-heading"));
   });
+
+  it("moves focus to the start heading when both sites are paused (StrictMode)", () => {
+    // A closed visit is saved, and both sites are paused, so the new visit opens the paused text.
+    savedNow = {
+      code: "ABC234",
+      site: "A",
+      language: "en",
+      status: "called",
+      placeInLine: null,
+      waitLow: null,
+      waitHigh: null,
+      calledAt: "2026-11-16T11:58:00Z",
+      lastStillHereAt: null,
+      triagedAt: "2026-11-16T11:50:00Z",
+      offeredAt: null,
+      seen: true,
+      closed: true,
+      expired: false,
+      surveyDone: false,
+    };
+    pausesNow = { A: true, B: true };
+    act(() => root.render(<StrictMode><StartVisit language="en" /></StrictMode>));
+    const newVisit = [...container.querySelectorAll("button")].find((b) => b.textContent === s.startNew);
+    if (!newVisit) throw new Error(`No button "${s.startNew}"`);
+    act(() => newVisit.click());
+    expect(container.querySelector('[data-testid="start-paused"]')).not.toBeNull();
+    expect(document.activeElement).toBe(container.querySelector("#start-heading"));
+  });
 });
