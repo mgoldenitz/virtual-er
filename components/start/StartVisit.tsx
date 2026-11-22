@@ -170,6 +170,7 @@ export function StartVisit({ language }: { language: string }) {
           {s.startHeading}
         </h2>
         <p>{s.startIntro}</p>
+        <p>{s.noPhone}</p>
         {/* Locked while a start saves, so a failed start's alert never shows under the other site. */}
         <fieldset disabled={starting}>
           <legend className="font-semibold">{s.siteQuestion}</legend>

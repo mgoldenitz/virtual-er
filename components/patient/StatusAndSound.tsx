@@ -3,11 +3,14 @@
 // The "I'm still here" prompt, the status screen and the sound box of the patient page, with the one
 // flag they share: when the prompt, the survey or the sound box leaves the page with focus inside it,
 // the status screen moves focus to its heading.
+// "Before you leave" shows above the sound box while the visit waits off-site (lib/beforeYouLeave.ts).
 // The survey box shows under the status screen once the visit has arrived and closed (SurveyBox).
 // The page and the click test both use this part, so the test checks the real wiring.
 
 import { useRef } from "react";
+import { beforeYouLeaveShows } from "@/lib/beforeYouLeave";
 import type { PatientView } from "@/lib/patientView";
+import { BeforeYouLeave } from "./BeforeYouLeave";
 import { PatientStatus } from "./PatientStatus";
 import { SoundSwitch } from "./SoundSwitch";
 import { StillHerePrompt } from "./StillHerePrompt";
@@ -48,6 +51,8 @@ export function StatusAndSound({ view, token, language, onOnMyWay, sending, onli
           }}
         />
       )}
+      {/* Above the sound box, because one tip names its "Turn on sound" button. */}
+      {beforeYouLeaveShows(view) && <BeforeYouLeave language={language} />}
       {(view.status === "waiting" || view.status === "called") && (
         <SoundSwitch
           status={view.status}

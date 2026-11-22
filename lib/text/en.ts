@@ -57,6 +57,46 @@ export const en = {
       "Off-site waiting is over for this visit. You might still be waiting at the hospital. Open your visit to check.",
     expiredHeading: "Your visit request has expired",
     startNew: "Start a new demo visit",
+    // In the start box, under the intro (2026-11-22).
+    noPhone: "You need a smartphone with internet to wait off-site. If you do not have one, wait in the emergency department as usual.",
+
+    // "How it works" (Gemini wording, owner 2026-11-22). Step 2 is patient.fromHomeText[0] (SPEC), so it is not here.
+    howHeading: "How it works",
+    howSteps: [
+      "Tap \"Start a visit\" at home or while waiting at the hospital. Starting a visit does not hold a place in line.",
+      "Staff decide if you can wait off-site. You must agree and be able to return within 20 minutes. If you did not start on your phone, staff give you a paper slip.",
+      "Follow your place in line, status, and simulated wait range on your phone. Tap \"I'm still here\" every 30 minutes.",
+      "When your status is \"Please head back now\", tap \"I'm on my way\". Come back within 20 minutes.",
+      "Go to the emergency department desk when you return. Tell staff you are back.",
+    ],
+    // "Questions". placeChanged and worse are answered by SPEC sentences (patient.placeCanChange, emergencyLine);
+    // paused.a gets start.paused (SPEC) in {message}.
+    questionsHeading: "Questions",
+    questions: {
+      holdPlace: {
+        q: "Does starting a visit at home hold my place?",
+        a: "Starting from home does not hold a place in line. Your place in line starts when a nurse sees you at triage.",
+      },
+      placeChanged: { q: "Why did my place in line change?" },
+      stillHere: {
+        q: "What happens if I do not tap \"I'm still here\"?",
+        a: "After 10 minutes, staff see a notice on your visit. Tapping this button only tells staff you are still waiting, not how you feel.",
+      },
+      noReply: {
+        q: "What happens if I do not reply when asked to return?",
+        a: "A second alert shows after 10 minutes. If you do not tap \"I'm on my way\" within 20 minutes, staff will review your visit.",
+      },
+      worse: { q: "What if my symptoms get worse?" },
+      saves: {
+        q: "What does the app save about me?",
+        a: "The app saves no names, health card numbers, phone numbers, or symptoms. App records are deleted after 24 hours.",
+      },
+      reopen: {
+        q: "How do I open my visit again?",
+        a: "Open it the same way you first did, on the same phone, or scan your paper slip. A QR code or a message app can open its own browser, and a different phone or a private window will not have your visit.",
+      },
+      paused: { q: "What if staff pause off-site waiting?", a: "You will see this message: \"{message}\"" },
+    },
 
     demoScreens: "Demo screens",
     staffScreen: "Staff screen",
@@ -92,6 +132,14 @@ export const en = {
     // from an hour, each end is built from the Duration words below.
     waitRangeLong: "{low} to {high}",
     simulated: "This estimate is simulated for the demo.",
+    // "Before you leave", while the status is "Waiting" (Gemini wording, owner 2026-11-22).
+    beforeHeading: "Before you leave",
+    beforeItems: [
+      "Keep this page open and your phone unlocked. Alerts cannot wake a locked phone.",
+      "Keep your phone charged and tap \"Turn on sound\".",
+      "Stay within 20 minutes of the emergency department.",
+      "Keep your paper slip if you got one, so you can scan the code again.",
+    ],
 
     calledHeading: "Please head back now",
     calledText: "Please go back to the emergency department desk.",

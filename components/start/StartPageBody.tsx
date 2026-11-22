@@ -2,7 +2,7 @@
 
 // Everything on the start page, in the language chosen on this phone (English until one is
 // chosen): the language menu, the emergency check first, other care options, THP's
-// wait-time link, then "Start a visit". Urdu and Arabic are laid out right to left.
+// wait-time link, then "Start a visit", "How it works" and "Questions". Urdu and Arabic are laid out right to left.
 
 import Link from "next/link";
 import { useChosenLanguage } from "@/data/savedLanguage";
@@ -12,6 +12,8 @@ import { EmergencyLine } from "@/components/EmergencyLine";
 import { PatientHeader } from "@/components/PatientHeader";
 import { SafetyCard } from "@/components/SafetyCard";
 import { CareOptions } from "@/components/start/CareOptions";
+import { HowItWorks } from "@/components/start/HowItWorks";
+import { StartQuestions } from "@/components/start/StartQuestions";
 import { StartVisit } from "@/components/start/StartVisit";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 
@@ -30,6 +32,8 @@ export function StartPageBody() {
         <CareOptions language={language} />
       </div>
       <StartVisit language={language} />
+      <HowItWorks language={language} />
+      <StartQuestions language={language} />
       <EmergencyLine language={language} />
       <nav aria-label={t.start.demoScreens} className="flex flex-wrap gap-3 border-t border-line pt-4">
         <Link href="/staff" className={linkStyle}>

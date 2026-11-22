@@ -51,6 +51,41 @@ export const fr: PatientText = {
       "L'attente hors site est terminée pour cette visite. Il se peut que vous soyez encore en train d'attendre à l'hôpital. Ouvrez votre visite pour vérifier.",
     expiredHeading: "Votre demande de visite a expiré",
     startNew: "Commencer une nouvelle visite de démonstration",
+    noPhone: "Vous avez besoin d'un téléphone intelligent avec accès à Internet pour attendre hors site. Si vous n'en avez pas, attendez aux urgences comme d'habitude.",
+    howHeading: "Comment ça fonctionne",
+    howSteps: [
+      "Appuyez sur \"Commencer une visite\" à la maison ou en attendant à l'hôpital. Commencer une visite ne réserve pas de place dans la file.",
+      "Le personnel décide si vous pouvez attendre hors site. Vous devez accepter et pouvoir revenir dans les 20 minutes. Si vous n'avez pas commencé sur votre téléphone, le personnel vous remet un feuillet papier.",
+      "Suivez votre place dans la file, votre statut et l'intervalle d'attente simulé sur votre téléphone. Appuyez sur \"Je suis toujours ici\" toutes les 30 minutes.",
+      "Lorsque votre statut est \"Veuillez revenir maintenant\", appuyez sur \"Je suis en route\". Revenez dans les 20 minutes.",
+      "Allez au bureau du service des urgences à votre retour. Dites au personnel que vous êtes de retour.",
+    ],
+    questionsHeading: "Questions",
+    questions: {
+      holdPlace: {
+        q: "Est-ce que commencer une visite depuis la maison réserve ma place?",
+        a: "Commencer depuis la maison ne réserve pas de place dans la file. Votre place dans la file commence lorsqu'une infirmière vous voit au triage.",
+      },
+      placeChanged: { q: "Pourquoi ma place dans la file a-t-elle changé?" },
+      stillHere: {
+        q: "Que se passe-t-il si je n'appuie pas sur \"Je suis toujours ici\"?",
+        a: "Après 10 minutes, le personnel voit un avis sur votre visite. Appuyer sur ce bouton indique seulement au personnel que vous attendez toujours, et non comment vous vous sentez.",
+      },
+      noReply: {
+        q: "Que se passe-t-il si je ne réponds pas quand on me demande de revenir?",
+        a: "Une deuxième alerte s'affiche après 10 minutes. Si vous n'appuyez pas sur \"Je suis en route\" dans les 20 minutes, le personnel examinera votre visite.",
+      },
+      worse: { q: "Que faire si mes symptômes s'aggravent?" },
+      saves: {
+        q: "Qu'est-ce que l'application enregistre à mon sujet?",
+        a: "L'application n'enregistre aucun nom, numéro de carte santé, numéro de téléphone ni symptôme. Les dossiers de l'application sont supprimés après 24 heures.",
+      },
+      reopen: {
+        q: "Comment ouvrir ma visite de nouveau?",
+        a: "Ouvrez-la de la même façon que la première fois, sur le même téléphone, ou scannez votre feuillet papier. Un code QR ou une application de texto ou de messagerie peut ouvrir son propre navigateur, et un autre téléphone ou une fenêtre de navigation privée n'aura pas votre visite.",
+      },
+      paused: { q: "Que se passe-t-il si le personnel suspend l'attente hors site?", a: "Vous verrez ce message : \"{message}\"" },
+    },
     demoScreens: "Écrans de démonstration",
     staffScreen: "Écran du personnel",
     patientScreen: "Écran du patient",
@@ -78,6 +113,13 @@ export const fr: PatientText = {
     // from an hour, each end is built from the Duration words below.
     waitRangeLong: "{low} à {high}",
     simulated: "Cette estimation est simulée pour la démonstration.",
+    beforeHeading: "Avant de partir",
+    beforeItems: [
+      "Gardez cette page ouverte et votre téléphone déverrouillé. Les alertes ne peuvent pas allumer un téléphone verrouillé.",
+      "Gardez votre téléphone chargé et appuyez sur \"Activer le son\".",
+      "Restez à moins de 20 minutes des urgences.",
+      "Gardez votre feuillet papier si vous en avez reçu un, pour pouvoir scanner le code de nouveau.",
+    ],
     calledHeading: "Veuillez revenir maintenant",
     calledText: "Veuillez retourner au bureau du service des urgences.",
     onMyWay: "Je suis en route",
