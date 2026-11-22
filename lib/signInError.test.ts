@@ -26,4 +26,9 @@ describe("signInErrorResult", () => {
   it("gives no_connection when there is no status", () => {
     expect(signInErrorResult(undefined)).toBe("no_connection");
   });
+
+  it("gives no_connection for a status below 400", () => {
+    expect(signInErrorResult(0)).toBe("no_connection");
+    expect(signInErrorResult(399)).toBe("no_connection");
+  });
 });
