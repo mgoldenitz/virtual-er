@@ -92,3 +92,7 @@ Checked in the code on 2026-11-21.
 - Fixes 1, 4, 5 and the Footer: no problem found, agreed.
 
 Proposed fixes: A (2.1 and 2.2 sign-out clean-up, with tests), B (2.4 tests), C (3.1 paused heading), D (3.2 focus after the new title, test re-renders with `homeVisit={null}`), E (3.3 no gap when empty), F (LoginForm lookup object).
+
+## What was done
+
+Owner said yes to A to F. A: `9f545f8` (tests, failed), `ad8ed89`. B: `c17ec28`. C: `24198a5` (test, failed), `15949d6`. D: `7615702` (tests, failed), `adb0200`. E: `68a7c48` (test, failed), `f7f4e4e`. F: `66eddc6`. Checks: 123 test files, 790 tests pass; lint exit 0; build exit 0; e2e 39 passed. Round 2 review: `handoffs/2026-11-21-gemini-review-phase5-final-fixes-2.md`.
