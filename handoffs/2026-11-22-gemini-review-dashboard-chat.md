@@ -653,3 +653,9 @@ Partly valid, no change recommended:
 Not valid:
 - 3b `Clear chat` does not submit the form: `components/Button.tsx:22` sets `type = "button"` by default.
 - 4d Ask with an empty box does nothing. This is not an input error.
+
+## Owner answers (2026-11-22)
+
+- A: the refusal line comes alone, with no "Demo numbers:" before it.
+- B: `SummaryPanel.tsx` gets the same `aria-disabled` fix as `Ask`.
+- C: the chat refuses 7 or more digits in a row (spaces and hyphens between them dropped).
