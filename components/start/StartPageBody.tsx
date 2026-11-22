@@ -16,7 +16,7 @@ import { StartVisit } from "@/components/start/StartVisit";
 import { useDocumentLanguage } from "@/components/useDocumentLanguage";
 
 const linkStyle =
-  "inline-block min-h-11 rounded-lg border-2 border-control bg-card px-4 py-2 font-semibold text-ink hover:bg-canvas focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink";
+  "inline-block min-h-11 rounded-lg border-2 border-control bg-card px-4 py-2 font-semibold text-ink hover:bg-line active:bg-line focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 export function StartPageBody() {
   const language = useChosenLanguage() ?? "en";

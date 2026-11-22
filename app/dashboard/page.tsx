@@ -15,7 +15,7 @@ export default function DashboardPage() {
         <SignOutButton />
       </header>
       <DashboardView />
-      <Link href="/staff" className="inline-block min-h-11 py-2 font-semibold text-brand underline underline-offset-2 focus-visible:outline-4 focus-visible:outline-ink">
+      <Link href="/staff" className="inline-block min-h-11 py-2 font-semibold text-brand underline underline-offset-2 hover:text-brand-strong active:text-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink">
         Back to the staff screen
       </Link>
     </main>

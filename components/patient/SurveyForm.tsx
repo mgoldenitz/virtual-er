@@ -53,7 +53,7 @@ export function SurveyForm({ token, language, onSaved }: Props) {
           {SCORES.map((n) => (
             <label
               key={n}
-              className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-xl border-2 border-control bg-card px-2 font-semibold"
+              className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-xl border-2 border-control bg-card px-2 font-semibold hover:bg-canvas active:bg-line"
             >
               <input
                 type="radio"

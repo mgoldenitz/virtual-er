@@ -5,10 +5,15 @@ import type { ComponentPropsWithRef } from "react";
 type Variant = "primary" | "secondary" | "danger";
 
 // Colours come from the tokens in app/globals.css (lib/contrast.test.ts checks them).
+// Hover and press colours start with "not-disabled:not-aria-disabled:", so a grayed-out
+// button does not change colour (Button.test.tsx checks this).
 const styles: Record<Variant, string> = {
-  primary: "bg-brand text-white hover:bg-brand-strong active:bg-brand-strong",
-  secondary: "border-2 border-control bg-card text-ink hover:bg-canvas active:bg-line",
-  danger: "bg-red-800 text-white hover:bg-red-900 active:bg-red-900",
+  primary:
+    "bg-brand text-white not-disabled:not-aria-disabled:hover:bg-brand-strong not-disabled:not-aria-disabled:active:bg-brand-strong",
+  secondary:
+    "border-2 border-control bg-card text-ink not-disabled:not-aria-disabled:hover:bg-line not-disabled:not-aria-disabled:active:bg-line",
+  danger:
+    "bg-red-800 text-white not-disabled:not-aria-disabled:hover:bg-red-900 not-disabled:not-aria-disabled:active:bg-red-900",
 };
 
 export function Button({

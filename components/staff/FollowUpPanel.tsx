@@ -138,7 +138,7 @@ export function FollowUpPanel({ visit, now, saving, act }: Props) {
           )}
           {followUp.kind === "review" && (
             <details>
-              <summary className="cursor-pointer py-2 text-ink underline underline-offset-2">
+              <summary className="cursor-pointer py-2 text-ink underline underline-offset-2 hover:text-brand-strong active:text-brand-strong focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-ink">
                 Confirm unable to reach
               </summary>
               <p className="mt-1 text-sm">
