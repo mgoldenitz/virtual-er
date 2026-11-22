@@ -55,3 +55,66 @@ Find problems in this diff. Do not confirm what works. For each problem give the
 Bring back: the full answer, pasted under "Response" below.
 
 ## Response
+
+Gemini Hydrogen 4, High, 2026-11-21, pasted by the owner:
+
+1. Stale `cancelled.current` flag can trigger focus after a Save if `homeVisit` does not become `null` immediately.
+   File and line: `components/staff/CheckInPanel.tsx`, lines 78 and 85-90.
+   What goes wrong: `cancelHome()` sets `cancelled.current = true` (line 78), and `cancelled.current` is only reset to `false` inside `useEffect` when `shouldFocusHeading(cancelled.current, homeVisit !== null)` returns `true` (lines 87-88). If staff click Cancel on `homeVisit` A and `onHomeDone()` switches `homeVisit` directly to another visit `B` (`A -> B`) or leaves `homeVisit` A open while a re-render occurs (for example, an async `onHomeDone` or an ignored Cancel), `useEffect` either sees `homeVisit !== null` (`true`) or does not run, leaving `cancelled.current === true`. When staff later click Save on that visit and `onHomeDone()` clears `homeVisit` to `null`, `useEffect` runs with `cancelled.current === true` and `homeVisit === null`, wrongly moving focus to `#checkin-heading` after a Save.
+   Smallest fix: Reset `cancelled.current = false` at the start of `save()` (before calling `onHomeDone()`), and track the previous `homeVisit?.id` in `useEffect` so `cancelled.current` is also cleared if `homeVisit` changes to a different non-null visit.
+
+2. `useEffect` leaves focus dropped on `document.body` between DOM commit and post-paint effect execution.
+   File and line: `components/staff/CheckInPanel.tsx`, lines 86-90.
+   What goes wrong: `useEffect` runs asynchronously after React commits the DOM mutation and the browser paints. When `cancelHome()` calls `onHomeDone()` and `homeVisit` becomes `null`, React removes the focused `Cancel:` button during commit, causing `document.activeElement` to fall back to `document.body` until the passive `useEffect` fires `heading.current?.focus()` after paint.
+   Smallest fix: Replace `useEffect` on line 86 with `useLayoutEffect` so focus moves synchronously right after DOM mutation and before paint.
+
+3. `clearThisDevice` fails to catch synchronous throws from `signOut` and can hang `LoginForm`.
+   File and line: `data/staffSignIn.ts`, lines 12-14, 17, 24, 28, and 33.
+   What goes wrong: `clearThisDevice` chains `.catch(() => {})` onto `supabase.auth.signOut({ scope: "local" })` (line 13). If `signOut` throws synchronously before returning a Promise (for example, `localStorage` throwing `SecurityError` in strict browser privacy settings, or a throwing stub):
+   - On the `claimsError` (line 24) or `!isStaffAccount` (line 28) paths, control jumps to `catch` (line 32), calls `clearThisDevice` a second time, and throws synchronously out of `signInStaff` instead of returning `"no_connection"` or `"not_staff"`.
+   - Inside `catch` (line 33), or if `supabaseBrowser()` throws on line 17 outside `try`, `signInStaff` rejects instead of returning `"no_connection"`. Because `LoginForm.tsx` (lines 43-49) calls `setBusy(false)` without `try/finally`, the submit button stays permanently disabled.
+   Smallest fix: Move `const supabase = supabaseBrowser();` inside the `try` block on line 18, and wrap `await supabase.auth.signOut({ scope: "local" });` in `try { ... } catch {}` inside `clearThisDevice`.
+
+4. `catch` clears an existing browser session when `signInWithPassword` throws before signing in.
+   File and line: `data/staffSignIn.ts`, lines 19-20 and 32-34.
+   What goes wrong: When `signInWithPassword` returns `{ error }` (for example, a network/server error object), line 20 returns `signInErrorResult(error.status)` without touching any existing local session. When `signInWithPassword` throws (for example, `fetch` rejects offline), execution jumps to line 33 and calls `clearThisDevice(supabase)`, wiping any existing valid staff session in that browser even though no new sign-in ever occurred.
+   Smallest fix: Track `let hasUnverifiedSession = false;`, set it to `true` right after `if (error) return signInErrorResult(error.status);`, and guard line 33 with `if (hasUnverifiedSession) await clearThisDevice(supabase);`.
+
+5. `CheckInPanel.click.test.tsx` still passes if `cancelled.current` is never reset or completely ignored.
+   File and line: `components/staff/CheckInPanel.click.test.tsx`, lines 199-221.
+   What goes wrong: The new test only clicks `Cancel:` once with `onHomeDone` synchronously calling `showPanel({ homeVisit: null, ... })` inside the same `act`. It would still pass if:
+   - Line 88 (`cancelled.current = false;`) of `CheckInPanel.tsx` were deleted (causing a subsequent Save after a second home visit to move focus).
+   - `CheckInPanel.tsx` ignored `shouldFocusHeading` / `cancelled.current` altogether and focused `#checkin-heading` on every update where `homeVisit === null` (including a Save).
+   - `CheckInPanel.tsx` omitted the `homeVisit !== null` guard and focused prematurely on an intermediate re-render before `homeVisit` changed to `null`.
+   Smallest fix: Add tests in `components/staff/CheckInPanel.click.test.tsx` confirming that: (a) saving a home visit (both directly and after an earlier Cancel on a prior visit) leaves focus off `#checkin-heading`; and (b) an intermediate re-render while `homeVisit` is still non-null after Cancel does not move focus until `homeVisit` becomes `null`.
+
+6. `data/staffSignIn.test.ts` misses return-value, `scope: "local"`, and synchronous-throw checks.
+   File and line: `data/staffSignIn.test.ts`, lines 72-88.
+   What goes wrong:
+   - Line 76 (`await signInStaff("staff@example.test", "pw");`) never asserts the resolved value `"no_connection"`, so the `claimsError` branch could return `"not_staff"` or `"signed_in"` and this test would still pass.
+   - Lines 80-88 (`still gives not_staff when the sign-out after it throws`) never assert `expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" })`, nor do the tests check `claimsError` when `signOut` throws or either path when `signOut` throws synchronously.
+   Smallest fix: Assert `await expect(signInStaff("staff@example.test", "pw")).resolves.toBe("no_connection")` on line 76, assert `expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" })` inside the `not_staff` test on line 87, and add a test where `signOut` throws synchronously.
+
+7. `SummaryPanel.click.test.tsx` still passes if `sr-only` stays on during "Writing the summary...".
+   File and line: `components/dashboard/SummaryPanel.click.test.tsx`, lines 52-59.
+   What goes wrong: The test checks `sr-only` before clicking and after the fetch resolves, skipping the pending `waiting` state. If `SummaryPanel.tsx` line 54 dropped `waiting ||` (leaving `className={message ? "space-y-3" : "sr-only"}`), "Writing the summary..." would remain hidden inside `sr-only` while waiting, and the test would still pass.
+   Smallest fix: Hold the summary request open with a deferred promise in `components/dashboard/SummaryPanel.click.test.tsx` and assert `statusBoxes()[0].classList.contains("sr-only")` is `false` while `waiting` is `true`.
+
+8. `StartVisit.click.test.tsx` does not verify that initial load with both sites paused avoids stealing focus.
+   File and line: `components/start/StartVisit.click.test.tsx`, lines 117-143.
+   What goes wrong: The test only renders `<StartVisit>` with a closed `savedNow` visit and clicks "Start a new demo visit". If `StartVisit.tsx` moved focus to `#start-heading` whenever `[data-testid="start-paused"]` mounted (even on an initial page load with `savedNow === null` and both sites paused), this test would still pass. (In addition, because `newVisit.click()` triggers a post-mount state update rather than a mount, `<StrictMode>` does not double-invoke that update effect here.)
+   Smallest fix: Add a test rendering `<StrictMode><StartVisit language="en"/></StrictMode>` with `savedNow = null` and `pausesNow = { A: true, B: true }`, asserting that `document.activeElement` is not `#start-heading` on initial load.
+
+## Claude's check
+
+No code faults are real. 4 test gaps are real (5a, 6b, 7, 8).
+
+1. Rejected. The only caller (`app/staff/page.tsx:125`) passes `onHomeDone={() => setHomeVisit(null)}`, so Cancel always gives `homeVisit = null` in the same click, and the effect clears the flag. `homeVisit` cannot go from A to B through `onHomeDone`, and Cancel is never ignored.
+2. Rejected. React runs the effects of a click before the browser paints, so there is no painted frame with focus on `body`.
+3. Rejected. `signOut` in auth-js is an `async` method (`GoTrueClient.js:3439`), so it cannot throw synchronously; `.catch` catches every failure. `supabaseBrowser()` throws only when the two public settings are missing, and then no screen works.
+4. Rejected. auth-js returns network failures from `signInWithPassword` as `{ error }` (status 0), so the `catch` runs for a throw from `getClaims` or a bug. A local sign-out there is the safe choice.
+5. Part (a) is real: no test shows that a save which ends the home visit leaves focus where it is. Add 2 tests: a direct save, and a save of a second home visit after Cancel on a first one. Part (b) is covered: the `homeVisit !== null` check is in `lib/cancelFocus.test.ts`.
+6. Part (a) is covered by the test at `data/staffSignIn.test.ts:47`, which checks `no_connection`. Part (b) is real: no test checks `scope: "local"` on the not-staff path. Add the check to the test at line 55. Rejected: the sync throw test (see 3).
+7. Real. Add a check that the box is not `sr-only` while "Writing the summary..." shows.
+8. Real but small: focus moves only when `wantsNew` is true (`StartVisit.tsx:39`). A guard test for the first page load with both sites paused costs a few lines.
+
