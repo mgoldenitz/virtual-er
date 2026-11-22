@@ -58,6 +58,34 @@ describe("signInStaff", () => {
     });
     await expect(signInStaff("patient@example.test", "pw")).resolves.toBe("not_staff");
   });
+
+  it("gives no_connection and clears this device when the claims check throws", async () => {
+    const auth = mockAuth({
+      getClaims: async () => {
+        throw new Error("network down");
+      },
+    });
+    await expect(signInStaff("staff@example.test", "pw")).resolves.toBe("no_connection");
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("clears this device only when the claims check returns an error", async () => {
+    const auth = mockAuth({
+      getClaims: async () => ({ data: null, error: new Error("claims check failed") }),
+    });
+    await signInStaff("staff@example.test", "pw");
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("still gives not_staff when the sign-out after it throws", async () => {
+    mockAuth({
+      getClaims: async () => ({ data: { claims: { sub: "user-2", app_metadata: { role: "patient" } } }, error: null }),
+      signOut: async () => {
+        throw new Error("network down");
+      },
+    });
+    await expect(signInStaff("patient@example.test", "pw")).resolves.toBe("not_staff");
+  });
 });
 
 describe("signOutStaff", () => {
