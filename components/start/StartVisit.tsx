@@ -140,7 +140,7 @@ export function StartVisit({ language }: { language: string }) {
       <>
         {announcer}
         <section aria-labelledby="start-heading" className={boxStyle} data-testid="start-paused">
-          <h2 id="start-heading" className="text-2xl font-bold">
+          <h2 id="start-heading" ref={startHeading} tabIndex={-1} className="text-2xl font-bold">
             {t.pausedHeading}
           </h2>
           <p>{s.paused}</p>
