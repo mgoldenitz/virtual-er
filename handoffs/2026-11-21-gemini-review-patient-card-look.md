@@ -53,3 +53,34 @@ Not checked:
 - The staff pills in a browser.
 - A real screen reader.
 - Windows high contrast mode (`forced-colors`).
+
+Owner, 2026-11-21: ran the e2e cleanup SQL, and checked the staff pills in a browser: as planned.
+
+## Response
+
+Gemini Hydrogen 4, High, 2026-11-21 (pasted by the owner):
+
+**1. Contrast (`lib/contrast.test.ts` gaps)**
+
+* `lib/contrast.test.ts` lines 74-76 and 95-98; `components/SafetyCard.tsx` lines 5-6; `components/start/StartVisit.tsx` line 199. Fault (WCAG 2.2 AA 1.4.11 non-text contrast / missing test coverage): `t["alert-edge"]` (`#b91c1c`) is tested against `t.canvas` (`#f5f5f7`) and `t["stop-tint"]` (`#fee2e2`), but never against `t["alert-tint"]` (`#fef2f2`, the inside edge of the 4 px border on `SafetyCard`) or against `#ffffff` / `t.card` (used both by the `bg-white text-alert-edge` 911 icon in `SafetyCard.tsx:6` and by the outer edge of the paused message in `StartVisit.tsx:199` inside `.clean-card`). Fix: add assertions in `lib/contrast.test.ts` checking `contrastRatio(t["alert-edge"], t["alert-tint"]) >= 3`, `contrastRatio(t["alert-edge"], t.card) >= 3`, and `contrastRatio(t["alert-edge"], t.card) >= 4.5` (or >= 3 for non-text icon strokes if using `bg-card`).
+* `lib/contrast.test.ts` lines 99-103; `components/PatientHeader.tsx` lines 9-12; `components/LanguageSwitch.tsx` lines 24 and 35; `components/patient/TextSizeSwitch.tsx` line 25. Fault (1.4.11 / missing test coverage): moving `LanguageSwitch` and `TextSizeSwitch` inside `.header-band` (`#e8eefc`) places `border-control` (`#6b7280`) on the `<select>` and text-size radio labels, and `border-amber-700` on the draft notice, directly against `t.band` (`#e8eefc`). `lib/contrast.test.ts:99-103` only checks `t.control` on `canvas` (`#f5f5f7`) and `card` (`#ffffff`), not on `t.band`. Fix: add `t.band` to the backgrounds checked against `t.control` in `lib/contrast.test.ts`.
+* `lib/contrast.test.ts` lines 91-93; `components/start/StartVisit.tsx` line 181. Fault (1.4.11 / missing test coverage): the chosen site card (`has-checked:border-brand has-checked:bg-band`) sits inside `.clean-card` (`bg-card`, `#ffffff`), so its border (`#1d4ed8`) borders `t.band` inside and `t.card` outside. The new test in `lib/contrast.test.ts:91-93` checks `t.brand` on `t.band` only, not on `t.card`. Fix: assert `contrastRatio(t.brand, t.card) >= 3` alongside the `t.band` check.
+
+**2. Right-to-left (Urdu and Arabic)**: no fault found in the diff.
+
+**3. Larger text (Extra large text on a 390 px phone)**
+
+* `components/start/StartVisit.tsx` lines 181 and 186. Fault (1.4.4 / works at larger text sizes on 390 px): even at Normal text size on a 390 px viewport (the 3 screenshots), "Demo Site A" and "Demo Site B" wrap onto two lines inside the two `flex-1` cards. At Extra large text (150%+ root size), `px-4` (2rem horizontal padding), `gap-3` (0.75rem), and `size-5` (1.25rem) leave a narrow text column per card before `flex-wrap` wraps them, and `<input type="radio" className="size-5">` omits `shrink-0` (unlike `TextSizeSwitch.tsx:33`), allowing flexbox to squash the radio circle horizontally when space is tight. Fix: add `shrink-0` to the radio on line 186, and give the `<label>` a minimum width (for example `min-w-44` or `basis-44`) on line 181 so the two site cards stack cleanly to full width instead of squeezing into narrow multi-line columns at Extra large text.
+
+**4. The 911 rule**: no fault found.
+
+**5. Screen readers**
+
+* `components/start/CareOptions.tsx` line 39. Fault (1.3.1 Info and Relationships): replacing `className="list-disc space-y-2 ps-6 text-base"` with `className="space-y-3 text-base"` leaves Tailwind Preflight's `list-style: none` active on `<ul>`. Safari and iOS VoiceOver strip `list` and `listitem` semantics from `<ul>` elements when `list-style` is `none`, so the four care options are no longer announced as a list of 4 items. Fix: add `role="list"` to the `<ul>`.
+
+**6. CSS cascade**: no fault found.
+
+**7. Other rule faults**
+
+* `app/globals.css` lines 46-52, 63-67 and 86-92. Fault (1.4.11 / `forced-colors` mode noted as unchecked): `.hero-card`, `.header-band` and `.status-pill` rely solely on `background` and `box-shadow` with no `border`. In Windows High Contrast mode (`forced-colors: active`), browsers strip background colours, gradients and box shadows, leaving the hero card, header band and staff status pills without visible container boundaries. Fix: add `border: 1px solid transparent;` (or 2px) to `.hero-card`, `.header-band` and `.status-pill`, so they stay unchanged in standard mode while gaining visible system-coloured borders under `forced-colors: active`.
+* `components/SafetyCard.tsx` line 6. Fault (readability / token consistency): uses the raw colour utility `bg-white` on `.icon-tile` instead of the semantic `--color-card` token (`bg-card`) used across the rest of the app and referenced by `lib/contrast.test.ts` (`t.card`). Fix: change `bg-white` to `bg-card` (and update the comment in `app/globals.css:70`).
