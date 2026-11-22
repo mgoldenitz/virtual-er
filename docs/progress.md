@@ -71,6 +71,11 @@ Links (share only these two):
 - **Live app: https://virtual-er-izpf.vercel.app**. Vercel project `virtual-er-izpf` (prj_9I2BWSDoNacI6gjVldBYA8CaAmo4), production branch `main`, functions in Montreal (yul1). Every push to `main` deploys here. `main` is at the Phase 4 save point, tag `savepoint-2026-11-19-phase4` (2026-11-19: everything below up to the Pushover alert, plus PR #4, the staff switch from `declined` to off-site waiting with Undo, plus docs commits).
 - **Phase 1 backup: https://virtual-er-phase1.vercel.app**. Vercel project `virtual-er-phase1` (prj_5FXPPlqjefU1BQpKafmHFOw3wPg4), production branch `phase1-backup`. Pushes to `main` make nothing there. Never merge `phase1-backup` and `main` into each other.
 
+State on 2026-11-22 (read this first):
+- `main` on GitHub is at `943ead3` and live (fast-forward from `2cb81ed`, owner OK 2026-11-21); `claude-features` and the main folder's `phase5-e2e` are at the newest commit. The local `main` pointer is old (`3274252`); the main folder does not use it.
+- `/api/keep-alive` cron gave 200 on production. Open: read the status of the first automatic `/api/demo-plan` run (09:00 UTC) in the Vercel dashboard.
+- Phase 5 still to do: Gemini Hydrogen 4, High, writes the README and the presentation (the two diagrams in `.archify/` in the main folder can go in); a fluent human reviewer approves the translations, safety messages first; 3 to 5 real testers (clear demo data first). Not started, owner asks first: the staff chat panel plan on `/dashboard`.
+
 State on 2026-11-19:
 - **Phase 4 is closed** (2026-11-19, tag `savepoint-2026-11-19-phase4`). `main` and `phase4-dashboard` point to the same commit. Still open from Phase 4, none block Phase 5: freeze the simulator by 2026-12-04, and the "Waiting on the owner" items below.
 - Phase 4 done: the demo simulator (`simulate_demo_tick`, `pg_cron` every 5 minutes), the Demo tag on staff rows, "Clear demo data", the dashboard and its metric definitions (decisions.md, 2026-11-18 "Dashboard numbers"), Vercel Web Analytics with private page addresses, the Pushover recall alert, the staff switch from `declined` to off-site waiting (PR #4). All are on `main` and live.
