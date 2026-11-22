@@ -173,11 +173,12 @@ export function StartVisit({ language }: { language: string }) {
         {/* Locked while a start saves, so a failed start's alert never shows under the other site. */}
         <fieldset disabled={starting}>
           <legend className="font-semibold">{s.siteQuestion}</legend>
+          {/* Each site is a card; the chosen one turns pale blue with a blue border. */}
           <div className="mt-2 flex flex-wrap gap-3">
             {(["A", "B"] as const).map((option) => (
               <label
                 key={option}
-                className="flex min-h-11 items-center gap-2 rounded-lg border-2 border-control px-4"
+                className="flex min-h-14 flex-1 items-center gap-3 rounded-xl border-2 border-control bg-card px-4 font-semibold has-checked:border-brand has-checked:bg-band"
               >
                 <input
                   type="radio"
@@ -195,7 +196,7 @@ export function StartVisit({ language }: { language: string }) {
           </div>
         </fieldset>
         {sitePaused ? (
-          <p className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900" data-testid="site-paused">
+          <p className="rounded-xl border-2 border-alert-edge bg-stop-tint p-3 font-semibold text-stop-ink" data-testid="site-paused">
             {s.paused}
           </p>
         ) : (

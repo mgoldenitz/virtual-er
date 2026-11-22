@@ -3,6 +3,7 @@
 // so patients are sent to THP's page for them.
 
 import { textFor } from "@/lib/text";
+import { CareIcon } from "./CareIcon";
 
 const THP_EMERGENCY_PAGE = "https://www.thp.ca/emergency/A/visit.html";
 
@@ -13,6 +14,8 @@ const linkStyle = `inline-block ${baseStyle}`;
 // A link that stands alone (not inside a sentence) is at least 44 pixels high, like the buttons.
 // inline-flex with items-center puts the words in the middle of that height, not at the top.
 const aloneStyle = `inline-flex min-h-11 items-center ${baseStyle}`;
+// One care option: the picture, then the words, lined up in the middle.
+const rowStyle = "flex items-center gap-3";
 
 function External({ href, children, newTab, alone }: { href: string; children: string; newTab: string; alone?: boolean }) {
   return (
@@ -32,21 +35,32 @@ export function CareOptions({ language }: { language?: string }) {
         {s.careHeading}
       </h2>
       <p>{s.careIntro}</p>
-      <ul className="list-disc space-y-2 ps-6 text-base">
-        <li>
-          {s.health811Before}{" "}
-          <a href="tel:811" className={linkStyle}>
-            811
-          </a>{" "}
-          {s.health811After}
+      {/* Each option is a row with a small picture first (start side, so it mirrors in Urdu and Arabic). */}
+      <ul className="space-y-3 text-base">
+        <li className={rowStyle}>
+          <CareIcon name="phone" />
+          <span>
+            {s.health811Before}{" "}
+            <a href="tel:811" className={linkStyle}>
+              811
+            </a>{" "}
+            {s.health811After}
+          </span>
         </li>
-        <li>
+        <li className={rowStyle}>
+          <CareIcon name="screen" />
           <External href="https://www.regional-virtual-urgent-care.ca/" newTab={t.newTab} alone>
             {s.virtualCare}
           </External>
         </li>
-        <li>{s.urgentCare}</li>
-        <li>{s.pharmacist}</li>
+        <li className={rowStyle}>
+          <CareIcon name="clinic" />
+          <span>{s.urgentCare}</span>
+        </li>
+        <li className={rowStyle}>
+          <CareIcon name="pill" />
+          <span>{s.pharmacist}</span>
+        </li>
       </ul>
       <p>
         {s.hoursBefore}{" "}

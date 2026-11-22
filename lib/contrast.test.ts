@@ -80,6 +80,16 @@ describe("globals.css tokens", () => {
     expect(contrastRatio(t["stop-ink"], t["stop-tint"])).toBeGreaterThanOrEqual(4.5);
   });
 
+  // The chosen site card (components/start/StartVisit.tsx): pale blue with a blue border.
+  it("chosen site card border is 3:1 or more on the band tint", () => {
+    expect(contrastRatio(t.brand, t.band)).toBeGreaterThanOrEqual(3);
+  });
+
+  // The paused message border sits on the paused tint.
+  it("paused message border is 3:1 or more on the paused tint", () => {
+    expect(contrastRatio(t["alert-edge"], t["stop-tint"])).toBeGreaterThanOrEqual(3);
+  });
+
   it("control borders are 3:1 or more on canvas and card", () => {
     for (const bg of backgrounds) {
       expect(contrastRatio(t.control, t[bg])).toBeGreaterThanOrEqual(3);
