@@ -11,6 +11,12 @@
   --color-card: #ffffff;
   --color-line: #e5e7eb;         /* card edges (decoration only) */
   --color-control: #6b7280;      /* input and select borders, 4.8:1 (WCAG needs 3:1) */
+  --color-band: #e8eefc;         /* light blue tint for the header band and icon tiles */
+  --color-alert-tint: #fef2f2;   /* 911 card background */
+  --color-alert-ink: #7f1d1d;    /* 911 card text */
+  --color-alert-edge: #b91c1c;   /* 911 card border */
+  --color-stop-tint: #fee2e2;    /* paused pill background */
+  --color-stop-ink: #7f1d1d;     /* paused pill text */
 }
 
 body {
@@ -32,6 +38,52 @@ html[data-lang-wait] main {
   border-radius: 1rem;
   padding: 1.25rem;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+/* Patient hero card: the large blue box at the top of a patient screen. White text on it is 4.5:1 or more. */
+.hero-card {
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong));
+  color: #ffffff;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgb(29 78 216 / 0.25);
+}
+
+/* Hero card with more contrast asked for: a solid dark blue, no shadow. */
+@media (prefers-contrast: more) {
+  .hero-card {
+    background: var(--color-brand-strong);
+    box-shadow: none;
+  }
+}
+
+/* Header band: the pale blue strip that holds a screen's title. */
+.header-band {
+  background: var(--color-band);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+}
+
+/* Icon tile: a small pale blue square that holds an icon. */
+.icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: var(--color-band);
+  color: var(--color-brand-strong);
+}
+
+/* Status pill: a small rounded label for a status word such as paused. */
+.status-pill {
+  display: inline-block;
+  border-radius: 9999px;
+  padding: 0.125rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 /* Staff screens (glass look): a soft, pale blue wash behind the glass panels. It stays light:

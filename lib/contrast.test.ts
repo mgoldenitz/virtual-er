@@ -58,6 +58,28 @@ describe("globals.css tokens", () => {
     expect(contrastRatio(t[name], BACKDROP_DARKEST)).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("white text on the hero card gradient is 4.5:1 or more", () => {
+    for (const name of ["brand", "brand-strong"]) {
+      expect(contrastRatio("#ffffff", t[name])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(["ink", "brand-strong"])("text colour %s is 4.5:1 or more on the header band", (name) => {
+    expect(contrastRatio(t[name], t.band)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("911 card text is 4.5:1 or more", () => {
+    expect(contrastRatio(t["alert-ink"], t["alert-tint"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("911 card border is 3:1 or more on canvas", () => {
+    expect(contrastRatio(t["alert-edge"], t.canvas)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("paused pill text is 4.5:1 or more", () => {
+    expect(contrastRatio(t["stop-ink"], t["stop-tint"])).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("control borders are 3:1 or more on canvas and card", () => {
     for (const bg of backgrounds) {
       expect(contrastRatio(t.control, t[bg])).toBeGreaterThanOrEqual(3);
