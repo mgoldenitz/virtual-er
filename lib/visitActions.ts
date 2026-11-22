@@ -142,7 +142,7 @@ export function confirmOnMyWay(visit: Visit, now: Date): Visit | null {
 
 /**
  * Staff record one simulated phone call (the demo stores no phone numbers). Only while called,
- * from the "Phone this patient" step on. "Answered" pauses the staff flags for a set time.
+ * from the "Phone the patient now" step on. "Answered" pauses the staff flags for a set time.
  */
 export function recordPhoneCall(visit: Visit, result: "answered" | "no_answer", now: Date): Visit | null {
   if (!canRecordPhoneCall(visit, now)) return null;

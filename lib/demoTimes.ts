@@ -9,10 +9,10 @@ export const STILL_HERE_ANSWER_WITHIN_MINUTES = 10;
 
 // No-response steps after "Recall patient" (SPEC /staff). Minutes are counted from called_at.
 
-/** Second alert on the patient's phone; staff see "Phone this patient". */
+/** Second alert on the patient's phone; staff see "Phone the patient now". */
 export const CALL_SECOND_ALERT_MINUTES = 10;
 
-/** Staff see "Phone a second time"; the patient's phone shows "Please return now". */
+/** Staff see "Phone the patient again" ("now" if no call was recorded yet); the patient's phone shows "Please return now". */
 export const CALL_PHONE_AGAIN_MINUTES = 20;
 
 /** With no answered call, staff see "Review: unable to reach" (a nurse must confirm). */

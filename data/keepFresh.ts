@@ -1,7 +1,7 @@
 // Keeps one thing re-read from the database while a screen is showing it: now, as soon as
 // the database signals a change (live updates), when the tab comes back or the connection
-// returns, and on a timer in case a signal was missed. Used by the patient's visit and the
-// staff list. Only one read runs at a time.
+// returns, and on a timer in case a signal was missed. Used by the patient's visit, the staff
+// list, the site pauses and the dashboard. Only one read runs at a time.
 
 import { onChangeSignal } from "./changeSignal";
 
