@@ -53,6 +53,7 @@ export const fr: PatientText = {
     startNew: "Commencer une nouvelle visite de démonstration",
     noPhone: "Vous avez besoin d'un téléphone intelligent avec accès à Internet pour attendre hors site. Si vous n'en avez pas, attendez aux urgences comme d'habitude.",
     howHeading: "Comment ça fonctionne",
+    // Step 2 is patient.fromHomeText[0] (SPEC), so it is not here.
     howSteps: [
       "Appuyez sur \"Commencer une visite\" à la maison ou en attendant à l'hôpital. Commencer une visite ne réserve pas de place dans la file.",
       "Le personnel décide si vous pouvez attendre hors site. Vous devez accepter et pouvoir revenir dans les 20 minutes. Si vous n'avez pas commencé sur votre téléphone, le personnel vous remet un feuillet papier.",
@@ -64,7 +65,7 @@ export const fr: PatientText = {
     questions: {
       holdPlace: {
         q: "Est-ce que commencer une visite depuis la maison réserve ma place?",
-        a: "Commencer depuis la maison ne réserve pas de place dans la file. Votre place dans la file commence lorsqu'une infirmière vous voit au triage.",
+        a: "Commencer depuis la maison ne réserve pas de place dans la file. {triage}",
       },
       placeChanged: { q: "Pourquoi ma place dans la file a-t-elle changé?" },
       stillHere: {
@@ -116,7 +117,7 @@ export const fr: PatientText = {
     beforeHeading: "Avant de partir",
     beforeItems: [
       "Gardez cette page ouverte et votre téléphone déverrouillé. Les alertes ne peuvent pas allumer un téléphone verrouillé.",
-      "Gardez votre téléphone chargé et appuyez sur \"Activer le son\".",
+      "Gardez votre téléphone chargé et le son activé.",
       "Restez à moins de 20 minutes des urgences.",
       "Gardez votre feuillet papier si vous en avez reçu un, pour pouvoir scanner le code de nouveau.",
     ],

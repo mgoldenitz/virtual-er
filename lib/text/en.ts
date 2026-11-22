@@ -75,7 +75,8 @@ export const en = {
     questions: {
       holdPlace: {
         q: "Does starting a visit at home hold my place?",
-        a: "Starting from home does not hold a place in line. Your place in line starts when a nurse sees you at triage.",
+        // {triage} is filled with patient.fromHomeText[0] (SPEC), so that sentence is never copied.
+        a: "Starting from home does not hold a place in line. {triage}",
       },
       placeChanged: { q: "Why did my place in line change?" },
       stillHere: {
@@ -136,7 +137,7 @@ export const en = {
     beforeHeading: "Before you leave",
     beforeItems: [
       "Keep this page open and your phone unlocked. Alerts cannot wake a locked phone.",
-      "Keep your phone charged and tap \"Turn on sound\".",
+      "Keep your phone charged and your sound on.",
       "Stay within 20 minutes of the emergency department.",
       "Keep your paper slip if you got one, so you can scan the code again.",
     ],

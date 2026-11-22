@@ -53,6 +53,7 @@ export const zh: PatientText = {
     startNew: "开始一次新的演示就诊",
     noPhone: "您需要一部能上网的智能手机才能在院外等候。如果您没有，请像往常一样在急诊室等候。",
     howHeading: "使用方法",
+    // Step 2 is patient.fromHomeText[0] (SPEC), so it is not here.
     howSteps: [
       "在家或在医院等候时，点击“开始就诊”。开始就诊不会为您保留排队位置。",
       "工作人员会决定您是否可以在院外等候。您必须同意，并且能够在 20 分钟内返回。如果您之前没有在手机上开始就诊，工作人员会给您一张纸质凭条。",
@@ -64,7 +65,7 @@ export const zh: PatientText = {
     questions: {
       holdPlace: {
         q: "在家开始就诊会保留我的排队位置吗？",
-        a: "在家开始就诊不会保留排队位置。您的排队位置从护士在分诊处（triage）看到您时开始算起。",
+        a: "在家开始就诊不会保留排队位置。{triage}",
       },
       placeChanged: { q: "为什么我的排队位置变了？" },
       stillHere: {
@@ -116,7 +117,7 @@ export const zh: PatientText = {
     beforeHeading: "离开前",
     beforeItems: [
       "请保持此页面打开，并让手机保持解锁状态。锁屏状态下，提醒无法唤醒手机。",
-      "请保持手机电量充足，并点击“开启声音”。",
+      "请保持手机电量充足，并保持声音开启。",
       "请留在 20 分钟内能回到急诊室的地方。",
       "如果您拿到了纸质凭条，请保存好，以便再次扫描上面的二维码。",
     ],

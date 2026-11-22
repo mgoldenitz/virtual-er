@@ -10,8 +10,7 @@ export function BeforeYouLeave({ language }: { language: string }) {
       <h2 id="before-heading" className="text-2xl font-bold">
         {p.beforeHeading}
       </h2>
-      {/* role="list" keeps the list a list for Safari's screen reader, which drops it without bullets. */}
-      <ul role="list" className="list-disc space-y-2 ps-6">
+      <ul className="list-disc space-y-2 ps-6">
         {p.beforeItems.map((item) => (
           <li key={item}>{item}</li>
         ))}
