@@ -95,4 +95,4 @@ Proposed fixes: A (2.1 and 2.2 sign-out clean-up, with tests), B (2.4 tests), C 
 
 ## What was done
 
-Owner said yes to A to F. A: `9f545f8` (tests, failed), `ad8ed89`. B: `c17ec28`. C: `24198a5` (test, failed), `15949d6`. D: `7615702` (tests, failed), `adb0200`. E: `68a7c48` (test, failed), `f7f4e4e`. F: `66eddc6`. Checks: 123 test files, 790 tests pass; lint exit 0; build exit 0; e2e 39 passed. Round 2 review: `handoffs/2026-11-21-gemini-review-phase5-final-fixes-2.md`.
+Owner said yes to A to F. A: `9f545f8` (tests, failed), `ad8ed89`. B: `c17ec28`. C: `24198a5` (test, failed), `15949d6`. D: `7615702` (tests, failed), `adb0200`. E: `68a7c48` (test, failed), `f7f4e4e`. F: `66eddc6`. Checks: 123 test files, 790 tests pass; lint exit 0; build exit 0; e2e 39 passed. Round 2 review: `handoffs/archive/2026-11-21-gemini-review-phase5-final-fixes-2.md`.

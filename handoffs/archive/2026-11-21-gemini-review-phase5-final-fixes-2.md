@@ -6,7 +6,7 @@ Give it: this file (down to "Response") and `handoffs/2026-11-21-gemini-review-p
 
 ## Context
 
-Virtual ER waiting room prototype: Next.js 16 App Router, React 19, Supabase auth, Vitest with happy-dom. Synthetic data only. Round 1 (handoffs/2026-11-21-gemini-review-phase5-final-fixes.md) found 6 faults. These commits fix them:
+Virtual ER waiting room prototype: Next.js 16 App Router, React 19, Supabase auth, Vitest with happy-dom. Synthetic data only. Round 1 (handoffs/archive/2026-11-21-gemini-review-phase5-final-fixes.md) found 6 faults. These commits fix them:
 
 - A (`9f545f8`, `ad8ed89`): `data/staffSignIn.ts`. The sign-outs after a failed sign-in (claims error, claims throw, not a staff account) now use `signOut({ scope: "local" })` and never throw, so a not-staff account keeps its own message. The staff "Sign out" button (`signOutStaff`) stays a global sign-out on purpose.
 - B (`c17ec28`): tests only. `lib/signInError.test.ts` (status 0 and 399), new `components/staff/LoginForm.click.test.tsx` (the text for each sign-in result).
@@ -117,4 +117,8 @@ No code faults are real. 4 test gaps are real (5a, 6b, 7, 8).
 6. Part (a) is covered by the test at `data/staffSignIn.test.ts:47`, which checks `no_connection`. Part (b) is real: no test checks `scope: "local"` on the not-staff path. Add the check to the test at line 55. Rejected: the sync throw test (see 3).
 7. Real. Add a check that the box is not `sr-only` while "Writing the summary..." shows.
 8. Real but small: focus moves only when `wantsNew` is true (`StartVisit.tsx:39`). A guard test for the first page load with both sites paused costs a few lines.
+
+## What was done
+
+Owner said yes to 5a, 6b and 7, and skipped 8 (2026-11-21). Tests in `a2b2a9f`, no code change. Each test was seen to fail with the code broken for a short time, then the code went back. Checks: 123 test files, 793 tests pass; lint exit 0; build exit 0. Review closed; no round 3.
 
