@@ -62,7 +62,7 @@ export const fr: PatientText = {
     loading: "Chargement de votre visite…",
     unavailableHeading: "Nous ne pouvons pas charger votre visite",
     unavailableText:
-      "Vos actions sur cette page ne sont pas enregistrées. Il se peut que le personnel ne les voie pas. Veuillez vous rendre au bureau du service des urgences.",
+      "Nous ne pouvons pas afficher votre visite pour le moment. Si vous avez besoin de soins, veuillez vous rendre au bureau du service des urgences.",
     noVisitHeading: "Aucune visite trouvée sur ce téléphone",
     brokenLinkHeading: "Ce lien n'a pas fonctionné",
     brokenLinkText: "Le lien pourrait être erroné ou coupé court. Aucune visite n'a été ouverte.",

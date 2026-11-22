@@ -62,7 +62,7 @@ export const zh: PatientText = {
     loading: "正在加载您的就诊信息…",
     unavailableHeading: "我们无法加载您的就诊信息",
     unavailableText:
-      "您在此页面上的操作没有被保存。工作人员可能看不到它们。请前往急诊室前台。",
+      "我们目前无法显示您的就诊信息。如果您需要治疗，请前往急诊室前台。",
     noVisitHeading: "在此手机上未找到就诊信息",
     brokenLinkHeading: "此链接无效",
     brokenLinkText: "链接可能错误或被截断。没有打开任何就诊。",

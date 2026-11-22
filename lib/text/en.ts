@@ -72,7 +72,7 @@ export const en = {
     loading: "Loading your visit…",
     unavailableHeading: "We cannot load your visit",
     unavailableText:
-      "Your actions on this page are not saving. Staff may not see them. Please go to the emergency department desk.",
+      "We cannot show your visit right now. If you need care, please go to the emergency department desk.",
     noVisitHeading: "No visit found on this phone",
     brokenLinkHeading: "This link did not work",
     brokenLinkText: "The link might be wrong or cut short. No visit was opened.",
