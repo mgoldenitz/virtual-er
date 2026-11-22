@@ -1,9 +1,9 @@
 ---
 name: run-virtual-er
-description: Run, start, screenshot or drive the Virtual Waiting Room app (Next.js) in a headless browser. Use to see a change working in the real app: the start page, the patient screen, a started visit, or the staff list, on a phone or laptop size.
+description: Run, start, screenshot or drive the WaitWell app (Next.js) in a headless browser. Use to see a change working in the real app: the start page, the patient screen, a started visit, or the staff list, on a phone or laptop size.
 ---
 
-# Run the Virtual Waiting Room
+# Run WaitWell
 
 All paths are from the project root. The app is a Next.js dev server; the driver is
 `.claude/skills/run-virtual-er/driver.mjs`, a small Playwright script (the project already has

@@ -1,4 +1,4 @@
-# Revised AI Model Workflow — Virtual ER Waiting Room
+# Revised AI Model Workflow — WaitWell
 
 ## Recommended model stack
 

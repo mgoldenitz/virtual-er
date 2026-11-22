@@ -1,6 +1,6 @@
-# Virtual Waiting Room: rules for Claude Code
+# WaitWell: rules for Claude Code
 
-What this is: a concept prototype of a virtual ER waiting room. Low-acuity patients (CTAS 4 or 5) wait off-site after triage, follow their place in line on their phone, and come back when staff recall them. Synthetic data only, no hospital systems. SPEC.md has the full spec and the hard rules.
+What this is: WaitWell, a concept prototype of a virtual ER waiting room. Low-acuity patients (CTAS 4 or 5) wait off-site after triage, follow their place in line on their phone, and come back when staff recall them. Synthetic data only, no hospital systems. SPEC.md has the full spec and the hard rules.
 
 ## Orchestrator and workers
 
