@@ -52,7 +52,7 @@ describe("CsvButton", () => {
     act(() => root.render(<CsvButton trend={withData} today="2026-11-25" isDemo={false} />));
     expect(button()?.textContent).toBe("Download past 7 days (CSV)");
     await act(async () => button()?.click());
-    expect(clickedNames).toEqual(["virtual-er-stats-real-2026-11-25.csv"]);
+    expect(clickedNames).toEqual(["waitwell-stats-real-2026-11-25.csv"]);
     const text = await blobs[0].text();
     expect(text.startsWith(`${CSV_HEADER}\r\n`)).toBe(true);
     expect(text).toContain("2026-11-22,B,false,0,2,");
@@ -61,7 +61,7 @@ describe("CsvButton", () => {
   it("says demo in the file name and in the is_demo column in Demo mode", async () => {
     act(() => root.render(<CsvButton trend={withData} today="2026-11-25" isDemo={true} />));
     await act(async () => button()?.click());
-    expect(clickedNames).toEqual(["virtual-er-stats-demo-2026-11-25.csv"]);
+    expect(clickedNames).toEqual(["waitwell-stats-demo-2026-11-25.csv"]);
     expect(await blobs[0].text()).toContain("2026-11-22,B,true,");
   });
 

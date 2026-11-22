@@ -10,7 +10,7 @@ import { textSizeScript } from "@/lib/textSize";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Virtual Waiting Room (concept prototype)",
+  title: "WaitWell: A virtual ER waiting room (concept prototype)",
   description: "Concept prototype of an emergency department virtual waiting room. Demo data only.",
   robots: { index: false, follow: false },
 };

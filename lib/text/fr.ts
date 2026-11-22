@@ -13,7 +13,7 @@ import type { PatientText } from "./en";
 export const fr: PatientText = {
   emergencyLine: "Si vos symptômes s'aggravent, appelez le 911 ou revenez immédiatement aux urgences.",
   footer: "Prototype conceptuel. Non affilié à ou approuvé par Trillium Health Partners. Données de démonstration uniquement.",
-  appName: "Salle d'attente virtuelle",
+  appName: "WaitWell : Salle d'attente virtuelle",
   visitCode: "Code de visite",
   siteName: "Demo Site {site}",
   newTab: "(s'ouvre dans un nouvel onglet)",

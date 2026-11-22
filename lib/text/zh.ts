@@ -13,7 +13,7 @@ import type { PatientText } from "./en";
 export const zh: PatientText = {
   emergencyLine: "如果您的症状恶化，请立即拨打 911 或回到急诊室。",
   footer: "概念原型。与 Trillium Health Partners 无关，也未获得其认可。仅为演示数据。",
-  appName: "虚拟候诊室",
+  appName: "WaitWell：虚拟候诊室",
   visitCode: "就诊代码",
   siteName: "Demo Site {site}",
   newTab: "（在新标签页中打开）",

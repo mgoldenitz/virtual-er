@@ -21,7 +21,7 @@ export function CsvButton({ trend, today, isDemo }: Props) {
     // A link that is never on the page: clicking it saves the file with this name.
     const link = document.createElement("a");
     link.href = url;
-    link.download = `virtual-er-stats-${isDemo ? "demo" : "real"}-${today}.csv`;
+    link.download = `waitwell-stats-${isDemo ? "demo" : "real"}-${today}.csv`;
     link.click();
     // Some browsers stop the download if the link is taken back at once.
     setTimeout(() => URL.revokeObjectURL(url), 1000);

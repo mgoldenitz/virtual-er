@@ -77,7 +77,7 @@ export default function StaffPage() {
     <StaffShell>
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
       <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold">Staff: Virtual Waiting Room</h1>
+        <h1 className="text-3xl font-bold">Staff: WaitWell</h1>
         <label className="flex flex-wrap items-center gap-2">
           <span className="font-semibold">Site</span>
           <select

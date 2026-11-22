@@ -13,7 +13,7 @@ import type { PatientText } from "./en";
 export const ur: PatientText = {
   emergencyLine: "اگر آپ کی علامات خراب ہوتی ہیں، تو ابھی 911 پر کال کریں یا ایمرجنسی ڈیپارٹمنٹ واپس آ جائیں۔",
   footer: "تصوراتی نمونہ (Concept prototype)۔ Trillium Health Partners سے منسلک یا ان سے منظور شدہ نہیں ہے۔ صرف ڈیمو ڈیٹا ہے۔",
-  appName: "ورچوئل ویٹنگ روم",
+  appName: "WaitWell: ورچوئل ویٹنگ روم",
   visitCode: "وزٹ کوڈ",
   siteName: "Demo Site {site}",
   newTab: "(نئے ٹیب میں کھلتا ہے)",
