@@ -22,7 +22,7 @@ test("declined, then switched to off-site waiting, then undone", async ({ browse
 
     // The patient changes their mind. Staff open the switch for this visit, tick all three items, and confirm.
     await onsite.getByRole("button", { name: "Switch to off-site waiting" }).click();
-    await onsite.getByRole("checkbox", { name: "Has a phone with them" }).check();
+    await onsite.getByRole("checkbox", { name: "Has a smartphone with internet" }).check();
     await onsite.getByRole("checkbox", { name: "Can return within 20 minutes" }).check();
     await onsite.getByRole("checkbox", { name: "Agrees to wait off-site" }).check();
     await onsite.getByRole("button", { name: "Start off-site waiting" }).click();

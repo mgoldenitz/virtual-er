@@ -34,7 +34,7 @@ export async function chooseSite(staff: Page, site: Site): Promise<void> {
 export async function fillCheckIn(staff: Page, options: { ticks: boolean; language?: string } = { ticks: true }): Promise<void> {
   await staff.getByRole("radio", { name: "CTAS 4" }).check();
   if (options.ticks) {
-    await staff.getByRole("checkbox", { name: "Has a phone with them" }).check();
+    await staff.getByRole("checkbox", { name: "Has a smartphone with internet" }).check();
     await staff.getByRole("checkbox", { name: "Can return within 20 minutes" }).check();
     await staff.getByRole("checkbox", { name: "Agrees to wait off-site" }).check();
   }
