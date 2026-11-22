@@ -43,19 +43,20 @@ function OnMyWayButton({ onOnMyWay, sending, label, onFocusLost }: {
 function Waiting({ view, language, t }: { view: PatientView; language: string; t: PatientText }) {
   const p = t.patient;
   return (
-    <section aria-labelledby="status-heading" className="clean-card space-y-3">
+    // The blue hero card. All text on it is white (lib/contrast.test.ts checks white on both blues).
+    <section aria-labelledby="status-heading" className="hero-card space-y-3">
       <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
         {p.waitingHeading}
       </h2>
       <p className="text-lg">
-        {p.placeInLine} <strong className="text-3xl">{view.placeInLine}</strong>
+        {p.placeInLine} <strong className="text-5xl">{view.placeInLine}</strong>
       </p>
       <p className="text-base">{p.placeCanChange}</p>
       <p className="text-lg">
         {p.waitLabel}{" "}
         <strong>{view.waitLow !== null && view.waitHigh !== null && formatWaitRange(view.waitLow, view.waitHigh, language)}</strong>
       </p>
-      <p className="text-sm text-muted">{p.simulated}</p>
+      <p className="text-sm">{p.simulated}</p>
     </section>
   );
 }
