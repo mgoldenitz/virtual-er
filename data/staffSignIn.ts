@@ -8,23 +8,29 @@ import { supabaseBrowser } from "./supabaseBrowser";
 /** How a sign-in went: signed in, not a staff account, or one of the sign-in errors. */
 export type SignInResult = "signed_in" | "not_staff" | SignInErrorResult;
 
+// Removes the sign-in from this browser only. It needs no network and never throws.
+async function clearThisDevice(supabase: ReturnType<typeof supabaseBrowser>) {
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+}
+
 export async function signInStaff(email: string, password: string): Promise<SignInResult> {
   const supabase = supabaseBrowser();
   try {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) return signInErrorResult(error.status);
     const { data, error: claimsError } = await supabase.auth.getClaims();
-    // The account could not be checked: sign out again, and say the service could not be reached.
+    // The account could not be checked: clear the sign-in from this device, and say the service could not be reached.
     if (claimsError) {
-      await supabase.auth.signOut().catch(() => {});
+      await clearThisDevice(supabase);
       return "no_connection";
     }
     if (!isStaffAccount((data?.claims ?? null) as StaffClaims)) {
-      await supabase.auth.signOut();
+      await clearThisDevice(supabase);
       return "not_staff";
     }
     return "signed_in";
   } catch {
+    await clearThisDevice(supabase);
     return "no_connection";
   }
 }
