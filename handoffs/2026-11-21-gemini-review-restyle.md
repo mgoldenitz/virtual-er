@@ -132,3 +132,5 @@ Checked against the code on 2026-11-21 (commit `6c883ea`).
 - 5, `text-white` token and raw backdrop colours: low value. Not done unless the owner asks.
 - 6, `theme-staff` removed: rejected. A search of `app`, `components`, `lib`, `data`, `e2e` and `scripts` finds no `theme-staff` or `jakarta`. `npm run e2e` passed (39) after the change.
 
+Owner decisions (2026-11-21): keep the blue theme; `/patient` h1 to `text-3xl`; visit code to `text-lg`; add hover and press states (point 3). Faults in 1a, 1b and 2 are fixed.
+
