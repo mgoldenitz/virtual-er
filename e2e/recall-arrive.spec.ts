@@ -18,12 +18,15 @@ test("recall, on the way, arrived, the survey, then undo and arrive again",async
     const row = staffRow(staff, code);
     await patient.goto(link);
     await expect(patient.getByRole("heading", { name: "Status: Waiting" })).toBeVisible();
+    // "Before you leave" shows only while the visit waits off-site (lib/beforeYouLeave.ts).
+    await expect(patient.getByRole("heading", { name: "Before you leave" })).toBeVisible();
     expect(await axeFaults(patient)).toEqual([]);
 
     // Recall: staff confirm, and the phone shows the called screen.
     await row.getByRole("button", { name: /^Recall patient/ }).click();
     await row.getByRole("button", { name: "Yes, recall patient" }).click();
     await expect(patient.getByRole("heading", { name: "Please head back now" })).toBeVisible();
+    await expect(patient.getByRole("heading", { name: "Before you leave" })).toHaveCount(0);
     await expect(patient.getByText(EMERGENCY).first()).toBeVisible();
     expect(await axeFaults(patient)).toEqual([]);
 
