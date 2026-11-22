@@ -46,6 +46,7 @@ html[data-lang-wait] main {
 .hero-card {
   background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong));
   color: #ffffff;
+  border: 1px solid transparent; /* shows as an edge in Windows high contrast mode */
   border-radius: 1.25rem;
   padding: 1.5rem;
   box-shadow: 0 8px 24px rgb(29 78 216 / 0.25);
@@ -62,12 +63,13 @@ html[data-lang-wait] main {
 /* Header band: the pale blue strip that holds a screen's title. */
 .header-band {
   background: var(--color-band);
+  border: 1px solid transparent; /* shows as an edge in Windows high contrast mode */
   border-radius: 1.25rem;
   padding: 1.25rem;
 }
 
 /* Icon tile: a small pale blue square that holds an icon. It sits in the components layer, so a
-   utility class (bg-white, text-alert-edge on the 911 card) can change its colours. */
+   utility class (bg-card, text-alert-edge on the 911 card) can change its colours. */
 @layer components {
   .icon-tile {
     display: inline-flex;
@@ -85,6 +87,7 @@ html[data-lang-wait] main {
 /* Status pill: a small rounded label for a status word such as paused. */
 .status-pill {
   display: inline-block;
+  border: 1px solid transparent; /* shows as an edge in Windows high contrast mode */
   border-radius: 9999px;
   padding: 0.125rem 0.75rem;
   font-size: 0.875rem;

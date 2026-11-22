@@ -183,7 +183,7 @@ export function StartVisit({ language }: { language: string }) {
                 <input
                   type="radio"
                   name="site"
-                  className="size-5"
+                  className="size-5 shrink-0"
                   checked={site === option}
                   onChange={() => {
                     setSite(option);

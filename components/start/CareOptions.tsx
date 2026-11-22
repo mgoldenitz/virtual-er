@@ -36,7 +36,7 @@ export function CareOptions({ language }: { language?: string }) {
       </h2>
       <p>{s.careIntro}</p>
       {/* Each option is a row with a small picture first (start side, so it mirrors in Urdu and Arabic). */}
-      <ul className="space-y-3 text-base">
+      <ul role="list" className="space-y-3 text-base">
         <li className={rowStyle}>
           <CareIcon name="phone" />
           <span>
