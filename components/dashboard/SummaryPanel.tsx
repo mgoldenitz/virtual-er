@@ -49,8 +49,9 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
       <Button variant="secondary" onClick={writeSummary} disabled={waiting || resting}>
         Write a short summary
       </Button>
-      {/* One live box, always on the page, so screen readers hear the summary or the note when it comes. */}
-      <div role="status" className="space-y-3">
+      {/* One live box, always on the page, so screen readers hear the summary or the note when it comes.
+          While it is empty it is hidden from view only (sr-only), so it adds no gap below the button. */}
+      <div role="status" className={waiting || message ? "space-y-3" : "sr-only"}>
         {waiting && <p>Writing the summary...</p>}
         {message?.kind === "text" && (
           <>
