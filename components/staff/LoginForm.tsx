@@ -12,6 +12,7 @@ import { Button } from "@/components/Button";
 const WRONG = "Email or password not recognised. Check them and try again.";
 const NOT_STAFF = "This account is not a staff account, so it cannot open the staff screens.";
 const NO_CONNECTION = "Could not reach the sign-in service. Check your internet connection and try again.";
+const TOO_MANY = "Too many sign-in tries. Wait a few minutes, then try again.";
 
 const fieldStyle = "mt-2 block min-h-11 w-full rounded-lg border-2 border-control px-3";
 
@@ -35,7 +36,9 @@ export function LoginForm() {
       router.replace(pageAfterSignIn(next));
       router.refresh();
     } else {
-      setProblem(result === "wrong" ? WRONG : result === "not_staff" ? NOT_STAFF : NO_CONNECTION);
+      setProblem(
+        result === "wrong" ? WRONG : result === "not_staff" ? NOT_STAFF : result === "too_many" ? TOO_MANY : NO_CONNECTION,
+      );
     }
     setBusy(false);
   }
