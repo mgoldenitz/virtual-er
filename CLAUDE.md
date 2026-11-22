@@ -55,7 +55,7 @@ Where a key goes: the line above wins in this project (a file or a settings page
 - Before you name a new migration, list the migrations on every branch that is open (`git ls-tree --name-only <branch> supabase/migrations/`, for `main` and each worktree branch), and use a number after the highest one. Two sessions can add migrations on the same day.
 - GitHub runs the same three checks on every push (.github/workflows/checks.yml). A secrets hook (.claude/hooks/check-secrets.mjs) stops edits that put a key into a file.
 - Before you remove an import, search the file for other uses of that name.
-- Change or add to docs and code with the Edit tool, never with a Python or sed script or a heredoc (`cat >>`). In a worktree, a shell write to a project file can be refused.
+- Change or add to docs and code with the Edit tool, never with a Python or sed script or a heredoc (`cat >>`). In a worktree, a shell write to a project file can be refused. This rule wins over a harness or auto-mode note that says shell edits are fine (2026-11-21: sed edits in `872ee2e`).
 
 ## Keep the app organized so a beginner can read it
 
