@@ -84,3 +84,16 @@ Gemini Hydrogen 4, High, 2026-11-21 (pasted by the owner):
 
 * `app/globals.css` lines 46-52, 63-67 and 86-92. Fault (1.4.11 / `forced-colors` mode noted as unchecked): `.hero-card`, `.header-band` and `.status-pill` rely solely on `background` and `box-shadow` with no `border`. In Windows High Contrast mode (`forced-colors: active`), browsers strip background colours, gradients and box shadows, leaving the hero card, header band and staff status pills without visible container boundaries. Fix: add `border: 1px solid transparent;` (or 2px) to `.hero-card`, `.header-band` and `.status-pill`, so they stay unchanged in standard mode while gaining visible system-coloured borders under `forced-colors: active`.
 * `components/SafetyCard.tsx` line 6. Fault (readability / token consistency): uses the raw colour utility `bg-white` on `.icon-tile` instead of the semantic `--color-card` token (`bg-card`) used across the rest of the app and referenced by `lib/contrast.test.ts` (`t.card`). Fix: change `bg-white` to `bg-card` (and update the comment in `app/globals.css:70`).
+
+## Check of the response (Claude, 2026-11-21)
+
+- 1a, accepted. `alert-edge` on `alert-tint` and `alert-edge` on `card` have no test. Both pass 3:1 by hand (about 6.0 and 6.5). Add the 2 tests.
+- 1b, partly accepted. `control` on `band` has no test. It passes 3:1 (about 4.0). Add the test. Rejected for `border-amber-700`: the draft notice border is not the boundary of a control, the notice is not new in this diff, and amber-700 is not a token in `app/globals.css`.
+- 1c, rejected. `brand` on `card` is tested at 4.5 in the "text colour brand" test (`lib/contrast.test.ts` line 34), which is stricter than 3:1.
+- 3, partly accepted. Add `shrink-0` to the radio (`StartVisit.tsx` line 186), the same as `TextSizeSwitch.tsx`. Rejected for the stacking: at Extra large text, 390 px, the 2 site cards already wrap to full width (each 265 x 84 px, one above the other), the radios are 30 x 30 px, and there is no sideways scroll (scrollWidth 375). Screenshot: `screenshots/2026-11-21-sites-xl-390-before.png`. "Demo Site A" on 2 lines at Normal text is a look choice for the owner, not a WCAG fault.
+- 5, accepted. Add `role="list"` to the `<ul>` in `CareOptions.tsx` line 39, with a test first in `CareOptions.test.tsx`.
+- 7a, accepted. Add `border: 1px solid transparent` to `.hero-card`, `.header-band` and `.status-pill`, with a test in lib/ that reads `app/globals.css`.
+- 7b, accepted. Change `bg-white` to `bg-card` in `SafetyCard.tsx` line 6 and update the comment in `app/globals.css`. Test 1a covers its contrast.
+- 2, 4, 6: no fault reported.
+
+The fixes touch app/, components/ and lib/, so they wait for an approved plan.
