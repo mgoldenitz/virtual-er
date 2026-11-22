@@ -52,11 +52,12 @@ describe("signInStaff", () => {
     expect(auth.signOut).toHaveBeenCalled();
   });
 
-  it("gives not_staff when the account is not marked staff", async () => {
-    mockAuth({
+  it("gives not_staff when the account is not marked staff, and clears this device only", async () => {
+    const auth = mockAuth({
       getClaims: async () => ({ data: { claims: { sub: "user-2", app_metadata: { role: "patient" } } }, error: null }),
     });
     await expect(signInStaff("patient@example.test", "pw")).resolves.toBe("not_staff");
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
   it("gives no_connection and clears this device when the claims check throws", async () => {

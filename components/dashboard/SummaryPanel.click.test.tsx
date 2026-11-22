@@ -57,4 +57,17 @@ describe("SummaryPanel status box", () => {
 
     expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
   });
+
+  it("shows the status box while the summary is being written", async () => {
+    // The summary request stays open until the test lets it finish.
+    let finish: (value: { kind: "text"; text: string }) => void = () => {};
+    vi.mocked(fetchDashboardSummary).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    act(() => root.render(<SummaryPanel isDemo={false} />));
+
+    act(() => summaryButton()?.click());
+
+    expect(statusBoxes()[0].textContent).toContain("Writing the summary...");
+    expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
+    await act(async () => finish({ kind: "text", text: SUMMARY }));
+  });
 });

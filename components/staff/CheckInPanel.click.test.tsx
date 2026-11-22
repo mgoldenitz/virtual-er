@@ -219,4 +219,29 @@ describe("CheckInPanel focus after Cancel", () => {
     expect(document.activeElement).toBe(heading);
     expect(textWhenFocused).toBe("Check in a patient after triage");
   });
+
+  it("does not move focus when a save ends the home visit", async () => {
+    vi.mocked(checkInVisitFromHome).mockResolvedValueOnce("saved");
+    const onHomeDone = vi.fn(() => showPanel({ homeVisit: null, offsitePaused: false, pauseReadFailed: false }));
+    showPanel({ homeVisit, onHomeDone, offsitePaused: false, pauseReadFailed: false });
+    fillForm();
+    await press("Not eligible");
+    expect(onHomeDone).toHaveBeenCalledTimes(1);
+    expect(document.activeElement?.id).not.toBe("checkin-heading");
+  });
+
+  it("does not move focus when a save ends a second home visit, after Cancel on the first", async () => {
+    const secondVisit = startFromHome({ id: "h2", code: "HOME45", access_token: "tok2", site: "A", language: "en" }, new Date());
+    const onHomeDone = vi.fn(() => showPanel({ homeVisit: null, onHomeDone, offsitePaused: false, pauseReadFailed: false }));
+    showPanel({ homeVisit, onHomeDone, offsitePaused: false, pauseReadFailed: false });
+    await press("Cancel:");
+    // Staff choose a second home visit and save it.
+    showPanel({ homeVisit: secondVisit, onHomeDone, offsitePaused: false, pauseReadFailed: false });
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
+    vi.mocked(checkInVisitFromHome).mockResolvedValueOnce("saved");
+    fillForm();
+    await press("Not eligible");
+    expect(onHomeDone).toHaveBeenCalledTimes(2);
+    expect(document.activeElement?.id).not.toBe("checkin-heading");
+  });
 });
