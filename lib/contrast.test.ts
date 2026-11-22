@@ -41,6 +41,23 @@ describe("globals.css tokens", () => {
     expect(contrastRatio("#ffffff", t[name])).toBeGreaterThanOrEqual(4.5);
   });
 
+  it.each(["ink", "brand-strong"])("text colour %s is 4.5:1 or more on line (pressed controls)", (name) => {
+    expect(contrastRatio(t[name], t.line)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("brand-strong (link hover) is 4.5:1 or more on canvas and card", () => {
+    for (const bg of backgrounds) {
+      expect(contrastRatio(t["brand-strong"], t[bg])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  // The darkest corner of .staff-backdrop in app/globals.css (about #d1dbf4). A link on the
+  // dashboard (app/dashboard/page.tsx) sits on the backdrop, not on a panel.
+  const BACKDROP_DARKEST = "#d1dbf4";
+  it.each(["ink", "muted", "brand", "brand-strong"])("text colour %s is 4.5:1 or more on the staff backdrop", (name) => {
+    expect(contrastRatio(t[name], BACKDROP_DARKEST)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("control borders are 3:1 or more on canvas and card", () => {
     for (const bg of backgrounds) {
       expect(contrastRatio(t.control, t[bg])).toBeGreaterThanOrEqual(3);
