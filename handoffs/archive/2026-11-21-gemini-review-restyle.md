@@ -2,7 +2,7 @@
 
 Model: Gemini Hydrogen 4, High, in a new chat. If you have no Hydrogen 4 credits, use Gemini 3.6 Flash, High.
 
-Give it: this file and `handoffs/2026-11-21-gemini-review-restyle-bundle.diff` (824 lines, `git diff 0291f74^ 9fb746f` for app/, components/, lib/ and docs/decisions.md; screenshots left out; no keys, no `.env`, no `.mcp.json`).
+Give it: this file and `handoffs/archive/2026-11-21-gemini-review-restyle-bundle.diff` (824 lines, `git diff 0291f74^ 9fb746f` for app/, components/, lib/ and docs/decisions.md; screenshots left out; no keys, no `.env`, no `.mcp.json`).
 
 ## Question to ask
 
