@@ -169,3 +169,32 @@ H4 116 characters; B1 74; Q4 180 (question and answer), Q7 answer alone 127; N1 
 - When and where the slip is given is not stated; a patient who started at home has no slip.
 - The survey (fact 10) has no section.
 - Can a visit near 24 hours be deleted mid-wait, and do totals stay after 24 hours?
+
+## Check of the response (Claude, 2026-11-22)
+
+Facts checked in this session:
+- `lib/followUp.test.ts:144`: `patientCallStep("on_the_way", ..., at(25))` is `"first"`. Tapping "I'm on my way" stops the second alert and F6.
+- `lib/text/en.ts:165`: the sound button is named "Turn on sound".
+- SPEC lines 82-86: 10 min second alert, 20 min "Please return now" (F6), 30 min "Review: unable to reach" after a nurse confirms.
+
+Accepted:
+- H1 fix ("at home or while waiting at the hospital. Starting a visit does not hold a place in line.").
+- H3 addition "If you agree and can return within 20 minutes".
+- Q4 question "What happens if I do not reply when asked to return?" and the answer that names "I'm on my way".
+- B1 merge "Keep this page open and your phone unlocked. Alerts cannot wake a locked phone."
+- B2, but with the real button name: "Keep your phone charged. Tap "Turn on sound"."
+- B5 reason, Q3 "not how you feel", Q6 "App records are deleted after 24 hours.".
+- Q7 "or scan your paper slip".
+- Note: add a pause question that quotes F5.
+
+Rejected:
+- Q1 "checks you in at the hospital": in this app, check-in is the staff step after triage. Keep the F4 wording.
+- H6 "so they can check you in": same reason. Proposed: "Go to the emergency department desk when you return. Tell staff you are back."
+- Q7 "in the same app": it must be the same browser. Proposed: "Open this website again in the same browser on your phone, or scan your paper slip."
+- Survey section: not part of this step.
+
+Owner decisions (open):
+1. "off-site" or "away from the hospital" (F5 keeps "Off-site" word for word).
+2. "simulated" or "demo" wait range (the patient screen now says "simulated for the demo").
+3. N1 "smartphone with internet" in place of "a phone", and the same change in the staff checklist and SPEC.
+4. Add the in-app browser note to Q7.
