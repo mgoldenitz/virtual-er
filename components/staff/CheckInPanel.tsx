@@ -4,8 +4,9 @@
 // "start off-site waiting", "offered, declined" or "not eligible". It checks in either a new
 // desk visit, or a visit the patient started from home (chosen from Expected arrivals).
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { checkInVisitFromHome, createDeskVisit } from "@/data/staffActions";
+import { shouldFocusHeading } from "@/lib/cancelFocus";
 import type { Site, Visit } from "@/lib/visit";
 import type { DeskOutcome } from "@/lib/visitActions";
 import { Button } from "@/components/Button";
@@ -74,11 +75,19 @@ export function CheckInPanel({
     setTicked({});
     setLanguage("en");
     setMessage("");
+    cancelled.current = true;
     onHomeDone();
-    // Cancel hides the button that had focus. Move focus to the heading first, so keyboard and
-    // screen-reader users keep their place instead of falling back to the top of the page.
-    heading.current?.focus();
   }
+
+  // Cancel hides the button that had focus. Once the home visit is gone (so the heading shows its
+  // new title), move focus to the heading, so keyboard and screen-reader users keep their place.
+  // A save that ends the home visit does not move focus.
+  const cancelled = useRef(false);
+  useEffect(() => {
+    if (!shouldFocusHeading(cancelled.current, homeVisit !== null)) return;
+    cancelled.current = false;
+    heading.current?.focus();
+  }, [homeVisit]);
 
   /** Save the check-in; returns the visit code, or null after showing why it was not saved. */
   async function save(outcome: DeskOutcome, ctasLevel: 4 | 5): Promise<string | null> {
