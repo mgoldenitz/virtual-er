@@ -66,17 +66,20 @@ html[data-lang-wait] main {
   padding: 1.25rem;
 }
 
-/* Icon tile: a small pale blue square that holds an icon. */
-.icon-tile {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
-  background: var(--color-band);
-  color: var(--color-brand-strong);
+/* Icon tile: a small pale blue square that holds an icon. It sits in the components layer, so a
+   utility class (bg-white, text-alert-edge on the 911 card) can change its colours. */
+@layer components {
+  .icon-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: var(--color-band);
+    color: var(--color-brand-strong);
+  }
 }
 
 /* Status pill: a small rounded label for a status word such as paused. */
