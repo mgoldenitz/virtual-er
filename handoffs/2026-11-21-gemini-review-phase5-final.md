@@ -405,3 +405,16 @@ Checked on 2026-11-21 by reading the code (greps and file reads in this session)
 4. Part 2 #6, #7, #8, #9: summary live region, 2 focus moves, Footer `lang="en" dir="ltr"`.
 5. Part 3 #16: fix the 3 stale comments.
 6. Wording: unavailableText, and the heading after `on_the_way`, as the owner decides.
+
+### What was done (2026-11-21, owner OK to the plan for fixes 1 to 6)
+
+The owner's numbering is different from the list above: 1 unavailableText, 2 sign-in errors, 3 accessibility, 4 stop reasons, 5 comments, 6 Speed Insights. Skipped: recallAll, the demo-plan guard, a heading after `on_the_way`, and faults that need a real screen reader.
+
+- Speed Insights removed: `8565eb0`.
+- Stop reasons: test `c4f2511` (failed), fix `b67549c`.
+- Sign-in errors: tests `a0394b0` (failed), fix `5d5d77d` (new `lib/signInError.ts`; 429 is "too many tries", not "no connection").
+- Accessibility: tests `330f8ec` (4 failed, 8 passed), fix `2ab8c62`.
+- Comments: `5bf58f2`.
+- unavailableText: `84fff03` (English, and 4 new drafts for the fluent review).
+- Checks after the last fix: 121 test files, 776 tests pass; lint exit 0; build exit 0.
+- Not checked: the new unavailableText in a browser (a failed visit read was not made), and the focus moves with a real screen reader.
