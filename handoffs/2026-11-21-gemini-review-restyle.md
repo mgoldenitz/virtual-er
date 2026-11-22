@@ -117,3 +117,18 @@ Gemini Hydrogen 4, High, 2026-11-21, pasted by the owner:
   * The `.theme-staff` class name was deleted from the wrapper `<div>` and stylesheet; any test, Playwright locator, or script querying `.theme-staff` (or `jakarta`'s generated font class) will no longer match.
   * Fix: Check all tests and scripts for `.theme-staff` or font-class selectors, and either update those selectors or retain `theme-staff` as a marker class if needed.
 
+## Claude's check
+
+Checked against the code on 2026-11-21 (commit `6c883ea`).
+
+- 1a, disabled contrast: rejected. WCAG 2.2 SC 1.4.3 and 1.4.11 exempt inactive controls from contrast. `opacity-50` stays.
+- 1a, `aria-disabled` buttons still change colour on hover and press: valid. 7 buttons use `aria-disabled` (`PatientStatus.tsx:36`, `StillHerePrompt.tsx:95`, `SurveyForm.tsx:72`, `CheckInPanel.tsx:224`, `:232`, `:236`, `ClearDemoData.tsx:71`). The `pointer-events-none` fix is rejected: it removes the `cursor-not-allowed` cue. Better fix: an `aria-disabled:hover:` and `aria-disabled:active:` class per variant that keeps the normal colour.
+- 1b, test gaps: valid. Add `line` as a background for `ink` (pressed secondary button), and the backdrop corner #d1dbf4 for `brand`, `muted` and `ink` (`app/dashboard/page.tsx:18` puts `text-brand` on the backdrop).
+- 2, `<summary>` focus rings: valid. `FollowUpPanel.tsx:141`, `NewLinkPanel.tsx:44` and `VisitRow.tsx:147` have no `focus-visible` classes.
+- 2, links without `outline-offset-2`: valid, small. `app/dashboard/page.tsx:18` and `VisitSlip.tsx:49`. `VisitSlip.tsx:49` also has no `min-h-11` (project rule: 44 px targets).
+- 3, hover and press states on links, `<summary>` and survey labels: not a WCAG need. Owner choice.
+- 4a, `/patient` h1 (`text-lg`, 18 px) smaller than the h2 in `StillHerePrompt.tsx:91` (`text-2xl`, 24 px): valid. Size is owner choice.
+- 4b, visit code `text-2xl` (`VisitRow.tsx:119`) the same size as the h2 (`app/staff/page.tsx:148`): true. Owner choice; the code is the main thing staff read on a row.
+- 5, `text-white` token and raw backdrop colours: low value. Not done unless the owner asks.
+- 6, `theme-staff` removed: rejected. A search of `app`, `components`, `lib`, `data`, `e2e` and `scripts` finds no `theme-staff` or `jakarta`. `npm run e2e` passed (39) after the change.
+
