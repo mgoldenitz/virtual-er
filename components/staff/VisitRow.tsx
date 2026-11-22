@@ -8,6 +8,7 @@ import { callBackVisit, issueNewVisitLink, markVisitArrived, removeVisit } from 
 import { minutesBetween } from "@/lib/queue";
 import { STILL_HERE_ANSWER_WITHIN_MINUTES } from "@/lib/demoTimes";
 import { lastTapThisWait, stillHereState } from "@/lib/stillHere";
+import { PILL_CLASS, visitPill } from "@/lib/statusPill";
 import { switchedAt } from "@/lib/switchToOffsite";
 import type { ChangeResult, Visit } from "@/lib/visit";
 import { Button } from "@/components/Button";
@@ -112,14 +113,18 @@ export function VisitRow({ visit, now, onShowSlip, onLeftList, onFocusLost }: Pr
     setOkNote(`New link issued for ${visit.code}. The old link no longer works.`);
   };
   const waited = visit.triaged_at ? minutesBetween(visit.triaged_at, now) : 0;
+  const pill = visitPill(visit.status);
 
   return (
     <li ref={row} onFocus={focusWatch.onFocus} onBlur={focusWatch.onBlur} className="rounded-xl border-2 border-line bg-card p-4" data-testid={`row-${visit.code}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-mono text-lg font-bold tracking-widest">
-          {visit.code}
-          <DemoTag isDemo={visit.is_demo} />
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-mono text-lg font-bold tracking-widest">
+            {visit.code}
+            <DemoTag isDemo={visit.is_demo} />
+          </p>
+          {pill && <span className={`status-pill ${PILL_CLASS[pill.tone]}`}>{pill.label}</span>}
+        </div>
         <p>
           CTAS {visit.ctas_level} · waited <strong><Duration minutes={waited} /></strong>
         </p>

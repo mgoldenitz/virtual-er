@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setSitePaused } from "@/data/sitePauses";
 import { patientCount } from "@/lib/patientCount";
+import { PILL_CLASS, sitePausePill } from "@/lib/statusPill";
 import type { ChangeResult, Site } from "@/lib/visit";
 import { Button } from "@/components/Button";
 
@@ -41,6 +42,8 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
   if (paused === null) {
     return <p className="text-sm text-muted">Checking whether off-site waiting is paused at this site…</p>;
   }
+
+  const pill = sitePausePill(paused);
 
   // Count words only when the list has been read; otherwise the sentences name no number.
   const stillOff = offSiteCount === null ? "the patients still off-site" : `the ${patientCount(offSiteCount)} still off-site`;
@@ -89,6 +92,8 @@ export function PauseSwitch({ site, paused, offSiteCount, onResult }: Props) {
       <h3 id={`pause-heading-${site}`} className="sr-only">
         Off-site waiting switch, Demo Site {site}
       </h3>
+
+      {pill && <span className={`status-pill ${PILL_CLASS[pill.tone]}`}>{pill.label}</span>}
 
       {paused && (
         <div className="space-y-2 rounded-xl border-4 border-red-800 bg-red-50 p-4 text-red-950" data-testid="paused-banner">

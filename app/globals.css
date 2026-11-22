@@ -17,6 +17,8 @@
   --color-alert-edge: #b91c1c;   /* 911 card border */
   --color-stop-tint: #fee2e2;    /* paused pill background */
   --color-stop-ink: #7f1d1d;     /* paused pill text */
+  --color-ok-tint: #dcfce7;      /* called and on-the-way pill background */
+  --color-ok-ink: #14532d;       /* called and on-the-way pill text */
 }
 
 body {

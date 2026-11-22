@@ -80,6 +80,14 @@ describe("globals.css tokens", () => {
     expect(contrastRatio(t["stop-ink"], t["stop-tint"])).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("called pill text is 4.5:1 or more", () => {
+    expect(contrastRatio(t["ok-ink"], t["ok-tint"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("waiting pill text is 4.5:1 or more", () => {
+    expect(contrastRatio(t["brand-strong"], t.band)).toBeGreaterThanOrEqual(4.5);
+  });
+
   // The chosen site card (components/start/StartVisit.tsx): pale blue with a blue border.
   it("chosen site card border is 3:1 or more on the band tint", () => {
     expect(contrastRatio(t.brand, t.band)).toBeGreaterThanOrEqual(3);
