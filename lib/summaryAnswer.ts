@@ -22,7 +22,8 @@ export const SUMMARY_NONE_TEXT: Record<"refusal" | "cut_off" | "empty", string> 
 /** Checks the stop reason first, then joins the text blocks (thinking blocks are skipped). */
 export function summaryAnswer(reply: ReplyLike): SummaryAnswer {
   if (reply.stop_reason === "refusal") return { kind: "none", reason: "refusal" };
-  if (reply.stop_reason === "max_tokens") return { kind: "none", reason: "cut_off" };
+  // Any end other than a normal finish (max_tokens, pause_turn, null...) means the reply may be incomplete.
+  if (reply.stop_reason !== "end_turn") return { kind: "none", reason: "cut_off" };
   const text = reply.content
     .filter((block) => block.type === "text")
     .map((block) => block.text ?? "")
