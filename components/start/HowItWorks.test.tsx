@@ -23,9 +23,7 @@ describe.each(["en", "fr", "ur", "ar", "zh"])("HowItWorks in %s", (language) => 
   });
 
   it("uses SPEC's triage sentence as step 2", () => {
-    const steps = render(language).querySelectorAll("ol > li");
-    expect(steps[1].textContent).toBe(t.patient.fromHomeText[0]);
-    expect(steps[0].textContent).toBe(t.start.howSteps[0]);
-    expect(steps[5].textContent).toBe(t.start.howSteps[4]);
+    const steps = [...render(language).querySelectorAll("ol > li")].map((li) => li.textContent);
+    expect(steps).toEqual([t.start.howSteps[0], t.patient.fromHomeText[0], ...t.start.howSteps.slice(1)]);
   });
 });

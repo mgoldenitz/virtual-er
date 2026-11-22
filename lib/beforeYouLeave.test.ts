@@ -28,7 +28,17 @@ describe("beforeYouLeaveShows", () => {
     expect(beforeYouLeaveShows(view)).toBe(true);
   });
 
-  it.each<VisitStatus>(["pre_arrival", "called", "on_the_way", "arrived"])("does not show for %s", (status) => {
+  it.each<VisitStatus>([
+    "pre_arrival",
+    "called",
+    "on_the_way",
+    "arrived",
+    "needs_reassessment",
+    "declined",
+    "not_eligible",
+    "unable_to_reach",
+    "removed",
+  ])("does not show for %s", (status) => {
     expect(beforeYouLeaveShows({ ...view, status })).toBe(false);
   });
 

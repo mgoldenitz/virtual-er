@@ -61,7 +61,10 @@ describe.each(Object.entries({ en, ...LANGUAGES }))("%s Part 2 sections", (_name
     expect(s.howSteps[2]).toContain(text.stillHere.button);
     expect(s.howSteps[3]).toContain(text.patient.calledHeading);
     expect(s.howSteps[3]).toContain(text.patient.onMyWay);
-    expect(text.patient.beforeItems[1]).toContain(text.sound.turnOn);
+    // The sound tip must not name "Turn on sound": that button says "Sound is on" once tapped (owner 2026-11-22).
+    expect(text.patient.beforeItems[1]).not.toContain(text.sound.turnOn);
+    // The triage sentence is filled in from patient.fromHomeText[0], never copied.
+    expect(s.questions.holdPlace.a).toContain("{triage}");
     expect(s.questions.stillHere.q).toContain(text.stillHere.button);
     expect(s.questions.noReply.a).toContain(text.patient.onMyWay);
   });

@@ -4,7 +4,7 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { textFor } from "@/lib/text";
+import { fill, textFor } from "@/lib/text";
 import { StartQuestions } from "./StartQuestions";
 
 const render = (language: string) => {
@@ -23,11 +23,19 @@ describe.each(["en", "fr", "ur", "ar", "zh"])("StartQuestions in %s", (language)
   });
 
   it("answers with SPEC's sentences exactly", () => {
-    const answers = [...render(language).querySelectorAll("details")].map(
-      (item) => item.textContent?.replace(item.querySelector("summary")?.textContent ?? "", "") ?? "",
-    );
-    expect(answers[1]).toBe(t.patient.placeCanChange);
-    expect(answers[4]).toBe(t.emergencyLine);
-    expect(answers[7]).toContain(t.start.paused);
+    const q = t.start.questions;
+    const answers = [...render(language).querySelectorAll("details > p")].map((p) => p.textContent ?? "");
+    expect(q.holdPlace.a).toContain("{triage}");
+    expect(q.paused.a).toContain("{message}");
+    expect(answers).toEqual([
+      fill(q.holdPlace.a, { triage: t.patient.fromHomeText[0] }),
+      t.patient.placeCanChange,
+      q.stillHere.a,
+      q.noReply.a,
+      t.emergencyLine,
+      q.saves.a,
+      q.reopen.a,
+      fill(q.paused.a, { message: t.start.paused }),
+    ]);
   });
 });
