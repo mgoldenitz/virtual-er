@@ -48,4 +48,13 @@ describe("SummaryPanel status box", () => {
     expect(statusBoxes()[0]).toBe(box);
     expect(statusBoxes()[0].textContent).toContain(SUMMARY);
   });
+
+  it("hides the empty status box from view (no gap below the button), and shows it once it has text", async () => {
+    act(() => root.render(<SummaryPanel isDemo={false} />));
+    expect(statusBoxes()[0].classList.contains("sr-only")).toBe(true);
+
+    await act(async () => summaryButton()?.click());
+
+    expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
+  });
 });
