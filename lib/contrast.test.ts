@@ -103,4 +103,19 @@ describe("globals.css tokens", () => {
       expect(contrastRatio(t.control, t[bg])).toBeGreaterThanOrEqual(3);
     }
   });
+
+  // The language and text size controls sit in the header band (components/PatientHeader.tsx).
+  it("control borders are 3:1 or more on the header band", () => {
+    expect(contrastRatio(t.control, t.band)).toBeGreaterThanOrEqual(3);
+  });
+
+  // The 911 card (components/SafetyCard.tsx): the red border touches the pale red inside.
+  it("911 card border is 3:1 or more on the 911 card tint", () => {
+    expect(contrastRatio(t["alert-edge"], t["alert-tint"])).toBeGreaterThanOrEqual(3);
+  });
+
+  // The red 911 icon on its white tile, and the paused message border on the white card.
+  it("red border and icon colour are 3:1 or more on the card", () => {
+    expect(contrastRatio(t["alert-edge"], t.card)).toBeGreaterThanOrEqual(3);
+  });
 });

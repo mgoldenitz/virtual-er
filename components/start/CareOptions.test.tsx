@@ -47,6 +47,13 @@ describe("CareOptions", () => {
     }
   });
 
+  it("keeps the list a list for screen readers", () => {
+    // The list has no bullets (list-style: none), and Safari VoiceOver then drops the list role,
+    // so the <ul> says role="list" itself.
+    const html = renderToStaticMarkup(<CareOptions language="en" />);
+    expect(html).toMatch(/<ul [^>]*role="list"/);
+  });
+
   it("makes the 2 links that stand alone 44 pixels high", () => {
     // The 811 link and the hours link sit inside sentences, so WCAG 2.5.8 lets them stay small.
     const t = textFor("en").start;
