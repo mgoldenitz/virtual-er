@@ -198,3 +198,39 @@ Owner decisions (open):
 2. "simulated" or "demo" wait range (the patient screen now says "simulated for the demo").
 3. N1 "smartphone with internet" in place of "a phone", and the same change in the staff checklist and SPEC.
 4. Add the in-app browser note to Q7.
+
+Owner answers (2026-11-22): 1 keep "off-site". 2 keep "simulated". 3 "smartphone with internet" in N1, the staff checklist and SPEC. 4 add the in-app browser note to Q7. 5 add a pause question (Q8).
+
+## Final English (for the owner to approve)
+
+H: start page, under the start box
+- H0: How it works
+- H1: 1. Tap "Start a visit" at home or while waiting at the hospital. Starting a visit does not hold a place in line.
+- H2: 2. Your place in line starts when a nurse sees you at triage. The most urgent patients are always seen first. (F4)
+- H3: 3. Staff decide if you can wait off-site. You must agree and be able to return within 20 minutes. If you did not start on your phone, staff give you a paper slip.
+- H4: 4. Follow your place in line, status, and simulated wait range on your phone. Tap "I'm still here" every 30 minutes.
+- H5: 5. When your status is "Please head back now", tap "I'm on my way". Come back within 20 minutes.
+- H6: 6. Go to the emergency department desk when you return. Tell staff you are back.
+
+B: patient screen, while the status is "Waiting"
+- B0: Before you leave
+- B1: Keep this page open and your phone unlocked. Alerts cannot wake a locked phone.
+- B2: Keep your phone charged and tap "Turn on sound".
+- B3: Stay within 20 minutes of the emergency department.
+- B4: Keep your paper slip if you got one, so you can scan the code again.
+
+Q: start page, below "How it works"
+- Q0: Questions
+- Q1: Does starting a visit at home hold my place? / Starting from home does not hold a place in line. Your place in line starts when a nurse sees you at triage.
+- Q2: Why did my place in line change? / (F3) Your place can change if more urgent patients arrive. The most urgent patients are always seen first.
+- Q3: What happens if I do not tap "I'm still here"? / After 10 minutes, staff see a notice on your visit. Tapping this button only tells staff you are still waiting, not how you feel.
+- Q4: What happens if I do not reply when asked to return? / A second alert shows after 10 minutes. If you do not tap "I'm on my way" within 20 minutes, staff will review your visit.
+- Q5: What if my symptoms get worse? / (F1) If your symptoms get worse, call 911 or come back to the emergency department now.
+- Q6: What does the app save about me? / The app saves no names, health card numbers, phone numbers, or symptoms. App records are deleted after 24 hours.
+- Q7: How do I open my visit again? / Open it the same way you first did, on the same phone, or scan your paper slip. A QR code or a message app can open its own browser, and a different phone or a private window will not have your visit.
+- Q8: What if staff pause off-site waiting? / You will see this message: "Off-site waiting is paused right now. Please come to the emergency department and wait there." (F5)
+
+N: start page, near "Start a visit"
+- N1: You need a smartphone with internet to wait off-site. If you do not have one, wait in the emergency department as usual.
+
+Staff checklist label (`components/staff/eligibility.ts:5`): "Has a phone with them" becomes "Has a smartphone with internet".
