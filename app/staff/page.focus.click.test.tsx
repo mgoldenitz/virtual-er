@@ -77,3 +77,9 @@ it("when another screen takes a patient off the list with focus in that row, foc
   draw([second]);
   expect(document.activeElement).toBe(document.getElementById("list-heading"));
 });
+
+it("hides the empty status line under the list heading from view, so it adds no gap", () => {
+  const status = document.getElementById("list-heading")?.parentElement?.querySelector('[role="status"]');
+  expect(status?.textContent).toBe("");
+  expect(status?.classList.contains("sr-only")).toBe(true);
+});

@@ -38,4 +38,8 @@ describe.each(["en", "fr", "ur", "ar", "zh"])("StartQuestions in %s", (language)
       fill(q.paused.a, { message: t.start.paused }),
     ]);
   });
+
+  it("sits on the page with no card frame (decisions.md, 2026-11-22)", () => {
+    expect(render(language).querySelector("section")?.classList.contains("clean-card")).toBe(false);
+  });
 });

@@ -26,4 +26,8 @@ describe.each(["en", "fr", "ur", "ar", "zh"])("HowItWorks in %s", (language) => 
     const steps = [...render(language).querySelectorAll("ol > li")].map((li) => li.textContent);
     expect(steps).toEqual([t.start.howSteps[0], t.patient.fromHomeText[0], ...t.start.howSteps.slice(1)]);
   });
+
+  it("sits on the page with no card frame (decisions.md, 2026-11-22)", () => {
+    expect(render(language).querySelector("section")?.classList.contains("clean-card")).toBe(false);
+  });
 });

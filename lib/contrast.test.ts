@@ -51,14 +51,14 @@ describe("globals.css tokens", () => {
     }
   });
 
-  // The darkest corner of .staff-backdrop in app/globals.css (about #d1dbf4). A link on the
-  // dashboard (app/dashboard/page.tsx) sits on the backdrop, not on a panel.
-  const BACKDROP_DARKEST = "#d1dbf4";
-  it.each(["ink", "muted", "brand", "brand-strong"])("text colour %s is 4.5:1 or more on the staff backdrop", (name) => {
-    expect(contrastRatio(t[name], BACKDROP_DARKEST)).toBeGreaterThanOrEqual(4.5);
+  // The staff page background is the flat canvas token (components/staff/StaffShell.tsx, bg-canvas). A link on
+  // the dashboard (app/dashboard/page.tsx) sits on it, not on a panel.
+  const STAFF_BACKGROUND = t.canvas;
+  it.each(["ink", "muted", "brand", "brand-strong"])("text colour %s is 4.5:1 or more on the staff background", (name) => {
+    expect(contrastRatio(t[name], STAFF_BACKGROUND)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("white text on the hero card gradient is 4.5:1 or more", () => {
+  it("white text on the hero card is 4.5:1 or more", () => {
     for (const name of ["brand", "brand-strong"]) {
       expect(contrastRatio("#ffffff", t[name])).toBeGreaterThanOrEqual(4.5);
     }
