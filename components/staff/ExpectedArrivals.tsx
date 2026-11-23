@@ -51,7 +51,7 @@ export function ExpectedArrivals({ visits, site, now, onChoose }: Props) {
   };
 
   return (
-    <section aria-labelledby="expected-heading" className="glass-panel space-y-3">
+    <section aria-labelledby="expected-heading" className="clean-card space-y-3">
       <h2 id="expected-heading" className="text-2xl font-bold">
         Expected arrivals ({expected.length})
       </h2>

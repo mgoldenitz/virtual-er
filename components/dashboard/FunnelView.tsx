@@ -27,7 +27,7 @@ function SiteSteps({ site, n }: { site: "A" | "B"; n: SiteNumbers }) {
 
 export function FunnelView({ numbers }: Props) {
   return (
-    <section className="glass-panel space-y-3">
+    <section className="clean-card space-y-3">
       <h2 className="text-lg font-bold">Steps today</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <SiteSteps site="A" n={numbers.A} />

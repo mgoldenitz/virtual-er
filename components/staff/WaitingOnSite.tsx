@@ -149,7 +149,7 @@ export function WaitingOnSite({ visits, site, now, offsitePaused, save, undo, on
   }
 
   return (
-    <section aria-labelledby="onsite-heading" className="glass-panel space-y-3">
+    <section aria-labelledby="onsite-heading" className="clean-card space-y-3">
       <h2 id="onsite-heading" ref={heading} tabIndex={-1} className="text-2xl font-bold">
         Waiting on-site: offered, declined ({list.length})
       </h2>

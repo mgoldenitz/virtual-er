@@ -33,38 +33,29 @@ html[data-lang-wait] main {
   visibility: hidden;
 }
 
-/* Patient screens (clean look): a plain white box on the light-grey page. */
+/* Patient and staff screens: a plain white box with a thin grey edge on the light-grey page. */
 .clean-card {
   background-color: var(--color-card);
   border: 1px solid var(--color-line);
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   padding: 1.25rem;
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
 
-/* Patient hero card: the large blue box at the top of a patient screen. White text on it is 4.5:1 or more. */
+/* Patient hero card: the solid dark blue box at the top of a patient screen. White text on it is 8.7:1. */
 .hero-card {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong));
+  background: var(--color-brand-strong);
   color: #ffffff;
   border: 1px solid transparent; /* shows as an edge in Windows high contrast mode */
-  border-radius: 1.25rem;
+  border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 8px 24px rgb(29 78 216 / 0.25);
-}
-
-/* Hero card with more contrast asked for: a solid dark blue, no shadow. */
-@media (prefers-contrast: more) {
-  .hero-card {
-    background: var(--color-brand-strong);
-    box-shadow: none;
-  }
 }
 
 /* Header band: the pale blue strip that holds a screen's title. */
 .header-band {
   background: var(--color-band);
   border: 1px solid transparent; /* shows as an edge in Windows high contrast mode */
-  border-radius: 1.25rem;
+  border-radius: 0.75rem;
   padding: 1.25rem;
 }
 
@@ -92,43 +83,4 @@ html[data-lang-wait] main {
   padding: 0.125rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
-}
-
-/* Staff screens (glass look): a soft, pale blue wash behind the glass panels. It stays light:
-   the darkest corner is about #d1dbf4, where brand is 4.8:1, muted 5.4:1 and ink 12.8:1. */
-.staff-backdrop {
-  background-color: #eef2f9;
-  background-image:
-    radial-gradient(at 10% 0%, rgb(29 78 216 / 0.14) 0, transparent 50%),
-    radial-gradient(at 95% 15%, rgb(75 85 99 / 0.1) 0, transparent 45%),
-    radial-gradient(at 50% 100%, rgb(96 165 250 / 0.12) 0, transparent 50%);
-}
-
-/* A frosted panel: mostly white (82%), so text stays dark-on-light. */
-.glass-panel {
-  background-color: rgb(255 255 255 / 0.82);
-  border: 1px solid rgb(255 255 255 / 0.9);
-  border-radius: 1.25rem;
-  padding: 1.25rem;
-  box-shadow:
-    0 8px 32px rgb(20 20 40 / 0.08),
-    inset 0 1px 0 rgb(255 255 255 / 0.7);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  backdrop-filter: blur(16px) saturate(150%);
-}
-
-/* Solid panels instead of glass for people who ask their device for less see-through or more
-   contrast, and on browsers that cannot blur. */
-@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .glass-panel {
-    background-color: #ffffff;
-    border-color: var(--color-control);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-panel {
-    background-color: #ffffff;
-  }
 }

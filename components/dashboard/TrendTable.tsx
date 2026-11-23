@@ -60,7 +60,7 @@ export function TrendTable({ site, trend }: Props) {
   const headingId = useId();
 
   return (
-    <section className="glass-panel space-y-2">
+    <section className="clean-card space-y-2">
       <h2 id={headingId} className="text-lg font-bold">
         {title}
       </h2>

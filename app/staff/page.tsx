@@ -76,7 +76,7 @@ export default function StaffPage() {
   return (
     <StaffShell>
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6">
-      <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
+      <header className="clean-card flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Staff: WaitWell</h1>
         <label className="flex flex-wrap items-center gap-2">
           <span className="font-semibold">Site</span>
@@ -144,11 +144,12 @@ export default function StaffPage() {
           )}
         </div>
 
-        <section aria-labelledby="list-heading" className="glass-panel space-y-3">
+        <section aria-labelledby="list-heading" className="clean-card space-y-3">
           <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-2xl font-bold">
             Off-site: waiting or called back ({line.length})
           </h2>
-          <p role="status" className="min-h-6 font-semibold">
+          {/* Hidden from view while empty (sr-only), so it adds no gap; screen readers still hear each message. */}
+          <p role="status" className={announcement ? "font-semibold" : "sr-only"}>
             {announcement}
           </p>
           <PauseSwitch key={`pause-${site}`} site={site} paused={paused} offSiteCount={visits ? line.length : null} onResult={setAnnouncement} />
@@ -176,7 +177,7 @@ export default function StaffPage() {
         </section>
       </div>
 
-      <section aria-labelledby="demo-heading" className="glass-panel space-y-3">
+      <section aria-labelledby="demo-heading" className="clean-card space-y-3">
         <h2 id="demo-heading" className="text-2xl font-bold">Demo data</h2>
         <p>For the demo only. Clear demo data before real testers start.</p>
         <ClearDemoData />

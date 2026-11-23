@@ -10,7 +10,7 @@ export default function DashboardPage() {
   return (
     <StaffShell>
     <main className="mx-auto w-full max-w-5xl space-y-5 px-4 py-6">
-      <header className="glass-panel flex flex-wrap items-center justify-between gap-3">
+      <header className="clean-card flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <SignOutButton />
       </header>

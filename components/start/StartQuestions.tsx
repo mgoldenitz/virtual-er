@@ -18,7 +18,7 @@ export function StartQuestions({ language }: { language: string }) {
     { id: "paused", q: q.paused.q, a: fill(q.paused.a, { message: t.start.paused }) },
   ];
   return (
-    <section aria-labelledby="questions-heading" className="clean-card space-y-3">
+    <section aria-labelledby="questions-heading" className="space-y-3">
       <h2 id="questions-heading" className="text-2xl font-bold">
         {t.start.questionsHeading}
       </h2>

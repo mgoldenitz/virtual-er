@@ -8,7 +8,7 @@ export function HowItWorks({ language }: { language: string }) {
   const [first, ...rest] = t.start.howSteps;
   const steps = [first, t.patient.fromHomeText[0], ...rest];
   return (
-    <section aria-labelledby="how-heading" className="clean-card space-y-3">
+    <section aria-labelledby="how-heading" className="space-y-3">
       <h2 id="how-heading" className="text-2xl font-bold">
         {t.start.howHeading}
       </h2>

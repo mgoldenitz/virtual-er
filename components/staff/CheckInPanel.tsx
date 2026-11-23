@@ -164,7 +164,7 @@ export function CheckInPanel({
   };
 
   return (
-    <form onSubmit={onSubmit} className="glass-panel space-y-4" aria-labelledby="checkin-heading">
+    <form onSubmit={onSubmit} className="clean-card space-y-4" aria-labelledby="checkin-heading">
       <h2 id="checkin-heading" ref={heading} tabIndex={-1} className="text-2xl font-bold">
         {homeVisit ? `Check in visit ${homeVisit.code} after triage` : "Check in a patient after triage"}
       </h2>

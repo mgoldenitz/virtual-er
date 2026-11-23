@@ -14,7 +14,7 @@ export default function LoginPage() {
         the link or QR code you were given.
       </p>
       {/* The form reads the web address (where to go next), so it loads just after the page. */}
-      <div className="glass-panel">
+      <div className="clean-card">
       <Suspense fallback={<p>Loading the sign-in form…</p>}>
         <LoginForm />
       </Suspense>

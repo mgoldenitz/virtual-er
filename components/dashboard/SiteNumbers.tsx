@@ -21,7 +21,7 @@ export function SiteNumbers({ site, numbers: n }: Props) {
   const nineOrTenShare = share(n.survey9or10, n.surveyResponses);
 
   return (
-    <section aria-labelledby={`site-${site}-heading`} className="glass-panel space-y-3">
+    <section aria-labelledby={`site-${site}-heading`} className="clean-card space-y-3">
       <h2 id={`site-${site}-heading`} className="text-2xl font-bold">
         Demo Site {site}
       </h2>
