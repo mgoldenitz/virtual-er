@@ -95,6 +95,12 @@ it("puts the empty status line beside the list heading, with no child and no cla
   expect(status?.classList.contains("sr-only")).toBe(false);
 });
 
+// Owner choice 2026-11-22: the line keeps one line of space, so a one-line message does not move the list.
+it("keeps one line of space for the status line, right under the heading", () => {
+  expect(statusLine()?.classList.contains("min-h-6")).toBe(true);
+  expect(document.getElementById("list-heading")?.nextElementSibling).toBe(statusLine());
+});
+
 it("shows a message in the same status line, and the line keeps its class (screen readers hear the change)", () => {
   const status = statusLine();
   const classBefore = status?.className;
