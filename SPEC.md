@@ -10,7 +10,7 @@ It is a concept prototype. It is not affiliated with any hospital, uses only inv
 
 "Concept prototype. Not affiliated with or endorsed by Trillium Health Partners. Demo data only."
 
-App name: WaitWell. The main header uses the full name, "WaitWell: A virtual ER waiting room". Subheaders and other places use "WaitWell". (Owner, 2026-11-22.)
+App name: WaitWell. The main header uses the full name, "WaitWell: A virtual waiting room". Subheaders and other places use "WaitWell". (Owner, 2026-11-22; "ER" removed 2026-11-23.)
 
 ## Stack
 

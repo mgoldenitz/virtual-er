@@ -12,7 +12,7 @@ export const en = {
   emergencyLine: "If your symptoms get worse, call 911 or come back to the emergency department now.",
   // SPEC: on every page.
   footer: "Concept prototype. Not affiliated with or endorsed by Trillium Health Partners. Demo data only.",
-  appName: "WaitWell: A virtual ER waiting room",
+  appName: "WaitWell: A virtual waiting room",
   visitCode: "Visit code",
   siteName: "Demo Site {site}",
   newTab: "(opens in a new tab)",
