@@ -34,7 +34,14 @@ vi.mock("@/components/staff/ClearDemoData", () => ({ ClearDemoData: () => null }
 vi.mock("@/components/staff/ExpectedArrivals", () => ({ ExpectedArrivals: () => null }));
 vi.mock("@/components/staff/PauseSwitch", () => ({ PauseSwitch: () => null }));
 vi.mock("@/components/staff/ProgressAnnouncer", () => ({ ProgressAnnouncer: () => null }));
-vi.mock("@/components/staff/RecallAllPanel", () => ({ RecallAllPanel: () => null }));
+// A stand-in button that sends one status message, so a test can make the status line show text.
+vi.mock("@/components/staff/RecallAllPanel", () => ({
+  RecallAllPanel: ({ onResult }: { onResult: (message: string, closed: boolean) => void }) => (
+    <button type="button" onClick={() => onResult("Test message", false)}>
+      Send test message
+    </button>
+  ),
+}));
 vi.mock("@/components/staff/RecentlyClosed", () => ({ RecentlyClosed: () => null }));
 vi.mock("@/components/staff/SignOutButton", () => ({ SignOutButton: () => null }));
 vi.mock("@/components/staff/VisitSlip", () => ({ VisitSlip: () => null }));
@@ -78,8 +85,23 @@ it("when another screen takes a patient off the list with focus in that row, foc
   expect(document.activeElement).toBe(document.getElementById("list-heading"));
 });
 
-it("hides the empty status line under the list heading from view, so it adds no gap", () => {
-  const status = document.getElementById("list-heading")?.parentElement?.querySelector('[role="status"]');
-  expect(status?.textContent).toBe("");
-  expect(status?.classList.contains("sr-only")).toBe(true);
+/** The live status line in the same row as the list heading. */
+const statusLine = () => document.getElementById("list-heading")?.parentElement?.querySelector('[role="status"]');
+
+it("puts the empty status line beside the list heading, with no child and no class that hides it", () => {
+  const status = statusLine();
+  expect(status).toBeTruthy();
+  expect(status?.childElementCount).toBe(0);
+  expect(status?.classList.contains("sr-only")).toBe(false);
+});
+
+it("shows a message in the same status line, and the line keeps its class (screen readers hear the change)", () => {
+  const status = statusLine();
+  const classBefore = status?.className;
+  const send = [...container.querySelectorAll("button")].find((b) => b.textContent === "Send test message");
+  if (!send) throw new Error('No "Send test message" button');
+  act(() => send.click());
+  expect(statusLine()).toBe(status);
+  expect(statusLine()?.className).toBe(classBefore);
+  expect(statusLine()?.querySelector("p")?.textContent).toBe("Test message");
 });

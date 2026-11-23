@@ -43,6 +43,10 @@ describe("flat look", () => {
     expect(hero).not.toContain("box-shadow");
   });
 
+  it(".clean-card has no shadow (a plain edge only)", () => {
+    expect(ruleBody(".clean-card")).not.toContain("box-shadow");
+  });
+
   it.each([".clean-card", ".hero-card", ".header-band"])("%s has a 0.75rem corner", (selector) => {
     expect(ruleBody(selector)).toContain("border-radius: 0.75rem;");
   });

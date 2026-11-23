@@ -49,13 +49,16 @@ describe("SummaryPanel status box", () => {
     expect(statusBoxes()[0].textContent).toContain(SUMMARY);
   });
 
-  it("hides the empty status box from view (no gap below the button), and shows it once it has text", async () => {
+  it("keeps the status box empty (no gap below the button) and its class the same once it has text", async () => {
     act(() => root.render(<SummaryPanel isDemo={false} />));
-    expect(statusBoxes()[0].classList.contains("sr-only")).toBe(true);
+    const classBefore = statusBoxes()[0].className;
+    expect(statusBoxes()[0].childElementCount).toBe(0);
+    expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
 
     await act(async () => summaryButton()?.click());
 
-    expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
+    expect(statusBoxes()[0].className).toBe(classBefore);
+    expect(statusBoxes()[0].textContent).toContain(SUMMARY);
   });
 
   it("shows the status box while the summary is being written", async () => {
@@ -68,6 +71,7 @@ describe("SummaryPanel status box", () => {
 
     expect(statusBoxes()[0].textContent).toContain("Writing the summary...");
     expect(statusBoxes()[0].classList.contains("sr-only")).toBe(false);
+    expect(statusBoxes()[0].querySelector("p")).toBeTruthy();
     await act(async () => finish({ kind: "text", text: SUMMARY }));
   });
 

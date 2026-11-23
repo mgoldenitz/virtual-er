@@ -45,6 +45,12 @@ describe("globals.css tokens", () => {
     expect(contrastRatio(t[name], t.line)).toBeGreaterThanOrEqual(4.5);
   });
 
+  // The card edge is decoration, so WCAG sets no number for it. This floor keeps the edge easy to see
+  // on the grey page (Gemini review of 2026-11-22: #e5e7eb was 1.15:1).
+  it("card edge colour line is 1.3:1 or more on canvas", () => {
+    expect(contrastRatio(t.line, t.canvas)).toBeGreaterThanOrEqual(1.3);
+  });
+
   it("brand-strong (link hover) is 4.5:1 or more on canvas and card", () => {
     for (const bg of backgrounds) {
       expect(contrastRatio(t["brand-strong"], t[bg])).toBeGreaterThanOrEqual(4.5);
