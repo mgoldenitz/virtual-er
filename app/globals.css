@@ -9,7 +9,7 @@
   --color-muted: #4b5563;        /* secondary text, 7.6:1 (6.9:1 on the canvas) */
   --color-canvas: #f5f5f7;       /* page background behind cards; brand on it is 6.2:1 */
   --color-card: #ffffff;
-  --color-line: #e5e7eb;         /* card edges (decoration only) */
+  --color-line: #d1d5db;         /* card edges and dividers (decoration), and the hover and pressed fill */
   --color-control: #6b7280;      /* input and select borders, 4.8:1 (WCAG needs 3:1) */
   --color-band: #e8eefc;         /* light blue tint for the header band and icon tiles */
   --color-alert-tint: #fef2f2;   /* 911 card background */
@@ -39,7 +39,6 @@ html[data-lang-wait] main {
   border: 1px solid var(--color-line);
   border-radius: 0.75rem;
   padding: 1.25rem;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
 
 /* Patient hero card: the solid dark blue box at the top of a patient screen. White text on it is 8.7:1. */

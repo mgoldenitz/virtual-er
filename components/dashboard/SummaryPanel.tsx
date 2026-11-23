@@ -45,24 +45,28 @@ export function SummaryPanel({ isDemo }: { isDemo: boolean }) {
   const message = shown && shown.forDemo === isDemo ? shown.message : null;
 
   return (
-    <section aria-label="Summary" className="space-y-3 rounded-lg border-2 border-line bg-card p-4">
+    <section aria-label="Summary" className="rounded-lg border-2 border-line bg-card p-4">
       {/* Only grayed out (aria-disabled), so keyboard focus stays on it; the guard in writeSummary() stops a click. */}
       <Button variant="secondary" onClick={writeSummary} aria-disabled={waiting || resting}>
         Write a short summary
       </Button>
-      {/* One live box, always on the page, so screen readers hear the summary or the note when it comes.
-          While it is empty it is hidden from view only (sr-only), so it adds no gap below the button. */}
-      <div role="status" className={waiting || message ? "space-y-3" : "sr-only"}>
-        {waiting && <p>Writing the summary...</p>}
-        {message?.kind === "text" && (
-          <>
-            <p>{message.text}</p>
-            <p className="text-sm text-muted">
-              {"Written by an AI model from today's totals. Check the numbers above."}
-            </p>
-          </>
+      {/* One live box, always on the page with the same class, so screen readers hear the summary or the note.
+          It is empty while there is nothing to say, so it adds no gap below the button. */}
+      <div role="status">
+        {(waiting || message) && (
+          <div className="mt-3 space-y-3">
+            {waiting && <p>Writing the summary...</p>}
+            {message?.kind === "text" && (
+              <>
+                <p>{message.text}</p>
+                <p className="text-sm text-muted">
+                  {"Written by an AI model from today's totals. Check the numbers above."}
+                </p>
+              </>
+            )}
+            {message?.kind === "note" && <p>{message.text}</p>}
+          </div>
         )}
-        {message?.kind === "note" && <p>{message.text}</p>}
       </div>
     </section>
   );
