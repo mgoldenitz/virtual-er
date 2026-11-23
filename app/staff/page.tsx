@@ -145,13 +145,13 @@ export default function StaffPage() {
         </div>
 
         <section aria-labelledby="list-heading" className="clean-card space-y-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+          <div>
             <h2 id="list-heading" ref={listHeading} tabIndex={-1} className="text-2xl font-bold">
               Off-site: waiting or called back ({line.length})
             </h2>
-            {/* One live line beside the heading, always on the page with the same class, so screen readers hear each message.
-                It has no child while empty, and the row has no vertical gap, so the list does not move on a wide screen. */}
-            <div role="status">{announcement && <p className="font-semibold">{announcement}</p>}</div>
+            {/* One live line right under the heading, always on the page with the same class, so screen readers hear each message.
+                It keeps one line of space (min-h-6), so a one-line message does not move the list. */}
+            <div role="status" className="min-h-6">{announcement && <p className="font-semibold">{announcement}</p>}</div>
           </div>
           <PauseSwitch key={`pause-${site}`} site={site} paused={paused} offSiteCount={visits ? line.length : null} onResult={setAnnouncement} />
           {visits && <RecallAllPanel key={`recall-${site}`} visits={visits} site={site} onResult={(message, closed) => (closed ? onLeftList(message) : setAnnouncement(message))} />}
