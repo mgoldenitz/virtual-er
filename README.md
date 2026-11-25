@@ -1,4 +1,8 @@
+<a href="https://virtual-er-izpf.vercel.app"><img src=".github/readme/logo.svg" alt="WaitWell: open the app" height="48"></a>
+
 # WaitWell: A virtual ER waiting room
+
+Try it: [virtual-er-izpf.vercel.app](https://virtual-er-izpf.vercel.app) (demo data only).
 
 WaitWell is a concept prototype. It shows how a hospital emergency department could let some patients wait off-site after triage. Triage is the first check a nurse does when a patient arrives. Patients who are not very sick, rated CTAS level 4 or 5 (the Canadian Triage and Acuity Scale), can go home or wait elsewhere. They follow their place in line on their phone. When staff are ready, they recall the patient, and the patient comes back to the hospital.
 
@@ -115,6 +119,16 @@ GitHub runs `npm test`, `npm run lint` and `npm run build` on every push and eve
 - screenshots/: test screenshots.
 - .claude/: settings for Claude Code, its worker agents and its skills.
 - .github/workflows/: the checks that GitHub runs.
+
+## Diagrams
+
+App architecture: the screens, the server routes, Supabase and the outside services, and how they connect.
+
+![WaitWell app architecture](.github/readme/architecture.png)
+
+Visit status lifecycle: each status a visit can have, and the moves between them. The list of moves is ALLOWED_MOVES in lib/allowedSteps.ts.
+
+![WaitWell visit status lifecycle](.github/readme/visit-lifecycle.png)
 
 ## Status and limits
 
