@@ -27,6 +27,14 @@ describe.each(["en", "fr", "ur", "ar", "zh"])("HowItWorks in %s", (language) => 
     expect(steps).toEqual([t.start.howSteps[0], t.patient.fromHomeText[0], ...t.start.howSteps.slice(1)]);
   });
 
+  it("shows one decorative picture between the heading and the steps", () => {
+    const images = render(language).querySelectorAll("section > img");
+    expect(images).toHaveLength(1);
+    expect(images[0].getAttribute("alt")).toBe("");
+    expect(images[0].previousElementSibling?.tagName).toBe("H2");
+    expect(images[0].nextElementSibling?.tagName).toBe("OL");
+  });
+
   it("sits on the page with no card frame (decisions.md, 2026-11-22)", () => {
     expect(render(language).querySelector("section")?.classList.contains("clean-card")).toBe(false);
   });
