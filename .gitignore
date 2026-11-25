@@ -1,3 +1,7 @@
+# Added by agent-swarm setup
+.mcp.json
+.mcp.json.bak
+
 # ── Secrets: never commit ─────────────────────────────────────────────
 # .env.local holds the Supabase keys and any other passwords.
 .env
@@ -54,3 +58,10 @@ Hand off summary.docx
 ~$*
 # Screenshots from the run skill driver (.claude/skills/run-virtual-er).
 /screenshots/run/
+
+# graphify output: generated, and the research graph names local paths
+/graphify-out/
+/graphify-out-research/
+
+handoffs/
+screenshots/

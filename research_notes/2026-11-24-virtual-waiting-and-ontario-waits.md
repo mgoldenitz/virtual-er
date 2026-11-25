@@ -8,7 +8,7 @@ For the README and slides only. No figure goes into the app (SPEC rule 8).
 
 - Virtual waiting evidence is thin. One real Canadian deployment (Sault Area Hospital, Ontario). All its figures are hospital-reported or from news. No peer-reviewed outcome evaluation and no published safety-event data. The peer-reviewed items are patient-perception studies.
 - LWBS = left without being seen. The Sault Area Hospital LWBS numbers differ between sources because they compare different groups (see conflicts).
-- Credit Valley Hospital (Trillium Health Partners) is slower than average: Ontario Health's January 2026 average time to first assessment is 2.2 h, against 1.7 h provincially.
+- Credit Valley Hospital (Trillium Health Partners) is slower than average: Ontario Health's July 2026 average time to first assessment is 2.7 h, against 2.0 h provincially (owner's ER Wait Time Scorecard, see Part B).
 - Safest wording: "hospital-reported pilot results from one Ontario hospital; no independent evaluation yet". Do not claim safety.
 
 ## Part A: virtual or off-site ER waiting
@@ -63,24 +63,29 @@ For the README and slides only. No figure goes into the app (SPEC rule 8).
 
 ### Conflicts and what is newer (Part A)
 
-- LWBS at Sault Area Hospital: 10% to 5.3% (CBC, Dec 2025, before/after) vs 5.6% virtual vs 13% direct (Sudbury.com, Apr 2026, users vs non-users). Different comparisons, not a contradiction. Use the newer one only with that label.
-- Wait reduction: 25% excludes home waiting time; about 22% with it (CBC, 14 Jan 2026).
+- LWBS at Sault Area Hospital: 10% to 5.3% (CBC, Dec 2025, before/after, 350 patients) vs 5.6% virtual vs 13% direct (Sudbury.com, Apr 2026, users vs non-users, about 1,000 patients). Different comparisons, not a contradiction. Use: 5.6% vs 13% (newest, more patients), always with the label "users vs non-users, hospital spokesperson". Do not show 5.3% beside it.
+- Wait reduction: 25% excludes home waiting time; about 22% with it (CBC, 14 Jan 2026). Use: about 22%, because WaitWell patients also wait at home. Do not use 25%.
 - Metric: CBC gives no percentile; SooToday says 90th percentile. Say 90th percentile only when citing SooToday.
 - Safety: no data on adverse events or deterioration at home from any source. State that as a gap.
 
 ## Part B: Ontario ER wait figures
 
-1. Provincial average time to first assessment: 1.7 hours, January 2026. Ontario Health, "Time Spent in Emergency Departments". https://ontariohealth.ca/system/reporting/performance/time-spent-in-emergency-departments . Opened and confirmed.
-   - "On average, patients waited 1.7 Hours", measured "from checking in at triage or registration, to their first assessment by a doctor, nurse-practitioner or dentist." Source: NACRS, CIHI. Averages only.
+Source of the July 2026 figures in items 1 to 3: the owner's ER Wait Time Scorecard (Power BI), built from Ontario Health "Time Spent in Emergency Departments" monthly data, July 2025 to July 2026, exported September 2026 (data: NACRS, CIHI). These figures replace the January 2026 figures as the newest. The scorecard's January 2026 values are the same as the Researcher's January 2026 values.
 
-2. Credit Valley Hospital, Trillium Health Partners: 2.2 hours average to first assessment, January 2026. Same page. Opened and confirmed.
-   - Same table: Ontario 1.7, Trillium-Mississauga 1.4, Trillium-Queensway 1.2.
+1. Provincial average time to first assessment: 2.0 hours, July 2026 (1.7 hours in January 2026). Ontario Health, "Time Spent in Emergency Departments". https://ontariohealth.ca/system/reporting/performance/time-spent-in-emergency-departments . Opened and confirmed.
+   - January 2026 page text: "On average, patients waited 1.7 Hours", measured "from checking in at triage or registration, to their first assessment by a doctor, nurse-practitioner or dentist." Source: NACRS, CIHI. Averages only.
+
+2. Credit Valley Hospital, Trillium Health Partners: 2.7 hours average to first assessment, July 2026 (2.2 hours in January 2026). Same data.
+   - July 2026: Ontario 2.0, Trillium-Mississauga 1.5, Trillium-Queensway 1.1. January 2026: Ontario 1.7, Mississauga 1.4, Queensway 1.2.
+   - Credit Valley was above Ontario in all 13 months (2.1 to 2.7 h). Queensway is an urgent care centre, not a full ED.
+   - Admitted patients, July 2026 (scorecard): Credit Valley 26.0 h average time in the ED, against 17.7 h for Ontario (rank 147 of 154); 15.4% left the ED within the 8-hour target, against 28.2% for Ontario (goal 90%).
    - Auditor General of Ontario, Dec 2023 (https://auditor.on.ca/en/content/annualreports/arreports/en23/AR_emergencydepts_en23.pdf): Credit Valley site 2.3 hours, 2022/23.
    - MEI annex (https://www.iedm.org/wp-content/uploads/2026/11/ANNEX_1_2025-26_ER_Wait_Times_Final.pdf, April 2025 to Feb 2026): Credit Valley median time to physician initial assessment 1:55; median ED length of stay 5:03.
    - No CTAS 4/5-specific figure for Credit Valley was found.
 
-3. Low-urgency non-admitted patients: average length of stay 3 hours, 77% within the 4-hour target, January 2026. Same Ontario Health page. Opened and confirmed.
-   - The page defines low-urgency as "e.g. sore throat or vomiting". It does not name CTAS 4/5, so the match is likely, not confirmed.
+3. Low-urgency non-admitted patients, July 2026: Ontario average length of stay 3.2 hours, 72.9% within the 4-hour target (January 2026: 3.0 hours, 76.6%). Same data.
+   - July 2026 by site: Credit Valley 3.9 h, 60.9% within target; Mississauga 3.4 h, 69.7%; Queensway 2.0 h, 95.1%.
+   - The scorecard defines low urgency as CTAS 4 to 5 (4-hour target). The Ontario Health page says only "e.g. sore throat or vomiting".
 
 4. 90th percentile time to physician initial assessment: 2.7 h in 2020-21, 4.5 h in 2024-25. CCPA (Andrew Longhurst), "Failure, by design", 11 May 2026. https://www.policyalternatives.ca/news-research/failure-by-design-ontarios-deepening-hospital-funding-crisis/ . Opened and confirmed. Also CP24, 11 May 2026: https://www.cp24.com/local/toronto/2026/05/11/under-immense-strain-wait-times-at-ontario-emergency-rooms-have-spiked-over-past-5-years-study-says/
    - CCPA is a policy think tank citing CIHI; the CIHI table was not opened.
@@ -98,9 +103,10 @@ For the README and slides only. No figure goes into the app (SPEC rule 8).
 
 ### Conflicts and what is newer (Part B)
 
-- Credit Valley "4 hours and 56 minutes" for 2024 (CP24, 4 Jun 2025, https://www.cp24.com/photos/2025/06/04/these-are-the-gta-hospitals-with-the-longest-wait-times-according-to-a-new-study/) is labelled time to initial assessment, but it is close to the 5:03 length-of-stay figure and far above 2.2 h and 1:55. Probably mislabelled. Do not use it.
-- Averages (Ontario Health, 1.7 h) and 90th percentiles (CCPA 4.5 h, target 3.4 h) measure different things. Do not put them side by side without labels.
-- Periods differ: 2022/23 (Auditor General), 2024 (MEI LWBS), 2024-25 (CCPA), April 2025 to Feb 2026 (MEI annex), January 2026 (Ontario Health, newest).
+- Credit Valley "4 hours and 56 minutes" for 2024 (CP24, 4 Jun 2025, https://www.cp24.com/photos/2025/06/04/these-are-the-gta-hospitals-with-the-longest-wait-times-according-to-a-new-study/) is labelled time to initial assessment, but it is close to the 5:03 length-of-stay figure and far above 2.7 h and 1:55. Probably mislabelled. Do not use it. Use: 2.7 h average to first assessment, July 2026 (owner's scorecard).
+- Ontario LWBS: 5.3% in 2022/23 (Auditor General) vs 4.92% in 2024 (MEI). Different years, not a contradiction. Use: 4.92% (2024, MEI, label it a think tank using freedom-of-information data). Use 5.3% only for the 2018/19 to 2022/23 trend, with its year. The Ontario 5.3% and the Sault 5.3% are different figures.
+- Averages (Ontario Health, 2.0 h) and 90th percentiles (CCPA 4.5 h, target 3.4 h) measure different things. Do not put them side by side without labels.
+- Periods differ: 2022/23 (Auditor General), 2024 (MEI LWBS), 2024-25 (CCPA), April 2025 to Feb 2026 (MEI annex), January 2026 (Ontario Health page, read by the Researcher), July 2026 (owner's scorecard, newest).
 
 ## Could not confirm (do not cite)
 
