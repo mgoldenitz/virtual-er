@@ -62,3 +62,6 @@ Hand off summary.docx
 # graphify output: generated, and the research graph names local paths
 /graphify-out/
 /graphify-out-research/
+
+handoffs/
+screenshots/
