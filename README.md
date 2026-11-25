@@ -130,12 +130,9 @@ Visit status lifecycle: each status a visit can have, and the moves between them
 
 ![WaitWell visit status lifecycle](.github/readme/visit-lifecycle.png)
 
-## Status and limits
+## Status and limitations
 
 - The project is in Phase 5: testing with real people and writing this README. Phases 2, 3 and 4 are closed. Phase 4 added the dashboard, the survey and the demo mode.
 - The translations for French, Urdu, Arabic and Mandarin wait for a fluent human reviewer. Safety messages are checked first.
 - Wait ranges are simulated. They do not come from a real hospital.
 - Sound and vibration work only while the page is open and the phone is unlocked. The app cannot wake a locked phone. The Pushover alert is the only message that can reach a locked phone, and it goes to the project owner's phone only.
-- The "I'm still here" tap tells staff the patient is still following the visit. It is not a clinical check. If symptoms change, the 911 line applies.
-- Before real testers use the app, staff must clear the demo data.
-- The app has no login for patients. A patient opens a visit with the link saved on their phone, or with the QR code on a desk slip.
