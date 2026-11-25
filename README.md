@@ -95,7 +95,7 @@ GitHub runs `npm test`, `npm run lint` and `npm run build` on every push and eve
 
 ## Diagrams
 
-App architecture: the screens, the server routes, Supabase and the outside services, and how they connect.
+App architecture: the screens, the server routes, Supabase and the external services, and how they connect.
 
 ![WaitWell app architecture](.github/readme/architecture.png)
 
