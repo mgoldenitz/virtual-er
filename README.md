@@ -92,7 +92,7 @@ Steps:
 
 Run these in the project folder. Each one is a script in package.json.
 
-- `npm test` runs the unit tests with Vitest. There are 873 unit tests. The output lines that matter are the "Test Files" and "Tests" lines.
+- `npm test` runs the unit tests with Vitest. There are 974 unit tests. The output lines that matter are the "Test Files" and "Tests" lines.
 - `npm run lint` checks the code with ESLint. A clean run prints nothing.
 - `npm run build` makes the production version of the app. It stops with an error if the build fails.
 - `npm run e2e` runs 39 end-to-end tests with Playwright. The tests open the app at phone size (390 by 844) and at laptop size. They start their own server on port 3100, and they need the E2E_ settings in `.env.local`.
