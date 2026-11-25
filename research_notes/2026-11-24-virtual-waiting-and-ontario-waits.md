@@ -63,8 +63,8 @@ For the README and slides only. No figure goes into the app (SPEC rule 8).
 
 ### Conflicts and what is newer (Part A)
 
-- LWBS at Sault Area Hospital: 10% to 5.3% (CBC, Dec 2025, before/after) vs 5.6% virtual vs 13% direct (Sudbury.com, Apr 2026, users vs non-users). Different comparisons, not a contradiction. Use the newer one only with that label.
-- Wait reduction: 25% excludes home waiting time; about 22% with it (CBC, 14 Jan 2026).
+- LWBS at Sault Area Hospital: 10% to 5.3% (CBC, Dec 2025, before/after, 350 patients) vs 5.6% virtual vs 13% direct (Sudbury.com, Apr 2026, users vs non-users, about 1,000 patients). Different comparisons, not a contradiction. Use: 5.6% vs 13% (newest, more patients), always with the label "users vs non-users, hospital spokesperson". Do not show 5.3% beside it.
+- Wait reduction: 25% excludes home waiting time; about 22% with it (CBC, 14 Jan 2026). Use: about 22%, because WaitWell patients also wait at home. Do not use 25%.
 - Metric: CBC gives no percentile; SooToday says 90th percentile. Say 90th percentile only when citing SooToday.
 - Safety: no data on adverse events or deterioration at home from any source. State that as a gap.
 
@@ -103,7 +103,8 @@ Source of the July 2026 figures in items 1 to 3: the owner's ER Wait Time Scorec
 
 ### Conflicts and what is newer (Part B)
 
-- Credit Valley "4 hours and 56 minutes" for 2024 (CP24, 4 Jun 2025, https://www.cp24.com/photos/2025/06/04/these-are-the-gta-hospitals-with-the-longest-wait-times-according-to-a-new-study/) is labelled time to initial assessment, but it is close to the 5:03 length-of-stay figure and far above 2.7 h and 1:55. Probably mislabelled. Do not use it.
+- Credit Valley "4 hours and 56 minutes" for 2024 (CP24, 4 Jun 2025, https://www.cp24.com/photos/2025/06/04/these-are-the-gta-hospitals-with-the-longest-wait-times-according-to-a-new-study/) is labelled time to initial assessment, but it is close to the 5:03 length-of-stay figure and far above 2.7 h and 1:55. Probably mislabelled. Do not use it. Use: 2.7 h average to first assessment, July 2026 (owner's scorecard).
+- Ontario LWBS: 5.3% in 2022/23 (Auditor General) vs 4.92% in 2024 (MEI). Different years, not a contradiction. Use: 4.92% (2024, MEI, label it a think tank using freedom-of-information data). Use 5.3% only for the 2018/19 to 2022/23 trend, with its year. The Ontario 5.3% and the Sault 5.3% are different figures.
 - Averages (Ontario Health, 2.0 h) and 90th percentiles (CCPA 4.5 h, target 3.4 h) measure different things. Do not put them side by side without labels.
 - Periods differ: 2022/23 (Auditor General), 2024 (MEI LWBS), 2024-25 (CCPA), April 2025 to Feb 2026 (MEI annex), January 2026 (Ontario Health page, read by the Researcher), July 2026 (owner's scorecard, newest).
 
