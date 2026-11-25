@@ -65,33 +65,6 @@ The footer on every page says the app is a concept prototype, not affiliated wit
 - ESLint 9 for lint.
 - GitHub for the code and for the checks that run on every push.
 
-## Run it on your computer
-
-You need:
-
-- Node.js version 22. This is the version GitHub uses (see .github/workflows/checks.yml).
-- A Supabase project, and a Vercel account if you want to put the app online.
-
-Steps:
-
-1. Download or clone the project folder. Open a terminal in that folder.
-2. Run `npm install`. This downloads the packages listed in package.json into a folder called node_modules.
-3. Make the settings file. Copy `.env.example` and name the copy `.env.local`. Keep it in the same folder. Git does not save `.env.local`, so keys stay off GitHub. Fill in only the values you need:
-   - NEXT_PUBLIC_SUPABASE_URL: in Supabase, Project Settings, Data API.
-   - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: in Supabase, Project Settings, API Keys.
-   - SUPABASE_SECRET_KEY: in Supabase, Project Settings, API Keys, Secret keys. This key is for the server only.
-   - CRON_SECRET: any long random value. Use the same name in the Vercel settings.
-   - PUSHOVER_APP_TOKEN and PUSHOVER_USER_KEY: from the Pushover website. Leave both empty to turn the recall alert off.
-   - ANTHROPIC_API_KEY: from the Anthropic console, API Keys. Leave it empty to turn the dashboard summary off.
-   - E2E_STAFF_EMAIL and E2E_STAFF_PASSWORD: a test staff account, used only by the end-to-end tests. Leave them empty if you do not run those tests.
-   Never paste these values into chat, into a shared file or into a screenshot.
-4. Set up the database. In Supabase, open the SQL Editor. Open each file in supabase/migrations/ and run it in order. Sort the files by name, lowest first. Each name starts with a timestamp.
-5. Create a staff user in Supabase, under Authentication, Users. Then give the user the staff role. In the SQL Editor, run this line, with the user's email in place of STAFF_EMAIL:
-   `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"staff"}' where email = 'STAFF_EMAIL';`
-   The app reads this role from `app_metadata` (see supabase/migrations/20261110060756_tables_and_security.sql). Users cannot change it themselves. If the user is signed in, they must sign out and sign in again before the role works.
-6. Start the app with `npm run dev`. This runs scripts/dev.mjs. It starts the Next.js development server. Before it starts, it tells Node to trust the same certificates as Windows. This stops an antivirus that checks secure web traffic (the file names Norton) from blocking the app's calls to the database.
-7. Open the address that the terminal shows. It is usually http://localhost:3000. Open /staff to sign in, or /patient on a phone.
-
 ## Checks
 
 Run these in the project folder. Each one is a script in package.json.
