@@ -1,3 +1,7 @@
+# Added by agent-swarm setup
+.mcp.json
+.mcp.json.bak
+
 # ── Secrets: never commit ─────────────────────────────────────────────
 # .env.local holds the Supabase keys and any other passwords.
 .env
