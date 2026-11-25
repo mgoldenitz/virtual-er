@@ -1,0 +1,36 @@
+# Files the code graph (/graphify) leaves out. The graph covers the code, SPEC.md and docs/.
+.agents/
+.archify/
+.auth/
+.claude/
+.codex/
+.github/
+.impeccable/
+.next/
+.playwright-mcp/
+.env*
+.mcp.json
+MGMT51463/
+UIUX Design/
+graphify-out/
+handoffs/
+node_modules/
+notes/
+reports/
+research_notes/
+screenshots/
+test-results/
+AGENTS.md
+CLAUDE.md
+README.md
+ai_model_workflow_virtual_er.md
+package-lock.json
+docs/progress-archive.md
+*.pdf
+*.pptx
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
