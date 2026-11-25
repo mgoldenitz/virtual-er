@@ -25,7 +25,7 @@ What this is: WaitWell, a concept prototype of a virtual ER waiting room. Low-ac
 - lib/: rules that decide things, as small functions with tests; lib/text/ holds all patient text, one file per language.
 - supabase/migrations/: database changes I run in the SQL Editor; supabase/checks/: permission checks.
 - scripts/: dev.mjs (starts the dev server with the Norton fix).
-- docs/: progress.md (where we are: done, next, a dated log line per session), decisions.md (what is settled, with the date and why), known-issues.md (gotchas and their fixes).
+- docs/: progress.md (where we are: done, next, a dated log line per session), decisions.md (what is settled, with the date and why), known-issues.md (gotchas and their fixes). Local only since 2026-11-25 (in .gitignore, with handoffs/, screenshots/, reports/ and research_notes/): never stage these, and new worktrees do not get them.
 - handoffs/: open model reviews; handoffs/archive/: finished ones.
 - notes/, research_notes/, reports/: earlier research (read only when a task needs it).
 - screenshots/: test screenshots.
