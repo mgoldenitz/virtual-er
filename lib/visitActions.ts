@@ -95,7 +95,7 @@ export function startFromHome(input: NewVisit, now: Date): Visit {
 }
 
 /** True if a nurse can triage this existing visit now (from home, or back for reassessment). */
-export function canTriageAgain(visit: Visit, now: Date): boolean {
+function canTriageAgain(visit: Visit, now: Date): boolean {
   return isExpected(visit, now) || visit.status === "needs_reassessment";
 }
 
@@ -194,7 +194,7 @@ export function issueNewLink(visit: Visit, token: string): Visit | null {
  * Statuses only move forward (waiting, then called, then on the way) and closing keeps
  * called_at and confirmed_at, so the visit's own times say where it was.
  */
-export function statusBeforeClose(visit: Visit): VisitStatus {
+function statusBeforeClose(visit: Visit): VisitStatus {
   if (visit.confirmed_at) return "on_the_way";
   if (visit.called_at) return "called";
   return "waiting";

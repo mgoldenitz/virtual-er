@@ -5,7 +5,7 @@ import { isExpected } from "./expectedArrivals";
 import type { Visit, VisitStatus } from "./visit";
 
 /** Staff wording for each status. */
-export const STAFF_STATUS_LABEL: Record<VisitStatus, string> = {
+const STAFF_STATUS_LABEL: Record<VisitStatus, string> = {
   pre_arrival: "expected from home, not yet triaged",
   waiting: "waiting off-site",
   called: "called back",

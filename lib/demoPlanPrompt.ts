@@ -4,7 +4,7 @@
 import { PLAN_FIELDS, PLAN_LIMITS } from "./demoPlan";
 
 /** The rules Claude follows when it writes the day plan. Each line is one rule. */
-export const DEMO_PLAN_RULES: string[] = [
+const DEMO_PLAN_RULES: string[] = [
   "You set the chances for a demo simulator of a virtual emergency department waiting room. All visits are made up.",
   // The numbers are chances per 5-minute tick or shares of new visits, never counts or minutes.
   "Give one number from 0 to 1 for each field. Stay inside the range given for each field.",

@@ -41,7 +41,7 @@ const minutesSince = (iso: string, now: Date) => (now.getTime() - new Date(iso).
  * result, but followup_paused_until is set only by an answered call (and cleared at triage),
  * so a later "no answer" never turns an answered visit into "unable to reach".
  */
-export function wasAnswered(visit: Pick<Visit, "last_phone_result" | "followup_paused_until">): boolean {
+function wasAnswered(visit: Pick<Visit, "last_phone_result" | "followup_paused_until">): boolean {
   return visit.last_phone_result === "answered" || visit.followup_paused_until !== null;
 }
 

@@ -3,7 +3,7 @@
 // phone or laptop whose clock is wrong.
 
 /** A reading taken over a slower connection than this is not trusted. */
-export const MAX_ROUND_TRIP_MS = 5_000;
+const MAX_ROUND_TRIP_MS = 5_000;
 
 /**
  * Milliseconds to add to this device's clock to get the server's time, or null if the reading

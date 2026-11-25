@@ -18,7 +18,7 @@ export async function startFromHome(patient: Page, site: Site): Promise<string> 
 }
 
 /** The visit code on the patient screen (the bold code after "Visit code:", in any language). */
-export async function patientCode(patient: Page): Promise<string> {
+async function patientCode(patient: Page): Promise<string> {
   const code = patient.locator("main strong.font-mono").first();
   await expect(code).toHaveText(/^[A-Z0-9]{6}$/, { timeout: 15_000 });
   return (await code.textContent()) ?? "";

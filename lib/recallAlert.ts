@@ -18,7 +18,7 @@ export type RecallAlertRow = {
 export const MAX_ALERT_IDS = 50;
 
 /** A recall older than this sends nothing, so a repeat request or an old id does not ring the phone again. */
-export const ALERT_WINDOW_MINUTES = 2;
+const ALERT_WINDOW_MINUTES = 2;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

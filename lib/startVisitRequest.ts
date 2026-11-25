@@ -5,7 +5,7 @@ import { LANGUAGE_CODES } from "./text/languages";
 import type { Site } from "./visit";
 
 /** Languages a visit can be started in: every language the app offers. */
-export const START_LANGUAGES = LANGUAGE_CODES;
+const START_LANGUAGES = LANGUAGE_CODES;
 
 export type StartVisitRequest = { site: Site; language: string };
 

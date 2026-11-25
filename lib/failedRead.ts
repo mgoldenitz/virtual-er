@@ -4,7 +4,7 @@
 
 import type { PatientView } from "./patientView";
 
-export const FAILED_READS_BEFORE_UNAVAILABLE = 2;
+const FAILED_READS_BEFORE_UNAVAILABLE = 2;
 
 type Shown = PatientView | null | "unavailable";
 

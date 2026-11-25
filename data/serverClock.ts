@@ -35,7 +35,7 @@ async function sync(): Promise<void> {
 }
 
 /** Ask the server for its time if that has not been done in the last 10 minutes (browser only). */
-export function syncClock(): void {
+function syncClock(): void {
   if (typeof window === "undefined" || syncing) return;
   if (Date.now() - lastSync < RESYNC_MS || Date.now() - lastTry < RETRY_MS) return;
   void sync();

@@ -3,7 +3,7 @@
 
 import type { Site, Visit } from "./visit";
 
-export const EXPECTED_ARRIVAL_HOURS = 6;
+const EXPECTED_ARRIVAL_HOURS = 6;
 
 /** True while a visit started from home is still expected (not triaged, under 6 hours old). */
 export function isExpected(visit: Visit, now: Date): boolean {
