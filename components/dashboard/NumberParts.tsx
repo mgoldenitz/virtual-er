@@ -22,12 +22,16 @@ export function NumberOrDash({ value }: { value: number | null }) {
   return value === null ? <NoData /> : <>{value}</>;
 }
 
-/** One label and value pair in a list (inside a <dl>). */
+/** The classes for a <dl> of Row tiles: one column on a narrow phone, then two, then three. */
+export const tileGrid = "grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-3";
+
+/** One label and value pair (inside a <dl>), shown as a tile: a big number with a small label under it. */
 export function Row({ label, children }: { label: string; children: ReactNode }) {
+  // The label stays first in the page so a screen reader reads it first; flex-col-reverse shows the number on top.
   return (
-    <div className="flex flex-wrap justify-between gap-x-3 border-b border-line py-2">
-      <dt className="font-semibold">{label}</dt>
-      <dd>{children}</dd>
+    <div className="flex flex-col-reverse justify-end gap-1 rounded-xl border border-line bg-band p-3">
+      <dt className="text-sm text-muted">{label}</dt>
+      <dd className="break-words text-2xl font-bold text-ink">{children}</dd>
     </div>
   );
 }

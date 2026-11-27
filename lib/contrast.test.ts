@@ -124,4 +124,25 @@ describe("globals.css tokens", () => {
   it("red border and icon colour are 3:1 or more on the card", () => {
     expect(contrastRatio(t["alert-edge"], t.card)).toBeGreaterThanOrEqual(3);
   });
+
+  // Patient status cards (lib/statusLook.ts): text on the tint, the edge on the tint, and the icon
+  // (edge colour) on its white tile.
+  const statusCards: [string, string, string][] = [
+    ["wait-tint", "wait-ink", "wait-edge"],
+    ["onsite-tint", "onsite-ink", "onsite-edge"],
+    ["end-tint", "ink", "control"],
+    ["gone-tint", "gone-ink", "gone-edge"],
+    ["band", "brand-strong", "brand"],
+  ];
+  it.each(statusCards)("status card %s: text 4.5:1, edge 3:1, icon 3:1 on the card", (tint, ink, edge) => {
+    expect(contrastRatio(t[ink], t[tint])).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.ink, t[tint])).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t[edge], t[tint])).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(t[edge], t.card)).toBeGreaterThanOrEqual(3);
+  });
+
+  // The "Start a new visit" link on the grey expired card.
+  it("brand link is 4.5:1 or more on the ended tint", () => {
+    expect(contrastRatio(t.brand, t["end-tint"])).toBeGreaterThanOrEqual(4.5);
+  });
 });

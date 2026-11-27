@@ -4,7 +4,7 @@
 import type { SiteNumbers as Counts } from "@/lib/dashboardNumbers";
 import { averageMinutes, averageScore, share } from "@/lib/dashboardShare";
 import { visitCount } from "@/lib/visitCount";
-import { NumberOrDash, Percent, Row } from "./NumberParts";
+import { NumberOrDash, Percent, Row, tileGrid } from "./NumberParts";
 import { WaitBands } from "./WaitBands";
 
 type Props = {
@@ -27,14 +27,14 @@ export function SiteNumbers({ site, numbers: n }: Props) {
       </h2>
 
       <h3 className="text-lg font-bold">Now</h3>
-      <dl>
+      <dl className={tileGrid}>
         <Row label="Waiting off-site">{n.waitingNow}</Row>
         <Row label="Recalled, not yet arrived">{n.recalledNow}</Row>
         <Row label="Back for reassessment">{n.reassessmentNow}</Row>
       </dl>
 
       <h3 className="text-lg font-bold">Today (since midnight, Toronto time)</h3>
-      <dl>
+      <dl className={tileGrid}>
         <Row label="Offered off-site waiting">
           {n.offered} of {n.triaged} triaged ({<Percent value={offeredShare} />})
         </Row>
