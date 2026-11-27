@@ -15,6 +15,9 @@ What this is: WaitWell, a concept prototype of a virtual ER waiting room. Low-ac
 - Start: read CLAUDE.md and the three docs: docs/progress.md, docs/decisions.md, docs/known-issues.md.
 - At each save point that ends a step: add or extend today's log line in progress.md, because a context summary can drop the details. End: update progress.md, add new decisions and gotchas, and propose skill edits with the evidence from this session (/reflect). I approve them before you apply them.
 - If you made the same mistake twice in this session, propose a line for CLAUDE.md or docs/known-issues.md in /reflect so it does not happen a third time.
+- Report first. When a relayed brief's work passes its checks, send the report at once; extras (handoff files, screenshots) come after it, each with a one-line note.
+- The first line of every final report says "Done, not pushed" or "Done and pushed", then lists what the owner must do (apply, Gemini review).
+- If the context gets close to full, stop and send a status report before you continue.
 - When you read or search for more than 5 tool calls in a row, first give me one line on what you are looking for.
 
 ## Folder map
