@@ -13,4 +13,10 @@ describe("SafetyCard", () => {
     expect(tile).not.toContain("bg-white");
     expect(tile).toContain("text-alert-edge");
   });
+
+  it("shows the second paragraph after the first, in one card", () => {
+    const html = renderToStaticMarkup(<SafetyCard second="Call 911">Check first</SafetyCard>);
+    expect(html.match(/<p /g)).toHaveLength(2);
+    expect(html.indexOf("Check first")).toBeLessThan(html.indexOf("Call 911"));
+  });
 });

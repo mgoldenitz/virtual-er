@@ -8,7 +8,6 @@ import Link from "next/link";
 import { useChosenLanguage } from "@/data/savedLanguage";
 import { textFor } from "@/lib/text";
 import { languageInfo } from "@/lib/text/languages";
-import { EmergencyLine } from "@/components/EmergencyLine";
 import { PatientHeader } from "@/components/PatientHeader";
 import { SafetyCard } from "@/components/SafetyCard";
 import { CareOptions } from "@/components/start/CareOptions";
@@ -27,14 +26,15 @@ export function StartPageBody() {
   return (
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-6 px-4 py-6">
       <PatientHeader language={language} />
-      <SafetyCard strong>{t.start.emergencyCheck}</SafetyCard>
+      <SafetyCard strong second={t.emergencyLine}>
+        {t.start.emergencyCheck}
+      </SafetyCard>
       <StartVisit language={language} />
       <div className="clean-card">
         <CareOptions language={language} />
       </div>
       <HowItWorks language={language} />
       <StartQuestions language={language} />
-      <EmergencyLine language={language} />
       <nav aria-label={t.start.demoScreens} className="flex flex-wrap gap-3 border-t border-line pt-4">
         <Link href="/staff" className={linkStyle}>
           {t.start.staffScreen}
