@@ -7,11 +7,14 @@ import { TextSizeSwitch } from "@/components/patient/TextSizeSwitch";
 export function PatientHeader({ language }: { language: string }) {
   return (
     <header className="header-band space-y-4">
-      <h1 className="flex items-center gap-2 text-3xl font-bold text-ink">
+      <h1 className="flex items-center gap-2 text-ink">
         {/* The logo is only a picture: the h1 text already says the app name. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.svg" alt="" width={32} height={32} />
-        {textFor(language).appName}
+        <span className="flex flex-col">
+          <span className="text-3xl font-bold">{textFor(language).appName}</span>
+          <span className="text-base font-normal text-muted">{textFor(language).appSubtitle}</span>
+        </span>
       </h1>
       <LanguageSwitch
         language={language}

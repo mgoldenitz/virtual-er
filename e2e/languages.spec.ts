@@ -78,6 +78,7 @@ test("a saved language shows before React loads, never English", async ({ page }
   await expect(main).toBeVisible();
 
   // After React: the heading is in Arabic.
-  await expect(page.getByRole("heading", { name: ar.appName })).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText(en.appName, { exact: true })).toHaveCount(0);
+  // The name "WaitWell" is the same in every language, so the subtitle shows the language.
+  await expect(page.getByRole("heading", { name: ar.appSubtitle })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(en.appSubtitle, { exact: true })).toHaveCount(0);
 });
