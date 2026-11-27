@@ -120,7 +120,7 @@ export function StartVisit({ language }: { language: string }) {
     return (
       <div className="space-y-4">
         {savedBox}
-        <Button variant="secondary" onClick={() => setWantsNew(true)}>
+        <Button onClick={() => setWantsNew(true)}>
           {s.startNew}
         </Button>
       </div>
