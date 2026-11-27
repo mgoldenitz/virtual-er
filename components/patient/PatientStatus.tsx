@@ -9,6 +9,7 @@ import type { PatientView } from "@/lib/patientView";
 import { textFor, type PatientText } from "@/lib/text";
 import { formatWaitRange } from "@/lib/waitText";
 import { Button } from "@/components/Button";
+import { CallCountdown } from "./CallCountdown";
 import { CallReminder } from "./CallReminder";
 import { FocusBox } from "./FocusBox";
 import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
@@ -73,6 +74,7 @@ function Called({ view, onOnMyWay, sending, t, onFocusLost }: Props & { t: Patie
         {p.calledHeading}
       </h2>
       <p className="text-lg">{p.calledText}</p>
+      {!confirmed && <CallCountdown calledAt={view.calledAt} t={t} />}
       {!confirmed && <CallReminder view={view} t={t} />}
       {confirmed ? (
         <p className="text-lg font-semibold" data-testid="confirmed">
