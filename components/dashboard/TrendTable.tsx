@@ -13,11 +13,13 @@ import { NoData, NumberOrDash, Percent } from "./NumberParts";
 const HEADERS = ["Triaged", "Offered", "Accepted", "Recall to arrival (min)", "Offer to recall (min)"];
 const SCORE_HEADER = "Score (0 to 10)";
 
-const cell = "whitespace-nowrap border-b border-line px-2 py-2 text-right";
+// Below sm (640 px) the cells are tighter and may wrap, so all columns fit in the card on a 390 px phone.
+const pad = "px-0.5 py-2 first:pl-0 last:pr-0 sm:px-2 sm:first:pl-2 sm:last:pr-2";
+const cell = `border-b border-line text-right sm:whitespace-nowrap ${pad}`;
 
-/** The small, light count after a number, such as "(3 visits)". */
+/** The small, light count after a number, such as "(3 visits)". On a phone it goes on its own line. */
 function Count({ children }: { children: ReactNode }) {
-  return <span className="text-xs font-normal text-muted"> ({children})</span>;
+  return <span className="block text-xs font-normal text-muted sm:inline"> ({children})</span>;
 }
 
 /** A share or average cell: only the dash when the bottom number is 0, else the value and its count. */
@@ -74,14 +76,14 @@ export function TrendTable({ trend, site }: { trend: TrendDay[]; site: "A" | "B"
       </h2>
       {/* "relative" keeps the sr-only text inside this scroll box, so it does not widen the page. */}
       <div className="relative overflow-x-auto" role="region" aria-labelledby={headingId} tabIndex={0}>
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-xs sm:text-sm">
           <thead>
             <tr>
-              <th scope="col" className="border-b-2 border-control px-2 py-2 text-left">
+              <th scope="col" className={`border-b-2 border-control text-left ${pad}`}>
                 Day
               </th>
               {headers.map((h) => (
-                <th key={h} scope="col" className="whitespace-nowrap border-b-2 border-control px-2 py-2 text-right">
+                <th key={h} scope="col" className={`border-b-2 border-control text-right sm:whitespace-nowrap ${pad}`}>
                   {h}
                 </th>
               ))}
@@ -90,7 +92,7 @@ export function TrendTable({ trend, site }: { trend: TrendDay[]; site: "A" | "B"
           <tbody>
             {trend.map((d) => (
               <tr key={d.day}>
-                <th scope="row" className="whitespace-nowrap border-b border-line px-2 py-2 text-left font-normal">
+                <th scope="row" className={`border-b border-line text-left font-normal sm:whitespace-nowrap ${pad}`}>
                   {d.day}
                 </th>
                 <DayCells n={d.numbers[site]} hasWait={d.day >= WAIT_START_DAY} showScore={showScore} />
