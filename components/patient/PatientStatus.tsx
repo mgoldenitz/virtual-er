@@ -9,6 +9,7 @@ import type { PatientView } from "@/lib/patientView";
 import { textFor, type PatientText } from "@/lib/text";
 import { formatWaitRange } from "@/lib/waitText";
 import { Button } from "@/components/Button";
+import { CallCountdown } from "./CallCountdown";
 import { CallReminder } from "./CallReminder";
 import { FocusBox } from "./FocusBox";
 import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
@@ -73,6 +74,7 @@ function Called({ view, onOnMyWay, sending, t, onFocusLost }: Props & { t: Patie
         {p.calledHeading}
       </h2>
       <p className="text-lg">{p.calledText}</p>
+      {!confirmed && <CallCountdown calledAt={view.calledAt} t={t} />}
       {!confirmed && <CallReminder view={view} t={t} />}
       {confirmed ? (
         <p className="text-lg font-semibold" data-testid="confirmed">
@@ -114,11 +116,30 @@ function otherStatus(status: PatientView["status"], t: PatientText): { heading: 
 
 function OtherStatus({ view, t }: { view: PatientView; t: PatientText }) {
   const { heading, text } = otherStatus(view.status, t);
+  // "Ready at the desk" gets the same green success look as the call-back card.
+  const done = view.status === "arrived";
+  const title = (
+    <h2 id="status-heading" tabIndex={-1} className={done ? "text-2xl font-bold text-green-950" : "text-2xl font-bold"}>
+      {heading}
+    </h2>
+  );
   return (
-    <section aria-labelledby="status-heading" className="clean-card space-y-3">
-      <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
-        {heading}
-      </h2>
+    <section
+      aria-labelledby="status-heading"
+      className={done ? "space-y-3 rounded-xl border-4 border-green-800 bg-green-50 p-4" : "clean-card space-y-3"}
+    >
+      {done ? (
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className="icon-tile bg-card text-green-800">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
+          {title}
+        </div>
+      ) : (
+        title
+      )}
       {text.map((paragraph) => (
         <p key={paragraph} className="text-lg">
           {paragraph}

@@ -1,6 +1,15 @@
 // The red card for safety messages (SPEC rule 3). It has no close button and can never be hidden.
+// `second` adds a second paragraph in the normal style (the start page puts the 911 line there).
 
-export function SafetyCard({ children, strong = false }: { children: React.ReactNode; strong?: boolean }) {
+export function SafetyCard({
+  children,
+  strong = false,
+  second,
+}: {
+  children: React.ReactNode;
+  strong?: boolean;
+  second?: React.ReactNode;
+}) {
   return (
     <div className="flex items-start gap-3 rounded-xl border-4 border-alert-edge bg-alert-tint p-3 text-alert-ink">
       <span aria-hidden="true" className="icon-tile bg-card text-alert-edge">
@@ -10,7 +19,10 @@ export function SafetyCard({ children, strong = false }: { children: React.React
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
       </span>
-      <p className={strong ? "text-lg font-bold" : "text-base font-semibold"}>{children}</p>
+      <div className="space-y-2">
+        <p className={strong ? "text-lg font-bold" : "text-base font-semibold"}>{children}</p>
+        {second && <p className="text-base font-semibold">{second}</p>}
+      </div>
     </div>
   );
 }

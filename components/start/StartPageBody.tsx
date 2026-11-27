@@ -1,14 +1,13 @@
 "use client";
 
 // Everything on the start page, in the language chosen on this phone (English until one is
-// chosen): the language menu, the emergency check first, other care options, THP's
-// wait-time link, then "Start a visit", "How it works" and "Questions". Urdu and Arabic are laid out right to left.
+// chosen): the language menu, the emergency check first, then "Start a visit", other care
+// options, THP's wait-time link, "How it works" and "Questions". Urdu and Arabic are laid out right to left.
 
 import Link from "next/link";
 import { useChosenLanguage } from "@/data/savedLanguage";
 import { textFor } from "@/lib/text";
 import { languageInfo } from "@/lib/text/languages";
-import { EmergencyLine } from "@/components/EmergencyLine";
 import { PatientHeader } from "@/components/PatientHeader";
 import { SafetyCard } from "@/components/SafetyCard";
 import { CareOptions } from "@/components/start/CareOptions";
@@ -27,14 +26,15 @@ export function StartPageBody() {
   return (
     <main lang={language} dir={languageInfo(language).dir} className="mx-auto w-full max-w-xl space-y-6 px-4 py-6">
       <PatientHeader language={language} />
-      <SafetyCard strong>{t.start.emergencyCheck}</SafetyCard>
+      <SafetyCard strong second={t.emergencyLine}>
+        {t.start.emergencyCheck}
+      </SafetyCard>
+      <StartVisit language={language} />
       <div className="clean-card">
         <CareOptions language={language} />
       </div>
-      <StartVisit language={language} />
       <HowItWorks language={language} />
       <StartQuestions language={language} />
-      <EmergencyLine language={language} />
       <nav aria-label={t.start.demoScreens} className="flex flex-wrap gap-3 border-t border-line pt-4">
         <Link href="/staff" className={linkStyle}>
           {t.start.staffScreen}

@@ -12,6 +12,7 @@ import type { PatientView } from "@/lib/patientView";
 import type { VisitStatus } from "@/lib/visit";
 import { fill, textFor } from "@/lib/text";
 import { FocusBox } from "./FocusBox";
+import { ProgressSteps } from "./ProgressSteps";
 import { StatusAndSound } from "./StatusAndSound";
 import { StatusAnnouncer } from "./StatusAnnouncer";
 import { useRescueFocus } from "./useFocusRescue";
@@ -104,6 +105,7 @@ export function VisitScreen({ loading, result, linkFailed, linkReplaced = false,
             </bdi>{" "}
             · <bdi>{fill(t.siteName, { site: view.site })}</bdi>
           </p>
+          <ProgressSteps status={view.status} closed={view.closed} expired={view.expired} language={language} />
           <StatusAndSound view={view} token={token} language={language} onOnMyWay={onOnMyWay} sending={sending} online={online} />
           {notSavedAlertShows(failedIn, view.status) && (
             <p role="alert" className="rounded-lg border-2 border-red-800 p-3 font-semibold text-red-900">

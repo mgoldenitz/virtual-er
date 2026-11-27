@@ -5,6 +5,7 @@
 // draft notice shows for any language a fluent speaker has not approved yet (SPEC). The
 // interpreter line is always shown. The choice is remembered on this phone (data/savedLanguage.ts).
 
+import type { ReactNode } from "react";
 import { chooseLanguage } from "@/data/savedLanguage";
 import { textFor } from "@/lib/text";
 import { languageInfo, LANGUAGES, menuLabel, type LanguageInfo } from "@/lib/text/languages";
@@ -15,12 +16,15 @@ function optionLabel(info: LanguageInfo): string {
   return `${menuLabel(info)} - ${textFor(info.code).language.draftTag}`;
 }
 
-export function LanguageSwitch({ language }: { language: string }) {
+/** `beside` is shown at the end of the menu row (the patient header puts the text size button there). */
+export function LanguageSwitch({ language, beside }: { language: string; beside?: ReactNode }) {
   const t = textFor(language);
   const current = languageInfo(language);
   return (
     <div className="space-y-2">
-      <label className="flex flex-wrap items-center gap-3">
+      {/* relative: the text size panel opens inside this row's width, so it never runs off a small phone. */}
+      <div className="relative flex items-end gap-3">
+      <label className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
         <span className="font-semibold">{t.language.label}</span>
         <select
           value={current.code}
@@ -34,6 +38,8 @@ export function LanguageSwitch({ language }: { language: string }) {
           ))}
         </select>
       </label>
+      {beside}
+      </div>
       {/* Always on the page, so a screen reader hears the notice when it appears after a language change. */}
       <div role="status">
         {!current.approved && (

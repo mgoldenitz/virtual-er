@@ -9,12 +9,15 @@ test("the start page opens and shows the 911 line", async ({ page }) => {
   await expect(page.getByText(/911/).first()).toBeVisible();
 });
 
-test("the start page has no accessibility fault, with its picture loaded", async ({ page }) => {
+test("the start page has no accessibility fault, with its pictures loaded", async ({ page }) => {
   await page.goto("/");
-  // The picture loads lazily, so scroll to it first; then axe checks the page as a patient sees it.
-  const picture = page.locator('section[aria-labelledby="how-heading"] img');
-  await picture.scrollIntoViewIfNeeded();
-  await expect.poll(() => picture.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  // The pictures load lazily, so scroll to each one first; then axe checks the page as a patient sees it.
+  const pictures = page.locator('section[aria-labelledby="how-heading"] img');
+  await expect(pictures).toHaveCount(6);
+  for (const picture of await pictures.all()) {
+    await picture.scrollIntoViewIfNeeded();
+    await expect.poll(() => picture.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  }
   expect(await axeFaults(page)).toEqual([]);
 });
 

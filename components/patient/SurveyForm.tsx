@@ -49,23 +49,26 @@ export function SurveyForm({ token, language, onSaved }: Props) {
           <span>{t.low}</span>
           <span>{t.high}</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {SCORES.map((n) => (
-            <label
-              key={n}
-              className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-xl border-2 border-control bg-card px-2 font-semibold hover:bg-canvas active:bg-line"
-            >
-              <input
-                type="radio"
-                name="survey-score"
-                value={n}
-                checked={score === n}
-                onChange={() => setScore(n)}
-                className="h-5 w-5"
-              />
-              {n}
-            </label>
-          ))}
+        {/* 11 scores on one row when there is room (Normal text at 390 px), otherwise even rows of 6. */}
+        <div className="@container">
+          <div className="grid grid-cols-6 gap-1 @min-[18rem]:grid-cols-11">
+            {SCORES.map((n) => (
+              <label
+                key={n}
+                className="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-control bg-card font-semibold hover:bg-canvas active:bg-line has-checked:border-brand has-checked:bg-brand has-checked:text-white has-focus-visible:outline-4 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink"
+              >
+                <input
+                  type="radio"
+                  name="survey-score"
+                  value={n}
+                  checked={score === n}
+                  onChange={() => setScore(n)}
+                  className="sr-only"
+                />
+                {n}
+              </label>
+            ))}
+          </div>
         </div>
       </fieldset>
       <p className="text-sm">{t.note}</p>

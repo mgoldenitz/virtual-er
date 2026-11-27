@@ -172,6 +172,16 @@ export const en = {
     expiredHelp: "If you still need care, please go to the emergency department desk.",
     expiredNewVisit: "Or start a new demo visit on the start page.",
   },
+  // The four progress steps above the status card, and the countdown on the called screen.
+  progress: {
+    label: "Your visit",
+    triage: "Triage",
+    waiting: "Waiting",
+    headBack: "Head back",
+    atDesk: "At the desk",
+    minutesLeft: "{minutes} min",
+    leftToTap: "left to tap I'm on my way",
+  },
 
   // Heard by screen-reader users when the status changes (never the wait range or countdowns).
   announce: {
