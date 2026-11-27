@@ -27,12 +27,18 @@ describe.each(["en", "fr", "ur", "ar", "zh"])("HowItWorks in %s", (language) => 
     expect(steps).toEqual([t.start.howSteps[0], t.patient.fromHomeText[0], ...t.start.howSteps.slice(1)]);
   });
 
-  it("shows one decorative picture between the heading and the steps", () => {
-    const images = render(language).querySelectorAll("section > img");
-    expect(images).toHaveLength(1);
-    expect(images[0].getAttribute("alt")).toBe("");
-    expect(images[0].previousElementSibling?.tagName).toBe("H2");
-    expect(images[0].nextElementSibling?.tagName).toBe("OL");
+  it("shows one decorative picture on top of each step, each a different one", () => {
+    const box = render(language);
+    expect(box.querySelectorAll("section img")).toHaveLength(6);
+    const sources = [...box.querySelectorAll("ol > li")].map((li) => {
+      const image = li.firstElementChild;
+      expect(image?.tagName).toBe("IMG");
+      expect(image?.getAttribute("alt")).toBe("");
+      expect(image?.nextElementSibling?.textContent).toBe(li.textContent);
+      return decodeURIComponent(image?.getAttribute("src") ?? "");
+    });
+    sources.forEach((src) => expect(src).toContain("/start/steps/"));
+    expect(new Set(sources).size).toBe(6);
   });
 
   it("sits on the page with no card frame (decisions.md, 2026-11-22)", () => {
