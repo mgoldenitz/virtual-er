@@ -1,6 +1,7 @@
 // The small pieces the dashboard uses to show a number: the "no data yet" dash, a percent, and a label and value row.
 
 import type { ReactNode } from "react";
+import type { TileValue } from "@/lib/tileValue";
 
 /** The dash shown when a share or average has no data: seen as "-", read aloud as "no data yet". */
 export function NoData() {
@@ -24,6 +25,17 @@ export function NumberOrDash({ value }: { value: number | null }) {
 
 /** The classes for a <dl> of Row tiles: one column on a narrow phone, then two, then three. */
 export const tileGrid = "grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-3";
+
+/** A tile's big value and its small detail line; a null value shows only the NoData dash. */
+export function TileText({ value }: { value: TileValue }) {
+  if (value.big === null) return <NoData />;
+  return (
+    <>
+      {value.big}
+      {value.detail && <span className="block text-sm font-normal text-muted">{value.detail}</span>}
+    </>
+  );
+}
 
 /** One label and value pair (inside a <dl>), shown as a tile: a big number with a small label under it. */
 export function Row({ label, children }: { label: string; children: ReactNode }) {
