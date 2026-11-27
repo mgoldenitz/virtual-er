@@ -1,70 +1,78 @@
-// One site's past 7 days as a table: one row per day, with each share and average next to its counts.
-// On a phone the table scrolls sideways inside its own box, so the page itself does not.
-// The heading is outside that box, so it stays in view when the table scrolls.
+// One site's past 7 days as a table, one row per day. The table scrolls sideways in its own box on a narrow
+// screen; the heading stays outside the box. The score column shows only when the site has a survey response.
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { SiteNumbers } from "@/lib/dashboardNumbers";
 import { averageMinutes, averageScore, share } from "@/lib/dashboardShare";
+import { trendHasScores } from "@/lib/trendHasScores";
 import type { TrendDay } from "@/lib/trendNumbers";
 import { responseCount, visitCount } from "@/lib/visitCount";
 import { WAIT_START_DAY } from "@/lib/waitStart";
 import { NoData, NumberOrDash, Percent } from "./NumberParts";
 
-type Props = { site: "A" | "B"; trend: TrendDay[] };
+const HEADERS = ["Triaged", "Offered", "Accepted", "Recall to arrival (min)", "Offer to recall (min)"];
+const SCORE_HEADER = "Score (0 to 10)";
 
-const HEADERS = [
-  "Triaged CTAS 4 or 5",
-  "Offered",
-  "Accepted",
-  "Average minutes from recall to arrival",
-  "Average minutes from offer to recall",
-  "Average score (0 to 10)",
-];
+const cell = "whitespace-nowrap border-b border-line px-2 py-2 text-right";
 
-/** The 6 number cells for one day. Before the wait start date, the wait cell is only a dash. */
-function DayCells({ n, hasWait }: { n: SiteNumbers; hasWait: boolean }) {
-  const cell = "border-b border-line px-2 py-2 text-right";
+/** The small, light count after a number, such as "(3 visits)". */
+function Count({ children }: { children: ReactNode }) {
+  return <span className="text-xs font-normal text-muted"> ({children})</span>;
+}
+
+/** A share or average cell: only the dash when the bottom number is 0, else the value and its count. */
+function ValueCell({ bottom, children, count }: { bottom: number; children: ReactNode; count: ReactNode }) {
+  return (
+    <td className={cell}>
+      {bottom === 0 ? (
+        <NoData />
+      ) : (
+        <>
+          {children}
+          <Count>{count}</Count>
+        </>
+      )}
+    </td>
+  );
+}
+
+function DayCells({ n, hasWait, showScore }: { n: SiteNumbers; hasWait: boolean; showScore: boolean }) {
   return (
     <>
       <td className={cell}>{n.triaged}</td>
-      <td className={cell}>
-        {n.offered} of {n.triaged} (<Percent value={share(n.offered, n.triaged)} />)
-      </td>
-      <td className={cell}>
-        {n.accepted} of {n.offered} (<Percent value={share(n.accepted, n.offered)} />)
-      </td>
-      <td className={cell}>
-        <NumberOrDash value={averageMinutes(n.recallToArrivalSeconds, n.arrivedAfterRecall)} /> (
-        {visitCount(n.arrivedAfterRecall)})
-      </td>
-      <td className={cell}>
-        {hasWait ? (
-          <>
-            <NumberOrDash value={averageMinutes(n.offerToCallSeconds, n.recalled)} /> ({visitCount(n.recalled)})
-          </>
-        ) : (
-          <NoData />
-        )}
-      </td>
-      <td className={cell}>
-        <NumberOrDash value={averageScore(n.surveyScoreSum, n.surveyResponses)} /> ({responseCount(n.surveyResponses)})
-      </td>
+      <ValueCell bottom={n.triaged} count={`${n.offered} of ${n.triaged}`}>
+        <Percent value={share(n.offered, n.triaged)} />
+      </ValueCell>
+      <ValueCell bottom={n.offered} count={`${n.accepted} of ${n.offered}`}>
+        <Percent value={share(n.accepted, n.offered)} />
+      </ValueCell>
+      <ValueCell bottom={n.arrivedAfterRecall} count={visitCount(n.arrivedAfterRecall)}>
+        <NumberOrDash value={averageMinutes(n.recallToArrivalSeconds, n.arrivedAfterRecall)} />
+      </ValueCell>
+      <ValueCell bottom={hasWait ? n.recalled : 0} count={visitCount(n.recalled)}>
+        <NumberOrDash value={averageMinutes(n.offerToCallSeconds, n.recalled)} />
+      </ValueCell>
+      {showScore && (
+        <ValueCell bottom={n.surveyResponses} count={responseCount(n.surveyResponses)}>
+          <NumberOrDash value={averageScore(n.surveyScoreSum, n.surveyResponses)} />
+        </ValueCell>
+      )}
     </>
   );
 }
 
-export function TrendTable({ site, trend }: Props) {
-  // The dates are "YYYY-MM-DD", so comparing the text compares the dates.
-  const someBeforeStart = trend.some((d) => d.day < WAIT_START_DAY);
-  const title = `Demo Site ${site}, past 7 days`;
+export function TrendTable({ trend, site }: { trend: TrendDay[]; site: "A" | "B" }) {
   const headingId = useId();
+  const someBeforeStart = trend.some((d) => d.day < WAIT_START_DAY);
+  const showScore = trendHasScores(trend, site);
+  const headers = showScore ? [...HEADERS, SCORE_HEADER] : HEADERS;
 
   return (
     <section className="clean-card space-y-2">
       <h2 id={headingId} className="text-lg font-bold">
-        {title}
+        {`Demo Site ${site}, past 7 days`}
       </h2>
-      {/* "relative" keeps the absolute sr-only words inside this box, or the phone page scrolls sideways. */}
+      {/* "relative" keeps the sr-only text inside this scroll box, so it does not widen the page. */}
       <div className="relative overflow-x-auto" role="region" aria-labelledby={headingId} tabIndex={0}>
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -72,8 +80,8 @@ export function TrendTable({ site, trend }: Props) {
               <th scope="col" className="border-b-2 border-control px-2 py-2 text-left">
                 Day
               </th>
-              {HEADERS.map((h) => (
-                <th key={h} scope="col" className="border-b-2 border-control px-2 py-2 text-right">
+              {headers.map((h) => (
+                <th key={h} scope="col" className="whitespace-nowrap border-b-2 border-control px-2 py-2 text-right">
                   {h}
                 </th>
               ))}
@@ -82,17 +90,19 @@ export function TrendTable({ site, trend }: Props) {
           <tbody>
             {trend.map((d) => (
               <tr key={d.day}>
-                <th scope="row" className="whitespace-nowrap border-b border-line px-2 py-2 text-left">
+                <th scope="row" className="whitespace-nowrap border-b border-line px-2 py-2 text-left font-normal">
                   {d.day}
                 </th>
-                <DayCells n={d.numbers[site]} hasWait={d.day >= WAIT_START_DAY} />
+                <DayCells n={d.numbers[site]} hasWait={d.day >= WAIT_START_DAY} showScore={showScore} />
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="text-sm">Each number counts on the date of its own event.</p>
-      {someBeforeStart && <p className="text-sm">Wait numbers start on {WAIT_START_DAY}.</p>}
+      <p className="text-sm">
+        Each number counts on the date of its own event.
+        {someBeforeStart && ` Wait numbers start on ${WAIT_START_DAY}.`}
+      </p>
     </section>
   );
 }

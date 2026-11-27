@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Draws the past 7 days part of the dashboard in a test browser (happy-dom): one line when no past day
-// has a number, or the 2 site tables and the CSV button when one does. Owner decision 2026-11-21.
+// has a number, or the Site switch, one site table and the CSV button when one does. Owner decision 2026-11-21.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -39,12 +39,24 @@ describe("PastDaysView", () => {
     expect(container.querySelector("button")).toBeNull();
   });
 
-  it("shows the 2 site tables and the CSV button when a past day has a number", () => {
+  const button = (name: string) => [...container.querySelectorAll("button")].find((b) => b.textContent === name);
+  const headings = () => [...container.querySelectorAll("h2")].map((h) => h.textContent);
+
+  it("shows the Site switch on Site A, one table and the CSV button when a past day has a number", () => {
     act(() => root.render(<PastDaysView trend={withData} today="2026-11-25" isDemo={false} />));
-    const headings = [...container.querySelectorAll("h2")].map((h) => h.textContent);
-    expect(headings).toEqual(["Demo Site A, past 7 days", "Demo Site B, past 7 days"]);
-    expect(container.querySelectorAll("table")).toHaveLength(2);
-    expect(container.querySelector("button")?.textContent).toBe("Download past 7 days (CSV)");
+    expect(headings()).toEqual(["Demo Site A, past 7 days"]);
+    expect(container.querySelectorAll("table")).toHaveLength(1);
+    expect(button("Site A")?.getAttribute("aria-pressed")).toBe("true");
+    expect(button("Site B")?.getAttribute("aria-pressed")).toBe("false");
+    expect(button("Download past 7 days (CSV)")).toBeDefined();
     expect(container.textContent).not.toContain("No past days with visits yet.");
+  });
+
+  it("shows the Site B table after a click on Site B", () => {
+    act(() => root.render(<PastDaysView trend={withData} today="2026-11-25" isDemo={false} />));
+    act(() => button("Site B")?.click());
+    expect(headings()).toEqual(["Demo Site B, past 7 days"]);
+    expect(button("Site A")?.getAttribute("aria-pressed")).toBe("false");
+    expect(button("Site B")?.getAttribute("aria-pressed")).toBe("true");
   });
 });
