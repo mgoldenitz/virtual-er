@@ -1,5 +1,5 @@
 // Checks that the waiting screen shows a long wait in hours and minutes, in the patient's language,
-// and that only "Ready at the desk" gets the green success card.
+// and that each status card gets its own colour (only "Ready at the desk" is green).
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -53,7 +53,19 @@ describe("PatientStatus arrived card", () => {
     expect(renderStatus("arrived")).toContain("border-green-800");
   });
 
-  it("keeps the plain card for other ended statuses", () => {
-    expect(renderStatus("declined")).not.toContain("border-green-800");
+  it("gives other statuses their own colour, not green", () => {
+    const declined = renderStatus("declined");
+    expect(declined).not.toContain("border-green-800");
+    expect(declined).toContain("border-onsite-edge");
+    expect(renderStatus("needs_reassessment")).toContain("border-wait-edge");
+    expect(renderStatus("removed")).toContain("border-gone-edge");
+  });
+
+  it("gives an expired visit the grey card with the clock", () => {
+    const html = renderToStaticMarkup(
+      <PatientStatus view={{ ...view, expired: true }} language="en" onOnMyWay={() => {}} sending={false} />,
+    );
+    expect(html).toContain("border-control");
+    expect(html).toContain('data-icon="clock"');
   });
 });

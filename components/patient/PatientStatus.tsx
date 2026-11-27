@@ -13,6 +13,8 @@ import { CallCountdown } from "./CallCountdown";
 import { CallReminder } from "./CallReminder";
 import { FocusBox } from "./FocusBox";
 import { useReportFocusOnLeave, useRescueFocus } from "./useFocusRescue";
+import { statusLook } from "@/lib/statusLook";
+import { StatusIcon } from "./StatusIcon";
 
 type Props = {
   view: PatientView;
@@ -116,30 +118,16 @@ function otherStatus(status: PatientView["status"], t: PatientText): { heading: 
 
 function OtherStatus({ view, t }: { view: PatientView; t: PatientText }) {
   const { heading, text } = otherStatus(view.status, t);
-  // "Ready at the desk" gets the same green success look as the call-back card.
-  const done = view.status === "arrived";
-  const title = (
-    <h2 id="status-heading" tabIndex={-1} className={done ? "text-2xl font-bold text-green-950" : "text-2xl font-bold"}>
-      {heading}
-    </h2>
-  );
+  // Each status has its own colour and icon (lib/statusLook.ts); "Ready at the desk" stays green.
+  const look = statusLook(view.status, false);
   return (
-    <section
-      aria-labelledby="status-heading"
-      className={done ? "space-y-3 rounded-xl border-4 border-green-800 bg-green-50 p-4" : "clean-card space-y-3"}
-    >
-      {done ? (
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="icon-tile bg-card text-green-800">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-          {title}
-        </div>
-      ) : (
-        title
-      )}
+    <section aria-labelledby="status-heading" className={look.card}>
+      <div className="flex items-center gap-3">
+        <StatusIcon name={look.icon} tileClass={look.tile} />
+        <h2 id="status-heading" tabIndex={-1} className={look.heading}>
+          {heading}
+        </h2>
+      </div>
       {text.map((paragraph) => (
         <p key={paragraph} className="text-lg">
           {paragraph}
@@ -152,11 +140,16 @@ function OtherStatus({ view, t }: { view: PatientView; t: PatientText }) {
 // A visit started from home that was never triaged within 6 hours: staff no longer expect it.
 function Expired({ t }: { t: PatientText }) {
   const p = t.patient;
+  // An expired visit gets the grey card and the clock, whatever its status.
+  const look = statusLook("pre_arrival", true);
   return (
-    <section aria-labelledby="status-heading" className="clean-card space-y-3">
-      <h2 id="status-heading" tabIndex={-1} className="text-2xl font-bold">
-        {p.expiredHeading}
-      </h2>
+    <section aria-labelledby="status-heading" className={look.card}>
+      <div className="flex items-center gap-3">
+        <StatusIcon name={look.icon} tileClass={look.tile} />
+        <h2 id="status-heading" tabIndex={-1} className={look.heading}>
+          {p.expiredHeading}
+        </h2>
+      </div>
       <p className="text-lg">{t.expiredText}</p>
       <p className="text-lg">{p.expiredHelp}</p>
       <p className="text-lg">

@@ -19,6 +19,17 @@
   --color-stop-ink: #7f1d1d;     /* paused pill text */
   --color-ok-tint: #dcfce7;      /* called and on-the-way pill background */
   --color-ok-ink: #14532d;       /* called and on-the-way pill text */
+  /* Patient status cards (lib/statusLook.ts): each status has its own tint, text and edge. */
+  --color-wait-tint: #fef3c7;    /* amber: waiting inside to be seen again */
+  --color-wait-ink: #78350f;
+  --color-wait-edge: #b45309;
+  --color-onsite-tint: #ede9fe;  /* violet: waiting inside the ER */
+  --color-onsite-ink: #4c1d95;
+  --color-onsite-edge: #6d28d9;
+  --color-end-tint: #f3f4f6;     /* grey: visit ended or expired (ink text, control edge) */
+  --color-gone-tint: #ffe4e6;    /* rose: removed or could not reach */
+  --color-gone-ink: #881337;
+  --color-gone-edge: #be123c;
 }
 
 body {
