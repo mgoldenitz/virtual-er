@@ -149,6 +149,15 @@ export const zh: PatientText = {
     expiredHelp: "如果您仍需要护理，请前往急诊室前台。",
     expiredNewVisit: "或者在起始页开始一次新的演示就诊。",
   },
+  progress: {
+    label: "您的就诊",
+    triage: "分诊",
+    waiting: "等候",
+    headBack: "返回",
+    atDesk: "到达服务台",
+    minutesLeft: "{minutes} 分钟",
+    leftToTap: "内点击我在路上",
+  },
   announce: {
     called: "轮到您了。请现在回到急诊室。",
     onTheWay: "谢谢。工作人员知道您正在路上。",

@@ -149,6 +149,15 @@ export const ar: PatientText = {
     expiredHelp: "إذا كنت لا تزال بحاجة إلى رعاية، يرجى الذهاب إلى مكتب قسم الطوارئ.",
     expiredNewVisit: "أو ابدأ زيارة تجريبية جديدة على صفحة البداية.",
   },
+  progress: {
+    label: "زيارتك",
+    triage: "الفرز",
+    waiting: "الانتظار",
+    headBack: "العودة",
+    atDesk: "عند المكتب",
+    minutesLeft: "{minutes} دقيقة",
+    leftToTap: "متبقية للضغط على أنا في الطريق",
+  },
   announce: {
     called: "حان دورك. يرجى العودة إلى قسم الطوارئ الآن.",
     onTheWay: "شكرًا لك. الموظفون يعلمون أنك في طريقك.",

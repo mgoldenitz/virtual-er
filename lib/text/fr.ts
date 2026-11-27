@@ -149,6 +149,15 @@ export const fr: PatientText = {
     expiredHelp: "Si vous avez toujours besoin de soins, veuillez vous rendre au bureau du service des urgences.",
     expiredNewVisit: "Ou commencez une nouvelle visite de démonstration sur la page d'accueil.",
   },
+  progress: {
+    label: "Votre visite",
+    triage: "Triage",
+    waiting: "Attente",
+    headBack: "Retour",
+    atDesk: "Au comptoir",
+    minutesLeft: "{minutes} min",
+    leftToTap: "pour appuyer sur Je suis en route",
+  },
   announce: {
     called: "C'est votre tour. Veuillez revenir au service des urgences maintenant.",
     onTheWay: "Merci. Le personnel sait que vous êtes en route.",
