@@ -6,7 +6,7 @@ Try it: [waitwell-er.vercel.app](https://virtual-er-izpf.vercel.app) (demo data 
 
 WaitWell is a concept prototype. It shows how a hospital emergency department could let some patients wait off-site after triage. Triage is the first check a nurse does when a patient arrives. Patients who are experiencing a minor health concern, rated CTAS level 4 or 5 (the Canadian Triage and Acuity Scale), can go home or wait elsewhere. They follow their place in line on their phone. When staff are ready, they recall the patient, and the patient comes back to the hospital.
 
-This is a concept prototype. It uses only invented (synthetic) patients and demo data. It connects to no hospital system. It is not for real patients, and it is not affiliated with any hospital.
+This is a concept prototype. It uses synthetic patient and demo data. It connects to no hospital system. It is not for real patients, and it is not affiliated with any hospital.
 
 ## What it does
 
@@ -21,10 +21,10 @@ Staff screens (login needed):
 
 - /staff: check in a patient after triage. Staff scan the QR code or type the short code, choose CTAS 4 or 5, tick the eligibility checklist and choose a language.
 - Staff can recall a patient, mark a patient arrived or removed, and follow up when a patient does not reply. They can issue a new link for a lost phone, pause off-site waiting for one site, and recall all off-site patients at once.
-- /dashboard: four key numbers per site, with the rest under "More numbers" (closed at first). It also has a funnel of today's counts, wait bands, one past-7-days table with a Site switch, and a CSV download. It has a Real view and a Demo view. Real and demo visits are never mixed.
+- /dashboard: four key numbers per site, with the rest under "More numbers". It also has a funnel of today's counts, wait bands, a weekly table with a Site switch, and a CSV download. It has a Real view and a Demo view. Real and demo visits are never mixed.
 - A demo simulator plays both sides at Demo Site A and Demo Site B, so the screens look busy. Each site has its own day shape in Toronto time: Site A is busiest around midday, and Site B is busiest in the evening. A daily factor from the date makes one site busier than the other, and that changes from day to day. Staff can clear all demo data with one button.
 
-Languages: English, French, Urdu, Arabic and Chinese (Simplified). Urdu and Arabic screens run right to left. Only English is marked as checked by a fluent speaker. The other four show a draft notice until a fluent speaker checks them.
+Languages: English, French, Urdu, Arabic and Chinese (Simplified). Only English is marked as checked by a fluent speaker. The other four languages show a draft notice until a fluent speaker checks them.
 
 Accessibility features:
 
@@ -49,7 +49,7 @@ These rules come from SPEC.md. They always apply.
 8. The app does not copy or show any hospital's wait-time numbers. All wait estimates in the app are simulated.
 9. The accessibility target is WCAG 2.2 AA. That means keyboard access, visible focus, labelled controls, enough colour contrast and a layout that still works at 200% text size.
 
-The only message that leaves the app is a Pushover alert to the project owner's phone when staff recall a real visit. It carries only the display code and the site. It never carries the token, a link, the language or the CTAS level.
+The only message that leaves the app is a Pushover alert to my phone when staff recall a real visit. It carries only the display code and the site. It never carries the token, a link, the language or the CTAS level.
 
 The footer on every page says the app is a concept prototype, not affiliated with any hospital, with demo data only.
 
