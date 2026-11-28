@@ -10,7 +10,7 @@ It is a concept prototype. It is not affiliated with any hospital, uses only inv
 
 "Concept prototype. Not affiliated with or endorsed by Trillium Health Partners. Demo data only."
 
-App name: WaitWell. The main header uses the full name, "WaitWell: A virtual waiting room". Subheaders and other places use "WaitWell". (Owner, 2026-11-22; "ER" removed 2026-11-23.)
+App name: WaitWell. The main header shows "WaitWell" with "A virtual waiting room" on a smaller line under it, in every language. The browser tab title keeps the full name, "WaitWell: A virtual waiting room". Subheaders and other places use "WaitWell". (Owner, 2026-11-22; "ER" removed 2026-11-23; header split 2026-11-27, so it fits on one line on a phone.)
 
 ## Stack
 
@@ -93,18 +93,18 @@ App name: WaitWell. The main header uses the full name, "WaitWell: A virtual wai
 
 ### /dashboard (staff login required)
 
-A "Show" switch with two buttons, Real (first, and on when the page opens; not saved) and Demo. Real and demo visits are never mixed; daily_stats keeps them apart through its is_demo key. Demo Site A and Demo Site B are two columns; on a phone they stack.
+A "Show" switch with two buttons, Real (first, and on when the page opens; not saved) and Demo. Real and demo visits are never mixed on the dashboard; daily_stats keeps them apart through its is_demo key. (The patient's place in line is the one exception: see Demo mode.) Demo Site A and Demo Site B are two columns; on a phone they stack.
 
 "Now" (the visits in the table at this moment):
 
 - Waiting off-site: status waiting.
 - Recalled, not yet arrived: status called or on_the_way.
-- Back for reassessment: status needs_reassessment.
+- Back for reassessment: status needs_reassessment. It is under "More numbers" (see below); the staff screen flags each of these visits.
 
 "Today (since midnight, Toronto time)". Each number counts a visit on the America/Toronto date of its own event, and adds the daily_stats row for (today, site, is_demo) (hard rule 4):
 
-- Offered off-site waiting: "8 of 10 triaged (80%)". Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today. Triage and offer are saved in the same step, so the share cannot go over 100%.
-- Accepted: "6 of 8 offered (75%)". Accepted is offered minus declined.
+- Offered off-site waiting: "80%" with "8 of 10 triaged" under it. Top: offered_at today. Bottom: CTAS 4 or 5 with triaged_at today. Triage and offer are saved in the same step, so the share cannot go over 100%.
+- Accepted: "75%" with "6 of 8 offered" under it. Accepted is offered minus declined.
 - Declined: status declined, on offered_at.
 - Average minutes from recall to arrival: "14 (5 visits)". arrived_at minus called_at, over visits with status arrived and called_at set, on arrived_at. A desk arrival with no called_at stays out.
 - No-shows (status removed, removed_reason no_show), Unable to reach (nurse confirmed) (status unable_to_reach), Left (status removed, removed_reason left): on closed_at.
@@ -114,13 +114,13 @@ A "Show" switch with two buttons, Real (first, and on when the page opens; not s
 - Average minutes from offer to recall: "52 (7 visits)". called_at minus offered_at, over the Recalled visits, on called_at. It starts at offered_at, because a declined-to-waiting switch moves offered_at to the switch time. Patients still waiting are not in it.
 - Wait bands: the same visits, by whole minutes rounded like the average: "Under 30 minutes", "30 to 59 minutes", "60 to 119 minutes", "120 minutes or more".
 
-Percentages and minutes round to whole numbers; the average score rounds to one decimal place. A share or average whose bottom number is 0 shows "-" on screen, with the screen-reader text "no data yet". (Owner, 2026-11-18, the Gemini metric review and the dashboard plan: replaces the earlier list, whose offered percentage was always 100%.)
+Each number is a tile with one big number and a small detail line. Four "Today" tiles show at first: Offered off-site waiting, Accepted, Average minutes from offer to recall, and Unable to reach (nurse confirmed). "Now" shows Waiting off-site and Recalled, not yet arrived. The other numbers, including Back for reassessment, are under "More numbers", which starts closed. Tiles that repeat the "Steps today" funnel are not shown. (Owner, 2026-11-27.) Percentages and minutes round to whole numbers; the average score rounds to one decimal place. A share or average whose bottom number is 0 shows "-" on screen, with the screen-reader text "no data yet". (Owner, 2026-11-18, the Gemini metric review and the dashboard plan: replaces the earlier list, whose offered percentage was always 100%.)
 
-"Past 7 days": the 7 dates before today, each counted by the same rules as "Today". A share shows its count ("8 of 10 (80%)"), and an average shows its count in brackets. When a share's bottom number is 0, the cell shows only "-", without a count (owner, 2026-11-27). The wait numbers start on the date their migration runs. A day before that date shows "-" with the note "Wait numbers start on <date>." A funnel of today's counts (Started from home, Started from home today and reached triage (owner, 2026-11-21), Triaged CTAS 4 or 5, Offered, Accepted, Recalled, Arrived after recall, Answered survey) shows counts only, with the line "Each row counts what happened today. Desk patients join at Triaged, and some patients come back before a recall, so a lower row can be larger." Staff can download the past 7 days as CSV, for the mode on screen. The CSV has the same numbers plus the raw counts, has empty cells before the start date, and does not include today, codes, tokens or visit times. (Owner, 2026-11-20, the Gemini review of the analysis definitions.)
+"Past 7 days": the 7 dates before today, each counted by the same rules as "Today". One table shows one site at a time, with a Site A / Site B switch above it (owner, 2026-11-27; replaces the 2 site tables of 2026-11-21). The score column shows only when that site has a survey response in the 7 days. A share shows its count ("80% (8 of 10)"), and an average shows its count in brackets. When a share's bottom number is 0, the cell shows only "-", without a count (owner, 2026-11-27). The wait numbers start on the date their migration runs. A day before that date shows "-" with the note "Wait numbers start on <date>." A funnel of today's counts (Started from home, Started from home today and reached triage (owner, 2026-11-21), Triaged CTAS 4 or 5, Offered, Accepted, Recalled, Arrived after recall, Answered survey) shows counts only, with the line "Each row counts what happened today. Desk patients join at Triaged, and some patients come back before a recall, so a lower row can be larger." Staff can download the past 7 days as CSV, for the mode on screen. The CSV has the same numbers plus the raw counts, has empty cells before the start date, and does not include today, codes, tokens or visit times. (Owner, 2026-11-20, the Gemini review of the analysis definitions.)
 
 ### Demo mode (staff only)
 
-A scheduled simulator plays the staff and patient sides at Demo Site A and B, so the screens look like a normal evening. It makes only moves the app allows, and it reads or changes only visits with is_demo = true. It aims for about 9 demo visits waiting off-site per site and call-backs about 15 minutes apart, as an average over a day: the numbers follow an hour-of-day curve in Toronto time with a different peak per site (Site A around midday, Site B in the evening), times a day factor of 0.8 to 1.2 that comes from the date. (Owner, 2026-11-27.) Once a day, an AI model sets the simulator's chances (tap rates, how often a recall comes early, the language mix) within fixed limits; it never sets a CTAS level or a time limit, and never sees a visit. Demo visits show a "Demo" tag on the staff screen. A staff action "Clear demo data" switches the simulator off and deletes all demo visits and demo rows in daily_stats; it must run before real testers start. (Owner, 2026-11-18: replaces the one-button demo mode, because the database sets every time to now(), so a button cannot make visits spread over the last few hours.)
+A scheduled simulator plays the staff and patient sides at Demo Site A and B, so the screens look like a normal evening. It makes only moves the app allows, and it reads or changes only visits with is_demo = true. It aims for about 9 demo visits waiting off-site per site and call-backs about 15 minutes apart, as an average over a day: the numbers follow an hour-of-day curve in Toronto time with a different peak per site (Site A around midday, Site B in the evening), times a day factor of 0.8 to 1.2 that comes from the date. (Owner, 2026-11-27.) Once a day, an AI model sets the simulator's chances (tap rates, how often a recall comes early, the language mix) within fixed limits; it never sets a CTAS level or a time limit, and never sees a visit. Demo visits show a "Demo" tag on the staff screen. A patient's place in line and wait range count the demo visits at the same site, so a real visit started while the simulator runs (for example by a classmate at the presentation) joins a busy line, as in a crowded ER. The demo patients ahead of it are recalled by the simulator, so its place still goes down. (Owner, 2026-11-27, after the security review.) A staff action "Clear demo data" switches the simulator off and deletes all demo visits and demo rows in daily_stats; run it before real testers start, unless the busy line above is wanted. (Owner, 2026-11-18: replaces the one-button demo mode, because the database sets every time to now(), so a button cannot make visits spread over the last few hours.)
 
 ## Data (one main table)
 

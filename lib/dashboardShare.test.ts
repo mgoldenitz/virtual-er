@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageMinutes, averageScore, share } from "./dashboardShare";
+import { averageMinutes, averageScore, hasBottom, share } from "./dashboardShare";
 
 describe("share", () => {
   it("gives the whole percentage", () => {
@@ -37,5 +37,16 @@ describe("averageScore", () => {
 
   it("gives null with no responses", () => {
     expect(averageScore(0, 0)).toBeNull();
+  });
+});
+
+describe("hasBottom", () => {
+  it("is false when the bottom number is 0, so the cell shows only the dash", () => {
+    expect(hasBottom(0)).toBe(false);
+  });
+
+  it("is true when there is at least one visit to divide by", () => {
+    expect(hasBottom(1)).toBe(true);
+    expect(hasBottom(10)).toBe(true);
   });
 });
