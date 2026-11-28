@@ -21,3 +21,8 @@ export function share(top: number, bottom: number): number | null {
   if (top === bottom) return 100;
   return Math.round((top/bottom)*100);
 }
+
+/** True when a share or average has something to divide by. A cell or tile with a 0 bottom shows only "-". */
+export function hasBottom(bottom: number): boolean {
+  return bottom > 0;
+}

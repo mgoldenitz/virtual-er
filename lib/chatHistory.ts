@@ -17,3 +17,8 @@ export function chatHistory(entries: ChatEntry[]): ChatTurn[] {
     { role: "assistant" as const, text: (entry.answer?.text ?? "").slice(0, CHAT_LIMITS.answerCharacters) },
   ]);
 }
+
+/** True when at least one question has an AI answer, so the one AI line shows under the chat (owner, 2026-11-27). */
+export function showsAiLine(entries: ChatEntry[]): boolean {
+  return entries.some((entry) => entry.answer?.kind === "text");
+}

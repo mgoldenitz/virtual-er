@@ -3,7 +3,7 @@
 
 import { useId, type ReactNode } from "react";
 import type { SiteNumbers } from "@/lib/dashboardNumbers";
-import { averageMinutes, averageScore, share } from "@/lib/dashboardShare";
+import { averageMinutes, averageScore, hasBottom, share } from "@/lib/dashboardShare";
 import { trendHasScores } from "@/lib/trendHasScores";
 import type { TrendDay } from "@/lib/trendNumbers";
 import { responseCount, visitCount } from "@/lib/visitCount";
@@ -26,13 +26,13 @@ function Count({ children }: { children: ReactNode }) {
 function ValueCell({ bottom, children, count }: { bottom: number; children: ReactNode; count: ReactNode }) {
   return (
     <td className={cell}>
-      {bottom === 0 ? (
-        <NoData />
-      ) : (
+      {hasBottom(bottom) ? (
         <>
           {children}
           <Count>{count}</Count>
         </>
+      ) : (
+        <NoData />
       )}
     </td>
   );

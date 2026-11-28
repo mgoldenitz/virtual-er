@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { fetchChatAnswer } from "@/data/dashboardChat";
-import { chatHistory, type ChatEntry } from "@/lib/chatHistory";
+import { chatHistory, showsAiLine, type ChatEntry } from "@/lib/chatHistory";
 import { CHAT_CODE_TEXT } from "@/lib/chatMessage";
 import { CHAT_LIMITS, hasPatientDetail } from "@/lib/chatRequest";
 
@@ -93,7 +93,7 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
           </div>
         ))}
         {/* One AI line for the whole chat, at the bottom (owner decision 2026-11-27). */}
-        {entries.some((e) => e.answer?.kind === "text") && (
+        {showsAiLine(entries) && (
           <p className="text-sm text-muted">{"Written by an AI model from today's totals. Check the numbers above."}</p>
         )}
       </div>

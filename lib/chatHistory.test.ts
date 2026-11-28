@@ -1,7 +1,7 @@
 // Checks which earlier turns go with a new chat question.
 
 import { describe, expect, it } from "vitest";
-import { chatHistory, type ChatEntry } from "./chatHistory";
+import { chatHistory, showsAiLine, type ChatEntry } from "./chatHistory";
 
 const text = (t: string) => ({ kind: "text" as const, text: t });
 const note = (t: string) => ({ kind: "note" as const, text: t });
@@ -40,5 +40,24 @@ describe("chatHistory", () => {
   it("cuts a long answer to 1200 characters", () => {
     const entries: ChatEntry[] = [{ question: "Q1", answer: text("x".repeat(1500)) }];
     expect(chatHistory(entries)[1].text).toHaveLength(1200);
+  });
+});
+
+describe("showsAiLine", () => {
+  it("is false for an empty chat", () => {
+    expect(showsAiLine([])).toBe(false);
+  });
+
+  it("is false while the only answer is on the way or is a note", () => {
+    expect(showsAiLine([{ question: "Q1", answer: null }])).toBe(false);
+    expect(showsAiLine([{ question: "Q1", answer: note("Try again later.") }])).toBe(false);
+  });
+
+  it("is true once one question has an AI answer", () => {
+    const entries: ChatEntry[] = [
+      { question: "Q1", answer: note("Try again later.") },
+      { question: "Q2", answer: text("A2") },
+    ];
+    expect(showsAiLine(entries)).toBe(true);
   });
 });
