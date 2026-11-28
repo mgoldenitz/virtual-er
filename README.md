@@ -95,11 +95,11 @@ GitHub runs `npm test`, `npm run lint` and `npm run build` on every push and eve
 
 ## Diagrams
 
-App architecture: the screens, the server routes, Supabase and the external services, and how they connect.
+App architecture: the screens, the server routes, Supabase and the external services, and how they connect. Two small read-only routes are not shown: /api/site-status (the site pause) and /api/time (the server clock).
 
 ![WaitWell app architecture](.github/readme/architecture.png)
 
-Visit status lifecycle: each status a visit can have, and the moves between them. The list of moves is ALLOWED_MOVES in lib/allowedSteps.ts.
+Visit status lifecycle: each status a visit can have, and the moves between them. Undo moves are not shown. An arrow from the dashed box starts from each of the three statuses in it. The full list of moves is ALLOWED_MOVES in lib/allowedSteps.ts.
 
 ![WaitWell visit status lifecycle](.github/readme/visit-lifecycle.png)
 
