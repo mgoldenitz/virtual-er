@@ -75,6 +75,16 @@ describe("ChatPanel", () => {
     expect(log().textContent).toContain(AI_LINE);
   });
 
+  it("shows the AI line once, at the bottom of the log, after two answers", async () => {
+    render(false);
+    await ask("First question");
+    act(() => vi.advanceTimersByTime(10_000));
+    await ask("Second question");
+    const paragraphs = [...log().querySelectorAll("p")];
+    expect(paragraphs.filter((p) => p.textContent?.includes(AI_LINE))).toHaveLength(1);
+    expect(paragraphs.at(-1)?.textContent).toContain(AI_LINE);
+  });
+
   it("refuses a visit code and makes no call", async () => {
     render(false);
     await ask("Where is ABC234?");

@@ -67,24 +67,24 @@ describe("TrendTable", () => {
     const headers = [...container.querySelectorAll("thead th")].map((h) => h.textContent);
     expect(headers).toEqual([
       "Day",
-      "Triaged CTAS 4 or 5",
+      "Triaged",
       "Offered",
       "Accepted",
-      "Average minutes from recall to arrival",
-      "Average minutes from offer to recall",
-      "Average score (0 to 10)",
+      "Recall to arrival (min)",
+      "Offer to recall (min)",
+      "Score (0 to 10)",
     ]);
     const days = [...container.querySelectorAll("tbody th")].map((h) => h.textContent);
     expect(days[0]).toBe("2026-11-18");
     expect(days[6]).toBe("2026-11-24");
   });
 
-  it("shows each share with its counts and each average with its count in brackets", () => {
+  it("shows each share and average with its count in brackets", () => {
     show(trendWith("2026-11-22"));
     expect(rowCells("2026-11-22")).toEqual([
       "10",
-      "8 of 10 (80%)",
-      "6 of 8 (75%)",
+      "80% (8 of 10)",
+      "75% (6 of 8)",
       "13 (2 visits)",
       "30 (3 visits)",
       "6.8 (4 responses)",
@@ -95,11 +95,11 @@ describe("TrendTable", () => {
     show(trendWith("2026-11-22"));
     expect(rowCells("2026-11-23")).toEqual([
       "0",
-      "0 of 0 (-no data yet)",
-      "0 of 0 (-no data yet)",
-      "-no data yet (0 visits)",
-      "-no data yet (0 visits)",
-      "-no data yet (0 responses)",
+      "-no data yet",
+      "-no data yet",
+      "-no data yet",
+      "-no data yet",
+      "-no data yet",
     ]);
     expect(container.textContent).not.toContain("NaN");
   });
@@ -110,7 +110,7 @@ describe("TrendTable", () => {
     );
     show(trend);
     expect(rowCells("2026-11-20")[4]).toBe("-no data yet");
-    expect(rowCells("2026-11-21")[4]).toBe("-no data yet (0 visits)");
+    expect(rowCells("2026-11-21")[4]).toBe("-no data yet");
     expect(container.textContent).toContain("Wait numbers start on 2026-11-21.");
   });
 
@@ -129,5 +129,15 @@ describe("TrendTable", () => {
     show(trendNumbers([], [], "2026-11-29", false));
     expect(container.textContent).toContain("Each number counts on the date of its own event.");
     expect(container.textContent).not.toContain("Wait numbers start on");
+  });
+
+  it("hides the score column when the site has no survey response in the 7 days", () => {
+    show(trendNumbers([], [], "2026-11-29", false));
+    const headers = [...container.querySelectorAll("thead th")].map((h) => h.textContent);
+    expect(headers).toHaveLength(6);
+    expect(headers).not.toContain("Score (0 to 10)");
+    for (const row of container.querySelectorAll("tbody tr")) {
+      expect(row.querySelectorAll("td")).toHaveLength(5);
+    }
   });
 });

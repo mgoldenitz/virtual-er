@@ -47,9 +47,6 @@ describe("SiteNumbers", () => {
       "No-shows",
       "Unable to reach (nurse confirmed)",
       "Left",
-      "Started from home",
-      "Reached triage",
-      "Survey responses",
       "Average score (0 to 10)",
       "Scored 9 or 10",
       "Average minutes from offer to recall",
@@ -59,37 +56,49 @@ describe("SiteNumbers", () => {
       "120 minutes or more",
     ];
     for (const label of labels) expect(text()).toContain(label);
+    for (const gone of ["Started from home", "Reached triage", "Survey responses"]) expect(text()).not.toContain(gone);
   });
 
-  it("shows the offered share as a whole percent", () => {
+  it("puts the other numbers in a More numbers part that starts closed", () => {
+    show(zero);
+    const details = container.querySelector("details");
+    expect(details?.querySelector("summary")?.textContent).toBe("More numbers");
+    expect(details?.open).toBe(false);
+    expect(details?.textContent).toContain("Declined");
+    expect(details?.textContent).not.toContain("Offered off-site waiting");
+  });
+
+  it("shows the offered share as a big percent with the counts under it", () => {
     show({ ...zero, offered: 8, triaged: 10 });
-    expect(text()).toContain("8 of 10 triaged (80%)");
+    expect(text()).toContain("80%8 of 10 triaged");
   });
 
   it("shows the screen-reader text for no data, and no NaN, when every number is 0", () => {
     show(zero);
     expect(container.querySelectorAll(".sr-only").length).toBeGreaterThan(0);
     expect(container.innerHTML).toContain("no data yet");
-    expect(text()).toContain("0 of 0 triaged (-no data yet)");
+    expect(text()).toContain("Offered off-site waiting-no data yet");
+    expect(text()).not.toContain("0 of 0");
     expect(text()).not.toContain("NaN");
   });
 
   it("shows the average off-site wait with its count, and the 4 band counts", () => {
     // 3 recalled visits, 9000 seconds in all: 50 minutes on average.
     show({ ...zero, recalled: 3, offerToCallSeconds: 9000, waitUnder30: 1, wait30to59: 0, wait60to119: 2, wait120plus: 0 });
-    expect(text()).toContain("Average minutes from offer to recall50 (3 visits)");
+    expect(text()).toContain("Average minutes from offer to recall503 visits");
     expect(text()).toContain("Under 30 minutes1");
     expect(text()).toContain("60 to 119 minutes2");
   });
 
   it("shows the no-data dash for the off-site wait when no one was recalled", () => {
     show(zero);
-    expect(text()).toContain("Average minutes from offer to recall-no data yet (0 visits)");
+    expect(text()).toContain("Average minutes from offer to recall-no data yet");
+    expect(text()).not.toContain("0 visits");
   });
 
   it("says 1 visit in the singular", () => {
     show({ ...zero, arrivedAfterRecall: 1, recallToArrivalSeconds: 840 });
-    expect(text()).toContain("14 (1 visit)");
+    expect(text()).toContain("141 visit");
     expect(text()).not.toContain("1 visits");
   });
 });

@@ -89,17 +89,13 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
           <div key={i} className="space-y-1">
             <p className="font-semibold">{`You asked: ${entry.question}`}</p>
             {entry.answer === null && <p>Writing the answer...</p>}
-            {entry.answer?.kind === "text" && (
-              <>
-                <p>{entry.answer.text}</p>
-                <p className="text-sm text-muted">
-                  {"Written by an AI model from today's totals. Check the numbers above."}
-                </p>
-              </>
-            )}
-            {entry.answer?.kind === "note" && <p>{entry.answer.text}</p>}
+            {entry.answer !== null && <p>{entry.answer.text}</p>}
           </div>
         ))}
+        {/* One AI line for the whole chat, at the bottom (owner decision 2026-11-27). */}
+        {entries.some((e) => e.answer?.kind === "text") && (
+          <p className="text-sm text-muted">{"Written by an AI model from today's totals. Check the numbers above."}</p>
+        )}
       </div>
       <form onSubmit={ask} className="space-y-2">
         <label htmlFor="chat-question" className="block font-semibold">
@@ -119,7 +115,7 @@ export function ChatPanel({ isDemo }: { isDemo: boolean }) {
           className="block w-full rounded-lg border-2 border-control bg-card px-3 py-2"
         />
         <p id="chat-note" className="text-sm text-muted">
-          {"Do not type patient codes or names. The AI sees only today's totals."}
+          {"Do not type patient codes or names."}
         </p>
         {codeNote && <p role="alert">{CHAT_CODE_TEXT}</p>}
         <div className="flex flex-wrap gap-2">
