@@ -4,7 +4,7 @@
 
 Try it: [waitwell-er.vercel.app](https://virtual-er-izpf.vercel.app) (demo data only).
 
-WaitWell is a concept prototype. It shows how a hospital emergency department could let some patients wait off-site after triage. Triage is the first check a nurse does when a patient arrives. Patients who are not very sick, rated CTAS level 4 or 5 (the Canadian Triage and Acuity Scale), can go home or wait elsewhere. They follow their place in line on their phone. When staff are ready, they recall the patient, and the patient comes back to the hospital.
+WaitWell is a concept prototype. It shows how a hospital emergency department could let some patients wait off-site after triage. Triage is the first check a nurse does when a patient arrives. Patients who are experiencing a minor health concern, rated CTAS level 4 or 5 (the Canadian Triage and Acuity Scale), can go home or wait elsewhere. They follow their place in line on their phone. When staff are ready, they recall the patient, and the patient comes back to the hospital.
 
 This is a concept prototype. It uses only invented (synthetic) patients and demo data. It connects to no hospital system. It is not for real patients, and it is not affiliated with any hospital.
 
