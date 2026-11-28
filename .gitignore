@@ -63,6 +63,9 @@ Hand off summary.docx
 /graphify-out/
 /graphify-out-research/
 
+# Archify diagram work folders: candidates, rendered HTML and receipts (the README PNGs live in .github/readme/)
+/.archify/
+
 handoffs/
 screenshots/
 reports/
